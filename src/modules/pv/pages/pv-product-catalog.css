@@ -78,7 +78,10 @@
   background: var(--pv-card);
   color: var(--pv-blue);
 }
-.pv-catalog-overview-header-toggle > i { font-size: 18px; line-height: 1; }
+.pv-catalog-overview-header-toggle > i {
+  font-size: 18px;
+  line-height: 1;
+}
 
 .pv-catalog-page .MuiButton-root:not(.hn-row-action),
 .pv-catalog-dialog .MuiButton-root:not(.hn-row-action) {
@@ -330,7 +333,8 @@
 .pv-catalog-filters {
   display: grid;
   grid-template-columns:
-    minmax(260px, 2fr) minmax(260px, 1fr) minmax(190px, 1fr) auto;
+    minmax(260px, 2fr) minmax(260px, 1fr) minmax(190px, 1fr)
+    auto;
   align-items: center;
   gap: 12px;
   min-width: 0;
@@ -545,9 +549,15 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-.pv-catalog-table tbody { counter-reset: pv-row var(--pv-row-start, 0); }
-.pv-catalog-table tbody tr { counter-increment: pv-row; }
-.pv-catalog-row-number::before { content: counter(pv-row); }
+.pv-catalog-table tbody {
+  counter-reset: pv-row var(--pv-row-start, 0);
+}
+.pv-catalog-table tbody tr {
+  counter-increment: pv-row;
+}
+.pv-catalog-row-number::before {
+  content: counter(pv-row);
+}
 .pv-catalog-table td a {
   color: var(--pv-blue);
 }
@@ -849,13 +859,30 @@
   background: var(--pv-card);
   color: var(--pv-heading);
 }
-.pv-catalog-menu .MuiMenuItem-root {
-  color: var(--pv-heading);
+.pv-catalog-menu .MuiMenuItem-root,
+.pv-catalog-menu .MuiAutocomplete-option {
   min-height: var(--ops-control-height);
   font-size: 14px;
 }
+.pv-catalog-menu .MuiMenuItem-root.Mui-selected,
+.pv-catalog-menu .MuiAutocomplete-option[aria-selected="true"] {
+  color: var(--pv-heading);
+  font-weight: 600;
+}
+.pv-catalog-menu .MuiMenuItem-root:not(.Mui-selected),
+.pv-catalog-menu .MuiAutocomplete-option:not([aria-selected="true"]) {
+  color: var(--pv-muted);
+  font-weight: 400;
+}
 .pv-catalog-menu .MuiMenuItem-root:hover,
-.pv-catalog-menu .MuiMenuItem-root.Mui-selected {
+.pv-catalog-menu .MuiMenuItem-root.Mui-focusVisible,
+.pv-catalog-menu .MuiAutocomplete-option:hover,
+.pv-catalog-menu .MuiAutocomplete-option.Mui-focused {
+  color: var(--pv-heading);
+  background: var(--pv-pale);
+}
+.pv-catalog-menu .MuiMenuItem-root.Mui-selected,
+.pv-catalog-menu .MuiAutocomplete-option[aria-selected="true"] {
   background: var(--pv-pale);
 }
 

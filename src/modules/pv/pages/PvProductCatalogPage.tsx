@@ -443,16 +443,22 @@ export function PvProductCatalogPage() {
   );
 
   const rows = useMemo(() => profiles.data?.data ?? [], [profiles.data]);
+  // Chuỗi rỗng cũng là "không lọc": nhánh Autocomplete của UiSelect từng trả
+  // "" khi bấm ×, và nếu coi đó là một industry_id thật thì mọi dòng đều bị loại.
+  const activeIndustry =
+    industryFilter === FILTER_ALL || industryFilter === ""
+      ? ""
+      : industryFilter;
   // Ngành nghề lọc phía CLIENT: `GET /pv-admin/resources/product-profiles`
   // không nhận industry_id, và mapping ngành nằm ở bảng phụ nên không thể suy ra
   // từ tham số hiện có. Lọc trên trang hiện tại là đúng phạm vi người dùng đang
   // nhìn; đừng dựng phân trang riêng cho nó.
   const visibleRows = useMemo(
     () =>
-      industryFilter === FILTER_ALL
-        ? rows
-        : rows.filter((row) => row.industry_ids.includes(industryFilter)),
-    [rows, industryFilter],
+      activeIndustry
+        ? rows.filter((row) => row.industry_ids.includes(activeIndustry))
+        : rows,
+    [rows, activeIndustry],
   );
 
   // `PvPageMeta` khai tường minh từng khoá (không có index signature) nên không
@@ -704,7 +710,7 @@ export function PvProductCatalogPage() {
 
   const isFilterActive =
     keyword.trim() !== "" ||
-    industryFilter !== FILTER_ALL ||
+    Boolean(activeIndustry) ||
     publishedFilter !== FILTER_ALL;
   const withoutImage = visibleRows.filter(
     (row) => (row.images?.length ?? 0) === 0,
@@ -857,75 +863,115 @@ export function PvProductCatalogPage() {
         aria-label={copy("Bộ lọc tìm kiếm", "Search filters")}
       >
         <div className="pv-catalog-filters">
-            <div className="pv-catalog-search">
-              <SearchInput
-                id="pv-catalog-search-input"
-                width="100%"
-                value={keyword}
-                onChange={(next) => applyFilter(() => setKeyword(next))}
-                placeholder={copy(
-                  "Tên sản phẩm, mã sản phẩm hoặc SKU...",
-                  "Product name, product code or SKU...",
-                )}
-                data-testid="pv-catalog-search"
-              />
-            </div>
-            <div className="pv-catalog-filter">
-              <UiSelect
-                value={industryFilter}
-                onChange={(next) => applyFilter(() => setIndustryFilter(next))}
-                aria-label={t("pv.admin.industryFilterAria")}
-                minWidth={0}
-                fullWidth
-                menuClassName="pv-catalog-menu"
-                placeholder={copy("Nhóm sản phẩm: Tất cả", "Product group: All")}
-                options={[
-                  { value: FILTER_ALL, label: copy("Nhóm sản phẩm: Tất cả", "Product group: All") },
-                  ...industryOptions.map((option) => ({ ...option, label: `${copy("Nhóm sản phẩm", "Product group")}: ${option.label}` })),
-                ]}
-                data-testid="pv-catalog-industry-filter"
-              />
-            </div>
-            <div className="pv-catalog-filter">
-              <UiSelect
-                value={publishedFilter}
-                onChange={(next) => applyFilter(() => setPublishedFilter(next))}
-                aria-label={t("pv.admin.publishedFilterAria")}
-                minWidth={0}
-                fullWidth
-                menuClassName="pv-catalog-menu"
-                placeholder={copy("Trạng thái: Tất cả", "Status: All")}
-                options={[
-                  { value: FILTER_ALL, label: copy("Trạng thái: Tất cả", "Status: All") },
-                  { value: "true", label: `${copy("Trạng thái", "Status")}: ${t("pv.admin.publishedShown")}` },
-                  { value: "false", label: `${copy("Trạng thái", "Status")}: ${t("pv.admin.publishedHidden")}` },
-                ]}
-                data-testid="pv-catalog-published-filter"
-              />
-            </div>
-            <button
-              type="button"
-              className="pv-catalog-filter-toggle"
-              aria-expanded={filtersOpen}
-              aria-controls="pv-catalog-filters-content"
-              onClick={() => setFiltersOpen((current) => !current)}
-            >
-              <FilterOutlined aria-hidden="true" />
-              {copy("Bộ lọc", "Filters")}
-            </button>
+          <div className="pv-catalog-search">
+            <SearchInput
+              id="pv-catalog-search-input"
+              width="100%"
+              value={keyword}
+              onChange={(next) => applyFilter(() => setKeyword(next))}
+              placeholder={copy(
+                "Tên sản phẩm, mã sản phẩm hoặc SKU...",
+                "Product name, product code or SKU...",
+              )}
+              data-testid="pv-catalog-search"
+            />
+          </div>
+          <div className="pv-catalog-filter">
+            <UiSelect
+              value={industryFilter}
+              onChange={(next) => applyFilter(() => setIndustryFilter(next))}
+              // "Tất cả" là mặc định: không hiện nút × khi đang chọn nó.
+              // Nếu người dùng xoá một nhóm đã chọn, trả về đúng sentinel
+              // ALL thay vì "" — nếu không danh sách sẽ lọc theo chuỗi rỗng
+              // và rơi vào trạng thái "Không có kết quả phù hợp".
+              clearValue={FILTER_ALL}
+              aria-label={t("pv.admin.industryFilterAria")}
+              minWidth={0}
+              fullWidth
+              menuClassName="pv-catalog-menu"
+              placeholder={copy("Nhóm sản phẩm: Tất cả", "Product group: All")}
+              options={[
+                {
+                  value: FILTER_ALL,
+                  label: copy("Nhóm sản phẩm: Tất cả", "Product group: All"),
+                },
+                ...industryOptions.map((option) => ({
+                  ...option,
+                  label: `${copy("Nhóm sản phẩm", "Product group")}: ${option.label}`,
+                })),
+              ]}
+              data-testid="pv-catalog-industry-filter"
+            />
+          </div>
+          <div className="pv-catalog-filter">
+            <UiSelect
+              value={publishedFilter}
+              onChange={(next) => applyFilter(() => setPublishedFilter(next))}
+              aria-label={t("pv.admin.publishedFilterAria")}
+              minWidth={0}
+              fullWidth
+              menuClassName="pv-catalog-menu"
+              placeholder={copy("Trạng thái: Tất cả", "Status: All")}
+              options={[
+                {
+                  value: FILTER_ALL,
+                  label: copy("Trạng thái: Tất cả", "Status: All"),
+                },
+                {
+                  value: "true",
+                  label: `${copy("Trạng thái", "Status")}: ${t("pv.admin.publishedShown")}`,
+                },
+                {
+                  value: "false",
+                  label: `${copy("Trạng thái", "Status")}: ${t("pv.admin.publishedHidden")}`,
+                },
+              ]}
+              data-testid="pv-catalog-published-filter"
+            />
+          </div>
+          <button
+            type="button"
+            className="pv-catalog-filter-toggle"
+            aria-expanded={filtersOpen}
+            aria-controls="pv-catalog-filters-content"
+            onClick={() => setFiltersOpen((current) => !current)}
+          >
+            <FilterOutlined aria-hidden="true" />
+            {copy("Bộ lọc", "Filters")}
+          </button>
         </div>
-        <div id="pv-catalog-filters-content" className="pv-catalog-extra-filters" hidden={!filtersOpen}>
-            <div className="pv-catalog-view-filter">
-              <span>{copy("Cách hiển thị", "View")}</span>
-              <div className="pv-catalog-view-tabs" role="group" aria-label={t("pv.productCatalog.viewTablistAria")}>
-                <button type="button" aria-pressed={view === "table"} data-testid="pv-catalog-view-table" onClick={() => setView("table")}>
-                  <UnorderedListOutlined aria-hidden="true" /> {t("pv.productCatalog.viewTable")}
-                </button>
-                <button type="button" aria-pressed={view === "card"} data-testid="pv-catalog-view-card" onClick={() => setView("card")}>
-                  <AppstoreOutlined aria-hidden="true" /> {t("pv.productCatalog.viewCard")}
-                </button>
-              </div>
+        <div
+          id="pv-catalog-filters-content"
+          className="pv-catalog-extra-filters"
+          hidden={!filtersOpen}
+        >
+          <div className="pv-catalog-view-filter">
+            <span>{copy("Cách hiển thị", "View")}</span>
+            <div
+              className="pv-catalog-view-tabs"
+              role="group"
+              aria-label={t("pv.productCatalog.viewTablistAria")}
+            >
+              <button
+                type="button"
+                aria-pressed={view === "table"}
+                data-testid="pv-catalog-view-table"
+                onClick={() => setView("table")}
+              >
+                <UnorderedListOutlined aria-hidden="true" />{" "}
+                {t("pv.productCatalog.viewTable")}
+              </button>
+              <button
+                type="button"
+                aria-pressed={view === "card"}
+                data-testid="pv-catalog-view-card"
+                onClick={() => setView("card")}
+              >
+                <AppstoreOutlined aria-hidden="true" />{" "}
+                {t("pv.productCatalog.viewCard")}
+              </button>
             </div>
+          </div>
         </div>
       </section>
 
@@ -975,7 +1021,16 @@ export function PvProductCatalogPage() {
               />
             </Box>
           ) : view === "table" ? (
-            <Box className="pv-catalog-table" data-testid="pv-catalog-table" style={{ "--pv-row-start": (pagination.current - 1) * pagination.pageSize } as CSSProperties}>
+            <Box
+              className="pv-catalog-table"
+              data-testid="pv-catalog-table"
+              style={
+                {
+                  "--pv-row-start":
+                    (pagination.current - 1) * pagination.pageSize,
+                } as CSSProperties
+              }
+            >
               <ResponsiveDataTable<PvAdminProfile>
                 columns={tableColumns}
                 rows={visibleRows}
@@ -1005,7 +1060,17 @@ export function PvProductCatalogPage() {
                     onClick={() => openEdit(row)}
                     data-testid="pv-catalog-edit"
                   >
-                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M5 12h14m-6-6 6 6-6 6" />
                     </svg>
                   </button>
@@ -1045,7 +1110,7 @@ export function PvProductCatalogPage() {
           <div className="pv-catalog-pagination">
             <span>
               {copy("Hiển thị", "Showing")}{" "}
-              {industryFilter === FILTER_ALL
+              {!activeIndustry
                 ? `${(pagination.current - 1) * pagination.pageSize + 1} – ${Math.min(pagination.current * pagination.pageSize, pagination.total)}`
                 : `${visibleRows.length} ${copy("kết quả trong trang", "matches on this page")}`}{" "}
               /{" "}
@@ -1074,9 +1139,10 @@ export function PvProductCatalogPage() {
         onClose={guardBackdropClose(closeDialog)}
         slotProps={{
           paper: {
-            "aria-label": dialogMode === "create"
-              ? t("pv.productCatalog.dialogCreateTitle")
-              : t("pv.productCatalog.dialogEditTitle"),
+            "aria-label":
+              dialogMode === "create"
+                ? t("pv.productCatalog.dialogCreateTitle")
+                : t("pv.productCatalog.dialogEditTitle"),
           },
         }}
       >
@@ -1092,143 +1158,165 @@ export function PvProductCatalogPage() {
               >
                 <span>{t("pv.productCatalog.skuField")}</span>
                 <strong>{editing?.sku_code}</strong>
-                {editing?.sku_name &&
-                editing.sku_name !== editing.sku_code ? (
+                {editing?.sku_name && editing.sku_name !== editing.sku_code ? (
                   <span className="pv-catalog-form-sku-name">
                     {editing.sku_name}
                   </span>
                 ) : null}
               </Box>
             )}
-            <ActionIconButton kind="close" label={t("common.close")} onClick={closeDialog} disabled={saving} />
+            <ActionIconButton
+              kind="close"
+              label={t("common.close")}
+              onClick={closeDialog}
+              disabled={saving}
+            />
           </header>
           <div className="pv-catalog-form-body">
-        <Grid container spacing={1.5} sx={{ pt: 0.5 }}>
-          {dialogMode === "create" ? (
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <UiAutocomplete
-                required
-                disabled={saving || !canManage}
-                label={t("pv.productCatalog.skuField")}
-                value={form.sku_id || null}
-                options={skuOptions}
-                loading={skuQuery.isFetching}
-                onInputChange={setSkuKeyword}
-                noOptionsText={t("pv.productCatalog.skuNoOption")}
-                onChange={(next) => {
-                  const skuId = next ? String(next) : "";
-                  const picked = (skuQuery.data?.data ?? []).find(
-                    (sku) => sku.sku_id === skuId,
-                  );
-                  // Tên hiển thị mặc định lấy theo tên SKU: hầu hết sản phẩm
-                  // không cần đặt lại tên cho App PV, và ô rỗng bắt người dùng
-                  // gõ lại một chuỗi đã có sẵn.
-                  patchForm(
-                    {
-                      sku_id: skuId,
-                      display_name:
-                        form.display_name.trim() === "" && picked
-                          ? picked.sku_name
-                          : form.display_name,
-                    },
-                    "sku_id",
-                  );
-                }}
-                error={Boolean(errors.sku_id)}
-                helperText={errors.sku_id || t("pv.productCatalog.skuHint")}
-                data-testid="pv-catalog-sku-picker"
-              />
-            </Grid>
-          ) : null}
+            <Grid container spacing={1.5} sx={{ pt: 0.5 }}>
+              {dialogMode === "create" ? (
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <UiAutocomplete
+                    required
+                    disabled={saving || !canManage}
+                    label={t("pv.productCatalog.skuField")}
+                    value={form.sku_id || null}
+                    options={skuOptions}
+                    loading={skuQuery.isFetching}
+                    onInputChange={setSkuKeyword}
+                    noOptionsText={t("pv.productCatalog.skuNoOption")}
+                    onChange={(next) => {
+                      const skuId = next ? String(next) : "";
+                      const picked = (skuQuery.data?.data ?? []).find(
+                        (sku) => sku.sku_id === skuId,
+                      );
+                      // Tên hiển thị mặc định lấy theo tên SKU: hầu hết sản phẩm
+                      // không cần đặt lại tên cho App PV, và ô rỗng bắt người dùng
+                      // gõ lại một chuỗi đã có sẵn.
+                      patchForm(
+                        {
+                          sku_id: skuId,
+                          display_name:
+                            form.display_name.trim() === "" && picked
+                              ? picked.sku_name
+                              : form.display_name,
+                        },
+                        "sku_id",
+                      );
+                    }}
+                    error={Boolean(errors.sku_id)}
+                    helperText={errors.sku_id || t("pv.productCatalog.skuHint")}
+                    data-testid="pv-catalog-sku-picker"
+                  />
+                </Grid>
+              ) : null}
 
-          {/* Không có ô "Thứ tự hiển thị": xem chú thích của `sort_order` trong
+              {/* Không có ô "Thứ tự hiển thị": xem chú thích của `sort_order` trong
               ProfileFormState. */}
-          <Grid size={{ xs: 12, sm: dialogMode === "edit" ? 12 : 6 }}>
-            <UiTextField
-              required
-              disabled={saving || !canManage}
-              fullWidth
-              label={t("pv.admin.displayName")}
-              value={form.display_name}
-              onChange={(event) =>
-                patchForm({ display_name: event.target.value }, "display_name")
-              }
-              error={Boolean(errors.display_name)}
-              helperText={errors.display_name}
-              slotProps={{ htmlInput: { maxLength: 255 } }}
-            />
-          </Grid>
-
-          <Grid size={12}>
-            <UiTextField
-              fullWidth
-              disabled={saving || !canManage}
-              multiline
-              minRows={2}
-              label={t("pv.admin.description")}
-              value={form.description}
-              onChange={(event) =>
-                patchForm({ description: event.target.value }, "description")
-              }
-              error={Boolean(errors.description)}
-              helperText={errors.description}
-              slotProps={{ htmlInput: { maxLength: DESCRIPTION_MAX } }}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <UiAutocomplete
-              multiple
-              disabled={saving || !canManage}
-              label={t("pv.admin.industry")}
-              value={form.industry_ids}
-              onChange={(next) => patchForm({ industry_ids: next.map(String) })}
-              options={industryOptions}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <UiAutocomplete
-              multiple
-              disabled={saving || !canManage}
-              label={t("pv.admin.tags")}
-              value={form.tag_ids}
-              onChange={(next) => patchForm({ tag_ids: next.map(String) })}
-              options={tagOptions}
-            />
-          </Grid>
-
-          {dialogMode === "edit" && editing && (
-            <Grid size={12}>
-              <Box className="pv-catalog-publish-field">
-                <span>{copy("Hiển thị trên App PV", "Visible on the PV App")}</span>
-                <PvSwitch
-                  checked={editing.published}
-                  onChange={(next) => void togglePublish(editing, next)}
-                  disabled={!canPublish || saving || setPublished.isPending}
-                  aria-label={t("pv.admin.publishSwitchAria")}
-                  data-testid="pv-catalog-publish-switch"
+              <Grid size={{ xs: 12, sm: dialogMode === "edit" ? 12 : 6 }}>
+                <UiTextField
+                  required
+                  disabled={saving || !canManage}
+                  fullWidth
+                  label={t("pv.admin.displayName")}
+                  value={form.display_name}
+                  onChange={(event) =>
+                    patchForm(
+                      { display_name: event.target.value },
+                      "display_name",
+                    )
+                  }
+                  error={Boolean(errors.display_name)}
+                  helperText={errors.display_name}
+                  slotProps={{ htmlInput: { maxLength: 255 } }}
                 />
-                <span>{editing.published ? t("pv.admin.publishedShown") : t("pv.admin.publishedHidden")}</span>
-              </Box>
+              </Grid>
+
+              <Grid size={12}>
+                <UiTextField
+                  fullWidth
+                  disabled={saving || !canManage}
+                  multiline
+                  minRows={2}
+                  label={t("pv.admin.description")}
+                  value={form.description}
+                  onChange={(event) =>
+                    patchForm(
+                      { description: event.target.value },
+                      "description",
+                    )
+                  }
+                  error={Boolean(errors.description)}
+                  helperText={errors.description}
+                  slotProps={{ htmlInput: { maxLength: DESCRIPTION_MAX } }}
+                />
+              </Grid>
+
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <UiAutocomplete
+                  multiple
+                  disabled={saving || !canManage}
+                  label={t("pv.admin.industry")}
+                  value={form.industry_ids}
+                  onChange={(next) =>
+                    patchForm({ industry_ids: next.map(String) })
+                  }
+                  options={industryOptions}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <UiAutocomplete
+                  multiple
+                  disabled={saving || !canManage}
+                  label={t("pv.admin.tags")}
+                  value={form.tag_ids}
+                  onChange={(next) => patchForm({ tag_ids: next.map(String) })}
+                  options={tagOptions}
+                />
+              </Grid>
+
+              {dialogMode === "edit" && editing && (
+                <Grid size={12}>
+                  <Box className="pv-catalog-publish-field">
+                    <span>
+                      {copy("Hiển thị trên App PV", "Visible on the PV App")}
+                    </span>
+                    <PvSwitch
+                      checked={editing.published}
+                      onChange={(next) => void togglePublish(editing, next)}
+                      disabled={!canPublish || saving || setPublished.isPending}
+                      aria-label={t("pv.admin.publishSwitchAria")}
+                      data-testid="pv-catalog-publish-switch"
+                    />
+                    <span>
+                      {editing.published
+                        ? t("pv.admin.publishedShown")
+                        : t("pv.admin.publishedHidden")}
+                    </span>
+                  </Box>
+                </Grid>
+              )}
+
+              <Grid size={12}>
+                <PvProductImageField
+                  value={form.images}
+                  onChange={(images) => patchForm({ images }, "images")}
+                  disabled={saving || !canManage}
+                  error={errors.images}
+                />
+              </Grid>
             </Grid>
-          )}
-
-          <Grid size={12}>
-            <PvProductImageField
-              value={form.images}
-              onChange={(images) => patchForm({ images }, "images")}
-              disabled={saving || !canManage}
-              error={errors.images}
-            />
-          </Grid>
-
-        </Grid>
           </div>
           <footer className="pv-catalog-form-footer">
             <ActionButton kind="cancel" onClick={closeDialog} disabled={saving}>
               {t("pv.common.cancel")}
             </ActionButton>
-            <ActionButton kind="save" onClick={() => void submit()} disabled={saving || !canManage || setPublished.isPending} data-testid="pv-catalog-submit">
+            <ActionButton
+              kind="save"
+              onClick={() => void submit()}
+              disabled={saving || !canManage || setPublished.isPending}
+              data-testid="pv-catalog-submit"
+            >
               {saving ? t("pv.common.saving") : t("pv.common.save")}
             </ActionButton>
           </footer>

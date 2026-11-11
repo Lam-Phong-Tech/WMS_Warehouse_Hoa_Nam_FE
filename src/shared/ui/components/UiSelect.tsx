@@ -44,6 +44,13 @@ export interface UiSelectProps {
   /** Bắt buộc khi không có label hiển thị. */
   "aria-label"?: string;
   placeholder?: string;
+  /**
+   * Value emitted when the searchable branch is cleared through MUI's ×.
+   * Defaults to "" (existing "no filter" contract). When the current value
+   * already equals this default, the × is hidden: a filter's default choice
+   * ("Tất cả") must not be clearable to an invalid empty value.
+   */
+  clearValue?: string | number | "";
   disabled?: boolean;
   fullWidth?: boolean;
   /** Bề rộng tối thiểu cho toolbar (px). */
@@ -83,6 +90,7 @@ export function UiSelect({
   label,
   "aria-label": ariaLabel,
   placeholder,
+  clearValue,
   disabled = false,
   fullWidth = false,
   minWidth,
@@ -130,6 +138,7 @@ export function UiSelect({
         searchable: searchableMode,
       });
   if (searchableMode) {
+    const clearValueString = clearValue === undefined ? "" : String(clearValue);
     return (
       <UiAutocomplete
         // Nhãn đã được resolveSearchable bảo đảm là chuỗi.
@@ -141,7 +150,12 @@ export function UiSelect({
           }>
         }
         value={value}
-        onChange={(next) => onChange(next == null ? "" : String(next))}
+        disableClearable={
+          clearValue !== undefined && String(value) === clearValueString
+        }
+        onChange={(next) =>
+          onChange(next == null ? clearValueString : String(next))
+        }
         label={label}
         aria-label={ariaLabel}
         placeholder={placeholder}

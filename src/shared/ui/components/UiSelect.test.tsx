@@ -153,6 +153,28 @@ describe("UiSelect — ngưỡng tìm kiếm", () => {
     expect(screen.getByTestId("value")).toBeEmptyDOMElement();
   });
 
+  it("clearValue giữ bộ lọc ở Tất cả và không cho xoá chính giá trị mặc định", async () => {
+    const user = userEvent.setup();
+    render(
+      <Host
+        options={[{ value: "ALL", label: "Tất cả" }, ...LONG]}
+        initial="ALL"
+        clearValue="ALL"
+      />,
+    );
+    expect(screen.getByTestId("value")).toHaveTextContent("ALL");
+    expect(screen.queryByTitle("Bỏ chọn")).not.toBeInTheDocument();
+
+    const input = screen.getByRole("combobox", { name: "Lọc hàng hoá" });
+    await user.click(input);
+    await user.click(screen.getByRole("option", { name: "SKU-0 · Hàng 0" }));
+    expect(screen.getByTestId("value")).toHaveTextContent("sku-0");
+
+    await user.click(screen.getByTitle("Bỏ chọn"));
+    expect(screen.getByTestId("value")).toHaveTextContent("ALL");
+    expect(screen.queryByTitle("Bỏ chọn")).not.toBeInTheDocument();
+  });
+
   it("nhãn ReactNode: KHÔNG tự đổi sang tìm kiếm (lọc cần nhãn chuỗi)", () => {
     const richOptions: UiSelectChoice[] = LONG.map((option) => ({
       ...option,

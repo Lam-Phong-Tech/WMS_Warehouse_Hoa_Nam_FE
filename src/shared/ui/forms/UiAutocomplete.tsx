@@ -41,6 +41,8 @@ interface UiAutocompleteBaseProps {
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
+  /** Hide the clear icon (e.g. while the filter's default value is selected). */
+  disableClearable?: boolean;
   /** Mặc định true. */
   fullWidth?: boolean;
   error?: boolean;
@@ -87,8 +89,7 @@ interface UiAutocompleteMultiProps extends UiAutocompleteBaseProps {
 }
 
 export type UiAutocompleteProps =
-  | UiAutocompleteSingleProps
-  | UiAutocompleteMultiProps;
+  UiAutocompleteSingleProps | UiAutocompleteMultiProps;
 
 export function UiAutocomplete({
   options,
@@ -99,6 +100,7 @@ export function UiAutocomplete({
   placeholder,
   required = false,
   disabled = false,
+  disableClearable = false,
   fullWidth = true,
   error = false,
   helperText,
@@ -155,6 +157,7 @@ export function UiAutocomplete({
       sx={sx}
       options={optionsWithAddNew}
       disabled={disabled}
+      disableClearable={disableClearable}
       loading={loading}
       value={selected}
       multiple={multiple}

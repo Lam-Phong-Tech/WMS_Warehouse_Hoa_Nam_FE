@@ -137,9 +137,11 @@ function searchInput() {
 
 async function chooseFilter(testId: string, label: string) {
   fireEvent.mouseDown(within(screen.getByTestId(testId)).getByRole("combobox"));
-  fireEvent.click(await screen.findByRole("option", {
-    name: (name) => name === label || name.endsWith(`: ${label}`),
-  }));
+  fireEvent.click(
+    await screen.findByRole("option", {
+      name: (name) => name === label || name.endsWith(`: ${label}`),
+    }),
+  );
 }
 
 function LocationProbe() {
@@ -264,6 +266,57 @@ describe("MST-PV-01 · catalog interactions", () => {
     expect(viewOptions).not.toBeVisible();
   });
 
+  it("xoá nhóm sản phẩm quay về Tất cả và không làm rỗng danh sách", async () => {
+    const industries = Array.from({ length: 10 }, (_, index) => ({
+      id: index === 0 ? "industry-tools" : `industry-${index}`,
+      code: `IND-${index}`,
+      name: index === 0 ? "Dụng cụ" : `Ngành ${index}`,
+      status: "ACTIVE",
+      sort_order: index,
+      version: 1,
+    }));
+    listPvAdminResourcesMock.mockImplementation((resource, params = {}) => {
+      if (resource === "industries") {
+        return Promise.resolve({
+          data: industries,
+          meta: {
+            current_page: 1,
+            per_page: 100,
+            total: industries.length,
+            last_page: 1,
+          },
+        });
+      }
+      return listResources(resource, params);
+    });
+
+    renderWithProviders(<PvProductCatalogPage />);
+    await screen.findByRole("table");
+
+    const input = screen.getByTestId("pv-catalog-industry-filter");
+    // Danh sách dài ⇒ UiSelect dùng nhánh Autocomplete.
+    expect(input.tagName).toBe("INPUT");
+    const root = input.closest(".MuiAutocomplete-root") as HTMLElement;
+    // "Tất cả" là mặc định, không được có nút xoá.
+    expect(within(root).queryByTitle("Bỏ chọn")).not.toBeInTheDocument();
+
+    fireEvent.mouseDown(input);
+    fireEvent.click(await screen.findByRole("option", { name: /Dụng cụ/ }));
+    expect(within(root).getByTitle("Bỏ chọn")).toBeInTheDocument();
+
+    fireEvent.click(within(root).getByTitle("Bỏ chọn"));
+    await waitFor(() =>
+      expect(screen.getByTestId("pv-catalog-industry-filter")).toHaveValue(
+        "Nhóm sản phẩm: Tất cả",
+      ),
+    );
+    expect(
+      screen.queryByText("Không có kết quả phù hợp."),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(WITH_IMAGE.display_name)).toBeInTheDocument();
+    expect(screen.getByText(WITHOUT_IMAGE.display_name)).toBeInTheDocument();
+  });
+
   it("applies filters immediately and returns to page 1 when filters change", async () => {
     renderWithProviders(<PvProductCatalogPage />);
     await screen.findByRole("table");
@@ -329,7 +382,10 @@ describe("MST-PV-01 · catalog interactions", () => {
       fireEvent.click(edit[0]);
       const publish = screen.getByTestId("pv-catalog-publish-switch");
       expect(publish).toHaveProperty("disabled", !canPublish);
-      expect(screen.getByTestId("pv-catalog-submit")).toHaveProperty("disabled", !canManage);
+      expect(screen.getByTestId("pv-catalog-submit")).toHaveProperty(
+        "disabled",
+        !canManage,
+      );
       fireEvent.click(publish);
       if (canPublish) {
         await waitFor(() =>
@@ -398,7 +454,9 @@ describe("MST-PV-01 · catalog interactions", () => {
       });
       await waitFor(() => {
         expect(searchInput()).toHaveValue("khoan");
-        expect(screen.queryByTestId("pv-catalog-publish-switch")).not.toBeInTheDocument();
+        expect(
+          screen.queryByTestId("pv-catalog-publish-switch"),
+        ).not.toBeInTheDocument();
       });
     },
   );
