@@ -477,7 +477,7 @@
   width: 6%;
 }
 .hn-defect-screen table.defect-table td.stt-col {
-  color: var(--defect-muted);
+  color: var(--defect-ink);
   font-weight: 500;
 }
 .hn-defect-screen table.defect-table .code-col {
@@ -499,7 +499,7 @@
   width: 29%;
 }
 .hn-defect-screen table.defect-table td.description-col {
-  color: var(--defect-muted);
+  color: var(--defect-ink);
 }
 .hn-defect-screen table.defect-table .status-col {
   width: 15%;
