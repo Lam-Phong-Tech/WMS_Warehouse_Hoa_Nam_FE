@@ -683,8 +683,24 @@
   margin-left: auto;
 }
 .hn-putaway-page .ptw-selection .ptw-selection-action {
-  font-weight: 600;
+  min-height: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ptw-link);
+  font-size: inherit;
+  font-weight: 500;
+  line-height: inherit;
   white-space: nowrap;
+}
+.hn-putaway-page
+  .ptw-selection
+  .ptw-selection-action:hover:not(:disabled) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ptw-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .hn-putaway-page .ptw-selection .ptw-selection-action.is-danger {
   color: var(--ptw-danger);
