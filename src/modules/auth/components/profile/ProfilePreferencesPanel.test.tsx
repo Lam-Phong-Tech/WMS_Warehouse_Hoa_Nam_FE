@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test/test-utils";
+import { OPERATIONS_COLORS, OPERATIONS_PALETTE } from "@/shared/ui/tokens";
 import { ProfilePreferencesPanel } from "./ProfilePreferencesPanel";
 import { preferenceFixture } from "../../pages/profile.fixture";
 const common = {
@@ -10,6 +11,46 @@ const common = {
 };
 describe("ProfilePreferencesPanel protected drafts", () => {
   afterEach(() => vi.unstubAllGlobals());
+  it("scopes the appearance preview to the draft theme instead of the page theme", () => {
+    renderWithProviders(
+      <ProfilePreferencesPanel
+        {...common}
+        preferences={preferenceFixture}
+        mode="appearance"
+        onSave={vi.fn()}
+      />,
+    );
+    const preview = screen.getByTestId("profile-preference-preview");
+    expect(preview).toHaveAttribute("data-preview-theme", "light");
+    expect(preview.style.getPropertyValue("--ops-surface")).toBe(
+      OPERATIONS_COLORS.light.surface,
+    );
+    expect(preview.style.getPropertyValue("--wms-text-high")).toBe(
+      OPERATIONS_PALETTE.light.textHigh,
+    );
+    expect(
+      screen
+        .getByRole("button", { name: "Sáng" })
+        .querySelector<HTMLElement>(".hn-personal-theme-thumbnail")
+        ?.style.getPropertyValue("--theme-thumb-canvas"),
+    ).toBe(OPERATIONS_COLORS.light.canvas);
+    expect(
+      screen
+        .getByRole("button", { name: "Tối" })
+        .querySelector<HTMLElement>(".hn-personal-theme-thumbnail")
+        ?.style.getPropertyValue("--theme-thumb-canvas"),
+    ).toBe(OPERATIONS_COLORS.dark.canvas);
+
+    fireEvent.click(screen.getByRole("button", { name: "Tối" }));
+    expect(preview).toHaveAttribute("data-preview-theme", "dark");
+    expect(preview.style.getPropertyValue("--ops-surface")).toBe(
+      OPERATIONS_COLORS.dark.surface,
+    );
+    expect(preview.style.getPropertyValue("--wms-text-high")).toBe(
+      OPERATIONS_PALETTE.dark.textHigh,
+    );
+    expect(preview.style.colorScheme).toBe("dark");
+  });
   it("keeps notifications in-app without asking for browser permission", () => {
     const requestPermission = vi.fn();
     vi.stubGlobal("Notification", {

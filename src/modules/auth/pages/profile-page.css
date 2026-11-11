@@ -562,10 +562,10 @@
   border: 1px solid var(--ops-line);
   padding: 6px;
   border-radius: 4px;
-  background: var(--ops-canvas);
+  background: var(--theme-thumb-canvas, var(--ops-canvas));
 }
 .hn-personal-theme-thumbnail > i {
-  background: var(--ops-primary);
+  background: var(--theme-thumb-accent, var(--ops-primary));
   border-radius: 2px;
 }
 .hn-personal-theme-thumbnail > span {
@@ -576,12 +576,9 @@
 }
 .hn-personal-theme-thumbnail > span i {
   display: block;
-  background: var(--ops-line);
+  background: var(--theme-thumb-line, var(--ops-line));
   height: 8px;
   border-radius: 2px;
-}
-.hn-personal-theme-thumbnail.dark {
-  background: var(--wms-text-high);
 }
 .hn-personal-theme-thumbnail.system > span {
   background: linear-gradient(
@@ -591,19 +588,24 @@
   );
 }
 .hn-personal-preview {
-  --preview-surface: var(--ops-surface);
-  --preview-text: var(--ops-text);
-  background: var(--preview-surface);
-  color: var(--preview-text);
+  background: var(--ops-surface);
+  color: var(--ops-text);
 }
-.hn-personal-preview h2,
-.hn-personal-preview .MuiInputBase-input,
+.hn-personal-preview h2 {
+  color: var(--ops-heading);
+}
+.hn-personal-preview .MuiInputBase-input {
+  color: var(--ops-text);
+}
 .hn-personal-preview .MuiInputLabel-root {
-  color: var(--preview-text);
+  color: var(--ops-muted);
 }
 .hn-personal-preview .MuiOutlinedInput-root {
-  background: var(--preview-surface);
-  color: var(--preview-text);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+.hn-personal-preview .MuiOutlinedInput-notchedOutline {
+  border-color: var(--ops-line);
 }
 .hn-personal-preview-toolbar {
   display: flex;
@@ -627,7 +629,11 @@
 .hn-personal-preview td {
   padding: 12px 8px;
   border-bottom: 1px solid var(--ops-line);
+  color: var(--ops-text);
   text-align: left;
+}
+.hn-personal-preview th {
+  color: var(--ops-heading);
 }
 .hn-personal-preview[data-density="compact"] td {
   padding-block: 6px;
@@ -1165,7 +1171,7 @@
 }
 
 .hn-personal-preview .hn-personal-muted {
-  color: var(--preview-muted);
+  color: var(--ops-muted);
 }
 
 .hn-personal-overview-grid {

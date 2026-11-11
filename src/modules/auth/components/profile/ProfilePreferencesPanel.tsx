@@ -10,7 +10,13 @@ import {
 } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
-import { personalAccent, OPERATIONS_COLORS } from "@/shared/ui/tokens";
+import {
+  cssVarNameOf,
+  OPERATIONS_COLORS,
+  OPERATIONS_PALETTE,
+  PALETTE_KEYS,
+  personalAccent,
+} from "@/shared/ui/tokens";
 import type {
   ProfilePreferences,
   ProfilePreferenceChanges,
@@ -297,25 +303,40 @@ export function ProfilePreferencesPanel({
           <section className="hn-personal-card">
             <h2>{t("auth.personal.theme")}</h2>
             <div className="hn-personal-theme-options">
-              {(["light", "dark", "system"] as const).map((theme) => (
-                <button
-                  type="button"
-                  key={theme}
-                  aria-pressed={draft.theme === theme}
-                  disabled={pending}
-                  onClick={() => update("theme", theme)}
-                >
-                  <span className={`hn-personal-theme-thumbnail ${theme}`}>
-                    <i />
-                    <span>
+              {(["light", "dark", "system"] as const).map((theme) => {
+                const thumbPalette =
+                  theme === "system" ? null : OPERATIONS_COLORS[theme];
+                return (
+                  <button
+                    type="button"
+                    key={theme}
+                    aria-pressed={draft.theme === theme}
+                    disabled={pending}
+                    onClick={() => update("theme", theme)}
+                  >
+                    <span
+                      className={`hn-personal-theme-thumbnail ${theme}`}
+                      style={
+                        thumbPalette
+                          ? ({
+                              "--theme-thumb-canvas": thumbPalette.canvas,
+                              "--theme-thumb-accent": thumbPalette.primary,
+                              "--theme-thumb-line": thumbPalette.line,
+                            } as CSSProperties)
+                          : undefined
+                      }
+                    >
                       <i />
-                      <i />
-                      <i />
+                      <span>
+                        <i />
+                        <i />
+                        <i />
+                      </span>
                     </span>
-                  </span>
-                  {t(`auth.personal.${theme}`)}
-                </button>
-              ))}
+                    {t(`auth.personal.${theme}`)}
+                  </button>
+                );
+              })}
             </div>
             <h3>{t("auth.personal.accent")}</h3>
             <div className="hn-personal-choice-row">
@@ -475,21 +496,55 @@ function PreferencePreview({
     preferences.theme === "dark" ||
     (preferences.theme === "system" &&
       window.matchMedia("(prefers-color-scheme: dark)").matches);
-  const palette = OPERATIONS_COLORS[dark ? "dark" : "light"];
+  const mode = dark ? "dark" : "light";
+  const palette = OPERATIONS_COLORS[mode];
+  const semantic = OPERATIONS_PALETTE[mode];
+  // The preview is a mini app of its own: scope every semantic token to the
+  // draft theme so MUI fields, the sample table and status pills do not keep
+  // resolving the *current* page theme while the card shows the other one.
+  const previewTokens = {
+    "--ops-heading": palette.heading,
+    "--ops-primary": palette.primary,
+    "--ops-primary-hover": palette.primaryHover,
+    "--ops-text": palette.text,
+    "--ops-muted": palette.muted,
+    "--ops-line": palette.line,
+    "--ops-divider": palette.divider,
+    "--ops-pale": palette.pale,
+    "--ops-table-header": palette.tableHeader,
+    "--ops-link": palette.link,
+    "--ops-surface": palette.surface,
+    "--ops-canvas": palette.canvas,
+    "--ops-success": palette.success,
+    "--ops-warning": palette.warning,
+    "--ops-danger": palette.danger,
+    "--ops-on-primary": palette.onPrimary,
+    "--ops-inactive": palette.inactive,
+    "--ops-success-soft": palette.successSoft,
+    "--ops-success-text": palette.successText,
+    "--ops-warning-text": palette.warningText,
+    "--ops-danger-text": palette.dangerText,
+    "--ops-warning-soft": palette.warningSoft,
+    "--ops-danger-soft": palette.dangerSoft,
+    "--ops-focus-ring": palette.focusRing,
+    "--ops-shadow-card": palette.shadowCard,
+    "--ops-shadow-floating": palette.shadowFloating,
+    "--ops-shadow-dialog": palette.shadowDialog,
+    "--ops-ink-rgb": palette.inkRgb,
+    "--personal-preview-accent": personalAccent(
+      mode,
+      preferences.accent,
+    ).primary,
+    ...Object.fromEntries(
+      PALETTE_KEYS.map((key) => [cssVarNameOf(key), semantic[key]]),
+    ),
+  } as CSSProperties;
   return (
     <section
       className={`hn-personal-card hn-personal-preview${dark ? " is-dark" : ""}`}
-      style={
-        {
-          "--personal-preview-accent": personalAccent(
-            dark ? "dark" : "light",
-            preferences.accent,
-          ).primary,
-          "--preview-surface": palette.surface,
-          "--preview-text": palette.text,
-          "--preview-muted": palette.muted,
-        } as CSSProperties
-      }
+      style={{ ...previewTokens, colorScheme: dark ? "dark" : "light" }}
+      data-preview-theme={mode}
+      data-testid="profile-preference-preview"
       data-font-size={preferences.font_size}
       data-density={preferences.density}
       data-reduced-motion={preferences.reduced_motion}
