@@ -73,7 +73,7 @@ Lỗi gốc đã ghi nhận: bảng/hover dùng màu light cố định trong kh
 | Label và nội dung phụ          | 13/20px           | 400–600                                    |
 | Nút                            | 14/20px           | 600                                        |
 | Mã phiếu/SKU chính             | 15/22px           | 600, theo chữ mã SKU đang render thực tế   |
-| **Đầu bảng**                   | **16/24px**       | **800**, viết hoa, letter spacing `0.02em` |
+| **Đầu bảng**                   | **16/24px**       | **800**, chỉ viết hoa chữ cái đầu, letter spacing `normal` |
 | **Ô dữ liệu bảng**             | **14/22px**       | 400; mã chính 15/22px, đậm 600             |
 
 Hai hàng cuối là quy cách riêng của bảng SKU và có ưu tiên hơn tỷ lệ chữ bảng mặc định của kit hoặc tài liệu cũ. Không thu nhỏ chữ để nhồi thêm cột. Số liệu dùng tabular numerals; số trong cột dữ liệu được căn theo ý nghĩa (số lượng thường căn phải). Mã dài phải ngắt dòng hoặc rút gọn có cách xem/copy đầy đủ.
@@ -127,7 +127,7 @@ Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-ta
 | Thành phần         | Quy cách bắt buộc                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Bao bảng           | Nền `--ops-surface`, viền `--ops-line`, radius `--ops-radius-card` (`8px`); đầu bảng chạm mép bao, không có padding bao quanh.                                                                       |
-| Đầu bảng           | Nền `--ops-table-header` (**`#d2edf7`** ở light, nền semantic tối ở dark), chữ `--ops-heading`, **16/24px, weight 800**, uppercase, letter spacing `0.02em`. Không gán màu sáng trực tiếp tại trang. |
+| Đầu bảng           | Nền `--ops-table-header` (**`#d2edf7`** ở light, nền semantic tối ở dark), chữ `--ops-heading`, **16/24px, weight 800**, chỉ viết hoa chữ cái đầu, letter spacing `normal`. Không gán màu sáng trực tiếp tại trang. |
 | Ô đầu và ô dữ liệu | Padding dọc `12px`, ngang `18px`; ngoại lệ cột STT/hành động theo bảng SKU khi cần; căn giữa theo chiều dọc, đường chia `1px solid --ops-line`.                                                      |
 | Hàng dữ liệu       | Tối thiểu khoảng `68px` khi có biểu tượng `44px`; nội dung có thể cao hơn khi xuống dòng.                                                                                                            |
 | Chữ                | `--ops-text`, **14/22px**, đậm 400; mã chính `--ops-heading`, **Inter 15/22px, đậm 600** theo chữ SKU thực tế; hover/focus không gạch chân, giữ focus bàn phím rõ.                                   |

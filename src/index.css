@@ -711,6 +711,16 @@ table td {
   overflow-wrap: anywhere;
 }
 
+/* Tiêu đề bảng toàn hệ thống: chỉ viết hoa chữ cái đầu như nhãn nguồn, không
+   in hoa toàn bộ. Selector phủ cả bảng HTML lẫn columnheader của MUI. */
+table th,
+table th *,
+[role="columnheader"],
+[role="columnheader"] * {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
 /* Vòng quay chờ canonical (UiSpinner) — glyph spinner của Flaticon. Đặt class ở đây
    để reduced-motion của hn-motion.css áp được và test có hook ổn định. */
 .hn-spinner {
