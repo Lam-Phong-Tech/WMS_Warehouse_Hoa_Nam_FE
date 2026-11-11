@@ -70,12 +70,20 @@ describe("RPT-08 shared report presentation", () => {
       "hn-report-pagination",
     );
   });
+  it("centers the type header and its pill together", () => {
+    const css = readFileSync(
+      "src/modules/reports/io-history/rpt08/alignment.css",
+      "utf8",
+    );
+    expect(css).toContain(
+      "#rpt08-history-report :is(th, td):nth-child(3) {\n  width: 14%;\n  text-align: center;\n}",
+    );
+  });
+
   it("numbers rows continuously for the selected page size and forwards size changes", () => {
     const onPageSizeChange = vi.fn();
     const { container } = mountTable(2, 42, { pageSize: 10, onPageSizeChange });
-    expect(
-      screen.getByRole("columnheader", { name: "#" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "#" })).toBeInTheDocument();
     expect(screen.getAllByRole("columnheader")).toHaveLength(7);
     expect(
       screen.getByRole("columnheader", { name: "Số lượng" }),

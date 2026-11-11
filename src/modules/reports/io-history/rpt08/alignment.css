@@ -246,6 +246,7 @@
 }
 #rpt08-history-report :is(th, td):nth-child(3) {
   width: 14%;
+  text-align: center;
 }
 #rpt08-history-report :is(th, td):nth-child(4) {
   width: 25%;
