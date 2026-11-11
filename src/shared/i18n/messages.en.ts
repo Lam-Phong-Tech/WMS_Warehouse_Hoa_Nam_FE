@@ -2402,6 +2402,8 @@ export const MESSAGES_EN: MessageTree = {
       departmentAll: "All departments",
       departmentAria: "Department",
       searchPlaceholder: "Document no. / SKU / recipient",
+      outboundSearchPlaceholder:
+        "Outbound no., request no., recipient...",
       searchAria: "Search document no., SKU or recipient",
       reversalReadError:
         "Could not read the reversal document list ( {error} ) — the table below only shows receipt/issue notes.",

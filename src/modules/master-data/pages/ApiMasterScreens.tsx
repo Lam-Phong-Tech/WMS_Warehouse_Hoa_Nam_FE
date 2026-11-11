@@ -375,7 +375,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const language = useLanguageStore((state) => state.language);
-  const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
+  const copy = (vi: string, en: string) =>
+    language === "vi" ? vi : localizedEnglish(en);
   const [offline, setOffline] = useState(() => !navigator.onLine);
   useEffect(() => {
     const updateConnection = () => setOffline(!navigator.onLine);

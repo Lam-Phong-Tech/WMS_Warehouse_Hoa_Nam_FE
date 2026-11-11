@@ -1390,7 +1390,9 @@ export default function OutboundFlowReport() {
                     setQuery(event.target.value);
                     setPage(1);
                   }}
-                  placeholder="Mã phiếu, mã tờ yêu cầu, người nhận..."
+                  placeholder={tUi(
+                    "reports.inventoryFlow.outboundSearchPlaceholder",
+                  )}
                   aria-label={tUi("outbound.list.searchAria")}
                   disabled={uiUpdating || reportEmpty}
                 />

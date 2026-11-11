@@ -1,9 +1,13 @@
+import { withFlatOverrides } from "./merge-flat-messages";
+import { DASHBOARD_SNAPSHOT_ZH } from "./messages.dashboard-snapshot";
 import { NOTIFICATION_CONTENT_ZH } from "./messages.notification-content";
 import { REPORT_EXPORT_ZH } from "./messages.report-export";
+import { ZH_SUPPLEMENT } from "./messages.zh-supplement";
 import type { MessageTree } from "./messages";
 
 /** Simplified Chinese interface catalog. */
-export const MESSAGES_ZH: MessageTree = {
+const BASE_ZH: MessageTree = {
+  dashboardSnapshot: DASHBOARD_SNAPSHOT_ZH,
   reportExport: REPORT_EXPORT_ZH,
   "nfc": {
     "outboundProductsTitle": "已出库产品与 NFC",
@@ -6229,3 +6233,8 @@ export const MESSAGES_ZH: MessageTree = {
     }
   }
 };
+
+export const MESSAGES_ZH: MessageTree = withFlatOverrides(
+  BASE_ZH,
+  ZH_SUPPLEMENT,
+);

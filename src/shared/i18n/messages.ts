@@ -2444,6 +2444,8 @@ export const MESSAGES_VI = {
       departmentAll: "Tất cả phòng ban",
       departmentAria: "Phòng ban",
       searchPlaceholder: "Mã phiếu / SKU / người nhận",
+      outboundSearchPlaceholder:
+        "Mã phiếu, mã tờ yêu cầu, người nhận...",
       searchAria: "Tìm mã phiếu, SKU hoặc người nhận",
       reversalReadError:
         "Không đọc được danh sách phiếu đảo ( {error} ) — bảng dưới đang chỉ hiển thị phiếu Nhập/Xuất.",

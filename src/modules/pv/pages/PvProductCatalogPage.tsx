@@ -18,6 +18,7 @@
 import { useContext, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 import { ROUTES } from "@/shared/constants/routes";
 import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 import { PvCatalogSymbol } from "./PvCatalogSymbol";
@@ -414,7 +415,8 @@ export function PvProductCatalogPage() {
   const t = useT();
   const { canManage, canPublish } = useCanManagePv();
   const language = useLanguageStore((state) => state.language);
-  const copy = (vi: string, en: string) => (language === "vi" ? vi : en);
+  const copy = (vi: string, en: string) =>
+    language === "vi" ? vi : localizedEnglish(en);
   // Sidebar mở + ghim làm vùng nội dung hẹp lại; cột trạng thái chỉ cần nhãn
   // ngắn để không xuống dòng. Tablet cũng dùng nhãn ngắn vì sidebar luôn ở
   // dạng drawer; desktop thu gọn sidebar vẫn giữ nhãn đầy đủ.

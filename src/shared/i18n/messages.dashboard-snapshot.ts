@@ -25,6 +25,32 @@ export const DASHBOARD_SNAPSHOT_VI = {
   reversal: "Hoàn tác",
 };
 
+export const DASHBOARD_SNAPSHOT_ZH = {
+  view: "查看",
+  viewDocument: "查看 {document}",
+  stockContext: "{skus} 个有库存 SKU · {products} 件产品 · {components} 个组件",
+  receiptContext: "{products} 件产品 · {components} 个组件",
+  thresholdNote: "仅评估已设置最小或最大值的 SKU。",
+  thresholdStale: "库存阈值可能已过期。",
+  thresholdLoading: "正在加载库存阈值…",
+  thresholdFailed: "无法加载库存阈值。",
+  configuredSkus: "已配置 SKU",
+  unconfiguredSkus: "未配置 SKU",
+  belowThreshold: "低于阈值",
+  aboveThreshold: "高于阈值",
+  transactionsStale: "交易可能已过期。",
+  transactionsLoading: "正在加载交易…",
+  transactionsFailed: "无法加载交易。",
+  transactionsEmpty: "最近 7 天没有交易",
+  transactionsEmptyCopy: "当前库存仍以最新快照为准。",
+  posted: "记账时间",
+  document: "单据",
+  type: "类型",
+  partner: "往来单位",
+  quantity: "数量",
+  reversal: "冲销",
+};
+
 export const DASHBOARD_SNAPSHOT_EN = {
   view: "View",
   viewDocument: "View {document}",
