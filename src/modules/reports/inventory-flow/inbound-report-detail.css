@@ -69,14 +69,15 @@
   cursor: pointer;
 }
 .inbound-report-detail__source {
-  border: 1px solid #26aebc;
-  color: #008a9b;
-  background: white;
+  /* Bám màu nhấn trong Cài đặt → Giao diện (Ocean/Teal/Indigo/Graphite). */
+  border: 1px solid var(--ops-link);
+  color: var(--ops-link);
+  background: var(--ops-surface);
 }
 .inbound-report-detail__export {
-  border: 1px solid #008b9b;
-  color: white;
-  background: #008b9b;
+  border: 1px solid var(--ops-primary);
+  color: var(--ops-on-primary);
+  background: var(--ops-primary);
 }
 .inbound-report-detail__export:disabled {
   opacity: 0.5;
@@ -247,9 +248,9 @@
   font-weight: 600;
 }
 .inbound-report-detail__tabs button[aria-selected="true"] {
-  border-color: #008b9b;
-  background: #008b9b;
-  color: white;
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
 }
 .inbound-report-detail__records-bar {
   display: flex;
