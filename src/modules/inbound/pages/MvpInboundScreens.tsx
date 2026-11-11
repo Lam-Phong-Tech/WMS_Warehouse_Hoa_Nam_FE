@@ -1173,14 +1173,24 @@ export function InboundScanModal({
     {
       key: "result",
       header: t("inbound.detail.colResult"),
+      width: "58%",
+      // Kết quả có thể là câu lỗi dài; tự clamp 2 dòng bên trong thay vì để
+      // lớp cắt chung bọc cả flex (flex không xuống dòng nên chữ bị xén ngang).
+      truncate: 0,
       render: (row) => (
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ alignItems: "flex-start", minWidth: 0 }}
+        >
           {row.success ? (
             <CheckCircleOutlined style={{ color: S.success }} />
           ) : (
             <CloseCircleOutlined style={{ color: S.error }} />
           )}
-          <span>{row.result}</span>
+          <span className="hn-scan-log-result" title={row.result}>
+            {row.result}
+          </span>
         </Stack>
       ),
     },

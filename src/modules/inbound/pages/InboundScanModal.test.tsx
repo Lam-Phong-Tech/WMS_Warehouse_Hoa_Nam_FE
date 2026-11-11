@@ -740,7 +740,7 @@ describe("IN-03 · hỏi loại SKU mới khi quét lần đầu", () => {
       await screen.findByText(
         "Mã này đã được quét trong phiếu nhập này. Mỗi mã chỉ ghi nhận một lần — hãy kiểm tra lại tem/mã.",
       ),
-    ).toBeInTheDocument();
+    ).toHaveClass("hn-scan-log-result");
     expect(
       screen.queryByText(/Trạng thái phiếu không cho phép thao tác này/),
     ).not.toBeInTheDocument();

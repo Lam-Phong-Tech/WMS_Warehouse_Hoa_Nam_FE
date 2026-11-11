@@ -88,6 +88,16 @@
   overflow-wrap: anywhere;
 }
 
+/* Log quét: kết quả lỗi dài được xuống tối đa 2 dòng, không bị xén ngang. */
+.hn-scan-log-result {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .hn-inbound-scan-footer {
   display: flex;
   justify-content: flex-end;
