@@ -2183,7 +2183,23 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         form.agency_code.trim(),
         editing?.agency_code,
       );
-      if (codeError) errors.agency_code = codeError;
+      if (codeError) {
+        errors.agency_code = codeError;
+      } else {
+        const normalizedCode = form.agency_code.trim().toLocaleLowerCase("vi");
+        const duplicate = rows.some(
+          (record) =>
+            record.agency_id !== editing?.agency_id &&
+            record.agency_code.trim().toLocaleLowerCase("vi") ===
+              normalizedCode,
+        );
+        if (duplicate) {
+          errors.agency_code = copy(
+            "Mã nơi nhận này đã tồn tại. Vui lòng dùng mã khác.",
+            "This recipient code already exists. Please use another code.",
+          );
+        }
+      }
     }
     if (!form.agency_name.trim()) {
       errors.agency_name = t("masterData.recipient.errName");
@@ -2265,7 +2281,8 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           ]),
         ),
       }));
-      toast.error(getMutationErrorMessage(error));
+      // Form đã hiện lỗi ngay dưới ô hoặc banner trong dialog; toast thứ hai
+      // chỉ lặp lại cùng một câu và che nội dung phía trên.
       setFormError(message ?? "");
     }
   };
@@ -2425,7 +2442,14 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                       <td className="stt-col">
                         {mvpRowNumber(page, perPage, originalIndexOf(record))}
                       </td>
-                      <td>{record.agency_code}</td>
+                      <td>
+                        <span
+                          className="agy-code-cell"
+                          title={record.agency_code}
+                        >
+                          {record.agency_code}
+                        </span>
+                      </td>
                       <td style={TRUNCATE_CELL_STYLE}>
                         <TruncatedText lines={1} maxWidth={220}>
                           {record.agency_name}

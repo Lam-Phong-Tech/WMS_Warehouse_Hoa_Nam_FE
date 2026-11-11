@@ -13,9 +13,15 @@ import {
   DefectMasterScreen,
   SkuMasterScreen,
 } from "@/modules/master-data/pages/MvpMasterScreens";
+import { toast } from "sonner";
+import { ApiEnvelopeError } from "@/shared/api/api-error";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
-import { useMvpSkus, useSetMvpSkuPublished } from "@/modules/master-data/hooks/use-mvp-master";
+import {
+  useMvpSkus,
+  useSetMvpSkuPublished,
+  useUpdateMvpAgency,
+} from "@/modules/master-data/hooks/use-mvp-master";
 
 const { mutation } = vi.hoisted(() => ({
   mutation: () => ({
@@ -57,6 +63,7 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
           agency_id: "agency-1",
           agency_code: "AG-HN-001",
           agency_name: "Đại lý Minh Anh",
+          recipient_type: "AGENCY",
           phone: "0901000001",
           address: "Hà Nội",
           status: "ACTIVE",
@@ -104,7 +111,7 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useUpdateMvpSku: mutation,
   useSetMvpSkuPublished: vi.fn(mutation),
   useCreateMvpAgency: mutation,
-  useUpdateMvpAgency: mutation,
+  useUpdateMvpAgency: vi.fn(mutation),
   useCreateMvpDefect: mutation,
   useUpdateMvpDefect: mutation,
 }));
@@ -149,6 +156,9 @@ describe("API-backed MVP master screens", () => {
       () => defaultSkusResult() as never,
     );
     vi.mocked(useSetMvpSkuPublished).mockImplementation(
+      (() => mutation()) as never,
+    );
+    vi.mocked(useUpdateMvpAgency).mockImplementation(
       (() => mutation()) as never,
     );
   });
@@ -599,6 +609,68 @@ describe("API-backed MVP master screens", () => {
     // REQ-001: màn master đổi nhãn "Đại lý" → "Nơi nhận".
     fireEvent.click(screen.getByRole("button", { name: /Thêm nơi nhận/ }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("chặn mã nơi nhận trùng ngay trên form trước khi gọi API", async () => {
+    render(
+      <MemoryRouter>
+        <AgencyMasterScreen />
+      </MemoryRouter>,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Thêm nơi nhận/ }),
+    );
+    fireEvent.change(screen.getByLabelText(/^Mã nơi nhận/), {
+      // Khác hoa/thường vẫn là cùng một mã nghiệp vụ.
+      target: { value: "ag-hn-001" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Tên nơi nhận/), {
+      target: { value: "Đại lý trùng mã" },
+    });
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: "Loại nơi nhận" }),
+    );
+    fireEvent.click(screen.getByRole("option", { name: "Đại lý" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lưu nơi nhận" }));
+
+    expect(
+      await screen.findByText(
+        "Mã nơi nhận này đã tồn tại. Vui lòng dùng mã khác.",
+      ),
+    ).toBeInTheDocument();
+    // Vẫn ở lại form để người dùng sửa mã, không đóng dialog.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("hiện lỗi server tại ô nhập và không bắn thêm toast trùng", async () => {
+    const toastError = vi.spyOn(toast, "error");
+    const mutateAsync = vi.fn().mockRejectedValue(
+      new ApiEnvelopeError({
+        status: "error",
+        message: "Dữ liệu không hợp lệ.",
+        errors: { agency_code: ["Mã nơi nhận đã tồn tại."] },
+      }),
+    );
+    vi.mocked(useUpdateMvpAgency).mockReturnValue({
+      isPending: false,
+      mutateAsync,
+    } as never);
+
+    render(
+      <MemoryRouter>
+        <AgencyMasterScreen />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByText("Đại lý Minh Anh"));
+    await screen.findByRole("dialog");
+    fireEvent.click(screen.getByRole("button", { name: "Lưu nơi nhận" }));
+
+    expect(
+      await screen.findByText("Mã nơi nhận đã tồn tại."),
+    ).toBeInTheDocument();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+    expect(toastError).not.toHaveBeenCalled();
+    toastError.mockRestore();
   });
 
   it("thu gọn riêng thống kê và bộ lọc bệnh/lỗi, giữ từ khóa khi mở lại", () => {

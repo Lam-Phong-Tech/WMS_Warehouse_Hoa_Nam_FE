@@ -71,6 +71,10 @@
   border-radius: var(--ops-radius-control);
   background: var(--agy-surface);
 }
+/* Giữ khoảng cách icon kính lúp ↔ chữ như ô tìm kiếm phiếu nhập. */
+.hn-agency-screen .agy-toolbar > :first-child .MuiInputAdornment-root {
+  margin-right: 8px;
+}
 .hn-agency-screen .agy-toolbar .MuiOutlinedInput-notchedOutline {
   border-color: var(--agy-line);
 }
@@ -160,7 +164,12 @@
 .hn-agency-screen .agy-table td:nth-child(2) {
   color: var(--agy-heading);
   font-weight: 700;
-  overflow-wrap: anywhere;
+}
+.hn-agency-screen .agy-code-cell {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hn-agency-screen .agy-table td:nth-child(4) > * {
   padding: 0;

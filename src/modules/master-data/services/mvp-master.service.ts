@@ -136,8 +136,18 @@ export function setMvpSkuPublished(id: string, version: number, publishedToApp: 
 }
 /** Preserve the existing optional-header contract for legacy agency/defect responses. */
 function ifMatchConfig(version?: number | null) {
-  return version === null || version === undefined
-    ? undefined : { headers: { "If-Match": String(requiredApiVersion(version)) } };
+  // Agency/defect để If-Match là TÙY CHỌN ở BE. Bản ghi legacy có version 0
+  // (chưa từng được sửa) vẫn phải lưu được; gửi If-Match=0 sẽ bị FE chặn và
+  // người dùng thấy "Chưa có phiên bản..." dù máy chủ chấp nhận cập nhật.
+  if (
+    version === null ||
+    version === undefined ||
+    !Number.isSafeInteger(version) ||
+    version <= 0
+  ) {
+    return undefined;
+  }
+  return { headers: { "If-Match": String(version) } };
 }
 export function getMvpAgencies(params: MasterListParams) {
   return listPage<AgencyRecord>(API_ENDPOINTS.AGENCIES, params);
