@@ -31,6 +31,8 @@ vi.mock("@/shared/api/http", () => ({
 }));
 
 import { http } from "@/shared/api/http";
+import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { businessToday } from "@/shared/utils/date-time";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import MovementTraceReport from "./MovementTraceReport";
@@ -163,6 +165,36 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     cleanupTestState();
   });
 
+  it("mặc định lọc 7 ngày gần nhất cho thông tin báo cáo bên dưới", async () => {
+    renderReport();
+    await screen.findByTestId("movement-trace-report");
+
+    const from = businessToday().subtract(6, "day").format("YYYY-MM-DD");
+    const to = businessToday().format("YYYY-MM-DD");
+    await waitFor(() =>
+      expect(http.getPage).toHaveBeenCalledWith(
+        API_ENDPOINTS.REPORTS_MOVEMENT_TRACE,
+        {
+          params: expect.objectContaining({
+            from_date: from,
+            to_date: to,
+          }),
+        },
+      ),
+    );
+
+    const fromField = document.querySelector<HTMLElement>(
+      '[data-date-field="from"]',
+    );
+    const toField = document.querySelector<HTMLElement>(
+      '[data-date-field="to"]',
+    );
+    expect(fromField).toHaveTextContent(
+      businessToday().subtract(6, "day").format("DD/MM/YYYY"),
+    );
+    expect(toField).toHaveTextContent(businessToday().format("DD/MM/YYYY"));
+  });
+
   it("i18n: localizes ledger filter prefixes and options while mounted", async () => {
     renderReport();
     await screen.findByText("IN-2026-00031");
@@ -170,20 +202,31 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
       await ensureEnglishMessages();
       useLanguageStore.getState().setLanguage("en");
     });
-    const ledger = within(document.getElementById("trace-ledger") as HTMLElement);
-    const movement = ledger.getByRole("combobox", { name: "Any movement type" });
+    const ledger = within(
+      document.getElementById("trace-ledger") as HTMLElement,
+    );
+    const movement = ledger.getByRole("combobox", {
+      name: "Any movement type",
+    });
     expect(movement).toHaveTextContent("Movement type: Any movement type");
-    expect(ledger.getByRole("combobox", { name: "Anyone" }))
-      .toHaveTextContent("Performed by: Anyone");
+    expect(ledger.getByRole("combobox", { name: "Anyone" })).toHaveTextContent(
+      "Performed by: Anyone",
+    );
     await userEvent.click(movement);
-    expect(within(document.getElementById("trace-ledger-kind-listbox") as HTMLElement)
-      .getAllByRole("option").every((option) =>
-      option.textContent?.trim().startsWith("Movement type:"),
-    )).toBe(true);
+    expect(
+      within(
+        document.getElementById("trace-ledger-kind-listbox") as HTMLElement,
+      )
+        .getAllByRole("option")
+        .every((option) =>
+          option.textContent?.trim().startsWith("Movement type:"),
+        ),
+    ).toBe(true);
     await userEvent.keyboard("{Escape}");
     act(() => useLanguageStore.getState().setLanguage("vi"));
-    expect(ledger.getByRole("combobox", { name: "Mọi loại biến động" }))
-      .toHaveTextContent("Loại biến động:");
+    expect(
+      ledger.getByRole("combobox", { name: "Mọi loại biến động" }),
+    ).toHaveTextContent("Loại biến động:");
   });
 
   it("dựng KPI, timeline và ledger từ payload thật, có mốc chốt của máy chủ", async () => {

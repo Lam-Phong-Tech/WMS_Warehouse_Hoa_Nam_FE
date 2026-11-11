@@ -29,6 +29,7 @@ import {
   SEMANTIC_LIGHT as S,
 } from "@/shared/ui";
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
+import { presetRange } from "@/modules/reports/operations/report-format";
 import {
   CheckCircleOutlined,
   FileTextOutlined,
@@ -510,6 +511,12 @@ const EMPTY_FILTERS: AppliedFilters = {
   relation: "all",
 };
 
+/** Mặc định báo cáo chạy trên 7 ngày gần nhất, giống bộ lọc ngày của RPT-04. */
+function defaultFilters(): AppliedFilters {
+  const [fromDate, toDate] = presetRange("last-7");
+  return { ...EMPTY_FILTERS, fromDate, toDate };
+}
+
 export default function MovementTraceReport() {
   const t = useT();
   const permissionState = usePermissionState();
@@ -519,8 +526,9 @@ export default function MovementTraceReport() {
   );
 
   const periodPresets = useMemo(() => reportRangePresets(t), [t]);
-  const [draft, setDraft] = useState<AppliedFilters>(EMPTY_FILTERS);
-  const [applied, setApplied] = useState<AppliedFilters>(EMPTY_FILTERS);
+  const [defaults] = useState<AppliedFilters>(defaultFilters);
+  const [draft, setDraft] = useState<AppliedFilters>(defaults);
+  const [applied, setApplied] = useState<AppliedFilters>(defaults);
   // Invalid or incomplete date ranges remain visible without replacing the active query.
   const [dateError, setDateError] = useState<string | null>(null);
   const [selected, setSelected] = useState<MovementTraceRow | null>(null);
@@ -808,11 +816,15 @@ export default function MovementTraceReport() {
     count: formatQuantity(timelineFilter.rows.length),
   });
 
+  const dateRangeChanged =
+    (draft.fromDate?.format("YYYY-MM-DD") ?? "") !==
+      (defaults.fromDate?.format("YYYY-MM-DD") ?? "") ||
+    (draft.toDate?.format("YYYY-MM-DD") ?? "") !==
+      (defaults.toDate?.format("YYYY-MM-DD") ?? "");
   const canClear =
     draft.code !== "" ||
-    draft.traceBy !== EMPTY_FILTERS.traceBy ||
-    draft.fromDate !== null ||
-    draft.toDate !== null ||
+    draft.traceBy !== defaults.traceBy ||
+    dateRangeChanged ||
     draft.movementType !== "" ||
     draft.source !== "" ||
     draft.actor !== "" ||
@@ -847,8 +859,8 @@ export default function MovementTraceReport() {
   };
 
   const clearFilters = () => {
-    setDraft(EMPTY_FILTERS);
-    setApplied(EMPTY_FILTERS);
+    setDraft(defaults);
+    setApplied(defaults);
     setDateError(null);
   };
 
