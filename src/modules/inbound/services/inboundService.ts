@@ -3,6 +3,7 @@ import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { assertWmsActionPermission } from "@/shared/api/wms-action-permission";
 import { withConcurrencyContract } from "@/shared/api/concurrency-contract";
 import { http } from "@/shared/api/http";
+import { businessDateOnly } from "@/shared/utils/date-time";
 import {
   requireIdempotencyKeyHeader,
   requireNonEmptyString,
@@ -164,6 +165,9 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     : num(row.scanned_qty ?? row.qty_scanned ?? row.total_scanned);
   const status = normalizeStatus(row.status);
   const posted = status === "POSTED" ? scanned : 0;
+  // `doc_date` có thể là date-only hoặc timestamp ISO (BE cast Carbon). Chuẩn
+  // hoá về ngày lịch Việt Nam để form sửa không bị lùi ngày qua UTC.
+  const rawDate = text(row.doc_date ?? row.date ?? row.created_at);
   return {
     id: text(row.id ?? row.stock_document_id),
     code: text(row.doc_no ?? row.code ?? row.document_no),
@@ -171,7 +175,7 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     // cột vật lý `source_name`. Không fallback sang `note` nữa: ghi chú là field
     // khác hẳn, đổ vào cột "Nguồn / tham chiếu" là hiển thị sai dữ liệu.
     source: text(row.source_reference ?? row.source_name ?? row.source, "-"),
-    date: text(row.doc_date ?? row.date ?? row.created_at),
+    date: businessDateOnly(rawDate) || rawDate,
     warehouseId: text(row.dst_warehouse_id ?? row.warehouse_id),
     supplierId: text(row.supplier_id) || undefined,
     supplier: normalizeSupplier(row.supplier),

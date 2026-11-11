@@ -26,6 +26,19 @@ export function getDisplayTimezone(): string {
   return BUSINESS_TIMEZONE;
 }
 
+/**
+ * Ngày lịch (YYYY-MM-DD) của một mốc dữ liệu theo giờ Việt Nam.
+ *
+ * Dùng cho các cột `date`/ngày chứng từ khi API có thể trả về timestamp ISO
+ * (có `Z` hoặc offset). Cắt chuỗi `.slice(0, 10)` sẽ lấy ngày UTC và bị lùi
+ * một ngày với mốc nửa đêm Việt Nam (17:00Z hôm trước).
+ */
+export function businessDateOnly(value?: string | null): string {
+  if (!value) return "";
+  const parsed = parseDateTime(value, BUSINESS_TIMEZONE);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD") : "";
+}
+
 /** Legacy offset-free API timestamps are Vietnam wall clocks, never device time. */
 export function parseDateTime(
   value: dayjs.ConfigType = undefined,

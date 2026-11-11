@@ -1,4 +1,4 @@
-import { businessToday } from "@/shared/utils/date-time";
+import { businessDateOnly, businessToday } from "@/shared/utils/date-time";
 import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import {
@@ -197,7 +197,9 @@ export function InboundDraftModal({
     if (!detail || initializedRef.current === documentId) return;
     const detailSupplier = detail.supplier;
     setFormValues({
-      documentDate: detail.document.date?.slice(0, 10) || localToday(),
+      // `date` có thể là timestamp ISO (created_at/doc_date) — đổi sang ngày
+      // lịch Việt Nam thay vì cắt 10 ký tự UTC làm lùi một ngày.
+      documentDate: businessDateOnly(detail.document.date) || localToday(),
       warehouseId: detail.document.warehouseId,
       supplierId: detailSupplier?.id ?? detail.document.supplierId ?? "",
       sourceName: detail.document.source === "-" ? "" : detail.document.source,

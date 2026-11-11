@@ -40,6 +40,34 @@ describe("inbound real API contract", () => {
     vi.clearAllMocks();
   });
 
+  it("normalizes an ISO document timestamp to the Vietnam calendar date", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({
+      data: [
+        {
+          id: "IN-ISO",
+          doc_no: "PN-ISO",
+          // 12/11 00:00 giờ Việt Nam = 11/11 17:00Z.
+          doc_date: "2026-11-11T17:00:00.000000Z",
+          dst_warehouse_id: "WH-1",
+          status: "DRAFT",
+        },
+        {
+          id: "IN-DATE",
+          doc_no: "PN-DATE",
+          doc_date: "2026-11-12",
+          dst_warehouse_id: "WH-1",
+          status: "DRAFT",
+        },
+      ],
+      meta: { current_page: 1, per_page: 20, last_page: 1, total: 2 },
+    });
+
+    const result = await fetchInboundDocuments({});
+
+    expect(result.data[0].date).toBe("2026-11-12");
+    expect(result.data[1].date).toBe("2026-11-12");
+  });
+
   it("delegates keyword, status and pagination to the server and preserves meta", async () => {
     vi.mocked(http.getPage).mockResolvedValue({
       data: [

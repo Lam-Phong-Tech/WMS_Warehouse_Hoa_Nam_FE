@@ -2,6 +2,7 @@ import { useInterfacePreferencesStore } from "@/shared/store/interface-preferenc
 import { parseDateTime } from "./date-time";
 export {
   BUSINESS_TIMEZONE,
+  businessDateOnly,
   businessToday,
   getDisplayTimezone,
   parseDateTime,
