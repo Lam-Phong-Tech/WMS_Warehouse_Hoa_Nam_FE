@@ -321,9 +321,73 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 }
 .hn-outbound-sort {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .hn-outbound-sort .MuiFormControl-root {
-  width: 100%;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+.hn-outbound-more-filters,
+.hn-outbound-clear-filters {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px;
+  padding: 0 13px;
+  border: 1px solid var(--out-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--out-surface);
+  color: var(--out-ink);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hn-outbound-clear-filters {
+  min-height: 44px;
+  color: var(--out-primary);
+}
+.hn-outbound-more-filters:hover,
+.hn-outbound-more-filters[aria-expanded="true"],
+.hn-outbound-clear-filters:hover {
+  border-color: var(--out-primary);
+  background: var(--out-pale);
+}
+.hn-outbound-more-filters > svg {
+  font-size: 17px;
+}
+.hn-outbound-extra-filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--out-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--out-surface);
+}
+.hn-outbound-extra-filters[hidden] {
+  display: none;
+}
+.hn-outbound-date-filter {
+  flex: 1 1 420px;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.hn-outbound-date-label {
+  color: var(--out-ink);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.hn-outbound-extra-filters .hn-vuexy-date-field {
+  min-height: 44px;
 }
 .hn-outbound-filter > label {
   display: none;

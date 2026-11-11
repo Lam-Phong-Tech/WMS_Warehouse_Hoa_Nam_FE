@@ -545,7 +545,7 @@ export const MESSAGES_UPDATED_VI = {
   text_ee41b3a150d1: "Cần kết nối mạng để tạo phiếu",
   text_eeffc0b6b7ba: "Không có phiếu bảo hành trong khoảng thời gian đã chọn.",
   text_ef700a3a2f41:
-    "Quét và đối chiếu thực hiện trên Scanner App. Chỉ Post Issue thành công mới làm giảm tồn kho; in hoặc in lại nhãn không làm thay đổi tồn.",
+    "Quét và đối chiếu thực hiện trên Scanner App. Chỉ ghi nhận xuất kho thành công mới làm giảm tồn kho; in hoặc in lại nhãn không làm thay đổi tồn.",
   text_f0c405587837: "Kiểm tra kết nối Internet rồi thử lại.",
   text_f152a05815cc:
     "Không có kết nối mạng. Đang hiển thị dữ liệu đã tải gần nhất.",

@@ -1,9 +1,10 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
+import type { Dayjs } from "dayjs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { BarChartOutlined } from "@/shared/components/icons";
+import { BarChartOutlined, FilterOutlined } from "@/shared/components/icons";
 import {
   UiAutocomplete,
   UiIcon,
@@ -32,6 +33,7 @@ import { AlignedOutboundDetailModal } from "@/modules/outbound/components/Aligne
 import { OutboundIntakeModal } from "@/modules/outbound/components/OutboundIntakeModal";
 import { OutboundOverview } from "@/modules/outbound/components/OutboundOverview";
 import { OutboundNfcProducts } from "@/modules/outbound/components/OutboundNfcProducts";
+import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import {
   fetchOutboundDocuments,
   type OutboundDocumentRecord,
@@ -78,6 +80,10 @@ export default function AlignedMvpOutboundPage() {
   const [recipient, setRecipient] = useState("");
   const [recipientOptionsOpen, setRecipientOptionsOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [createdRange, setCreatedRange] = useState<
+    [Dayjs | null, Dayjs | null] | null
+  >(null);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [overviewExpanded, setOverviewExpanded] = useState(() => {
@@ -94,9 +100,13 @@ export default function AlignedMvpOutboundPage() {
     WMS_ACTION_PERMISSIONS.OUTBOUND_REQUEST_MANUAL_CREATE.some(can);
   const canAttach = can("outbound.scan") || can("outbound.post");
   const canScan = can("outbound.scan");
+  const createdFrom = createdRange?.[0]?.format("YYYY-MM-DD");
+  const createdTo = createdRange?.[1]?.format("YYYY-MM-DD");
   const listParams = {
     search: search || undefined,
     status: status || undefined,
+    fromDate: createdFrom,
+    toDate: createdTo,
     page,
     per_page: perPage,
     sortOrder,
@@ -107,6 +117,8 @@ export default function AlignedMvpOutboundPage() {
       "list",
       search,
       status,
+      createdFrom,
+      createdTo,
       page,
       perPage,
       sortOrder,
@@ -148,7 +160,17 @@ export default function AlignedMvpOutboundPage() {
     SORT_ACCESSORS,
   );
   const loading = listQuery.isLoading;
-  const hasFilters = Boolean(searchInput || search || status || recipient);
+  const hasFilters = Boolean(
+    searchInput || search || status || recipient || createdFrom || createdTo,
+  );
+  const resetFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setStatus("");
+    setRecipient("");
+    setCreatedRange(null);
+    setPage(1);
+  };
   const first = rows.length
     ? (pagination.current - 1) * pagination.pageSize + 1
     : 0;
@@ -461,8 +483,46 @@ export default function AlignedMvpOutboundPage() {
                     setPage(1);
                   }}
                 />
+                <button
+                  type="button"
+                  className="hn-outbound-more-filters"
+                  aria-expanded={filtersOpen}
+                  aria-controls="hn-outbound-extra-filters"
+                  onClick={() => setFiltersOpen((current) => !current)}
+                >
+                  <FilterOutlined aria-hidden="true" />
+                  {t("outbound.list.filterButton")}
+                </button>
               </div>
             </form>
+            <div
+              id="hn-outbound-extra-filters"
+              className="hn-outbound-extra-filters"
+              hidden={!filtersOpen}
+            >
+              <div className="hn-outbound-date-filter">
+                <span className="hn-outbound-date-label">
+                  {t("outbound.list.dateFilterLabel")}
+                </span>
+                <ReportDateRangePicker
+                  value={createdRange}
+                  aria-label={t("outbound.list.dateFilterAria")}
+                  onChange={(value) => {
+                    setCreatedRange(value);
+                    setPage(1);
+                  }}
+                />
+              </div>
+              {hasFilters ? (
+                <button
+                  type="button"
+                  className="hn-outbound-clear-filters"
+                  onClick={resetFilters}
+                >
+                  {t("outbound.list.clearFilters")}
+                </button>
+              ) : null}
+            </div>
             {listQuery.isError ? (
               <div className="hn-outbound-error">
                 <ApiErrorAlert

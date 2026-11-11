@@ -474,6 +474,9 @@ export async function fetchOutboundDocuments(
      * Bỏ trống = thứ tự mặc định cũ của BE.
      */
     sortOrder?: "desc" | "asc";
+    /** Ngày tạo phiếu, bao gồm cả hai đầu (YYYY-MM-DD) — lọc trong SQL ở BE. */
+    fromDate?: string;
+    toDate?: string;
   } = {},
 ): Promise<OutboundListResult> {
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(
@@ -482,6 +485,8 @@ export async function fetchOutboundDocuments(
       params: {
         ...(params.search ? { keyword: params.search } : {}),
         ...(params.status ? { status: params.status } : {}),
+        ...(params.fromDate ? { from_date: params.fromDate } : {}),
+        ...(params.toDate ? { to_date: params.toDate } : {}),
         page: params.page ?? 1,
         per_page: params.per_page ?? 10,
         ...(params.sortOrder ? { sort_order: params.sortOrder } : {}),

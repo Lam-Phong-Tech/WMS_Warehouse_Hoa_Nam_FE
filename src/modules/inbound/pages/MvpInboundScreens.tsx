@@ -671,11 +671,24 @@ export function InboundScanModal({
       onChanged?.();
       return true;
     } catch (error) {
-      const errorText = getApiErrorMessage(
-        error,
-        t("inbound.scan.invalidCode"),
-      );
-      const errorCode = normalizeError(error).code ?? undefined;
+      const errorCode =
+        (error instanceof WmsConcurrencyError ? error.code : undefined) ??
+        normalizeError(error).code ??
+        undefined;
+      // 409 mã miền của BE (trùng mã trong phiếu, item đang nhập ở phiếu khác)
+      // từng bị lớp concurrency bọc thành "trạng thái phiếu không cho phép" nên
+      // người quét tưởng phải tải lại phiếu. Dịch đúng ba trường hợp hay gặp.
+      const scanConflictMessage =
+        errorCode === "DUPLICATE_ITEM_IN_DOCUMENT"
+          ? t("inbound.scan.duplicateCode")
+          : errorCode === "ITEM_ALREADY_RECEIVING"
+            ? t("inbound.scan.alreadyReceiving")
+            : errorCode === "ITEM_ALREADY_REGISTERED"
+              ? t("inbound.scan.alreadyRegistered")
+              : undefined;
+      const errorText =
+        scanConflictMessage ??
+        getApiErrorMessage(error, t("inbound.scan.invalidCode"));
       scanKeyRef.current = shouldReuseScanKey(error)
         ? { key: scanAttemptKey, fingerprint: scanFingerprint }
         : null;

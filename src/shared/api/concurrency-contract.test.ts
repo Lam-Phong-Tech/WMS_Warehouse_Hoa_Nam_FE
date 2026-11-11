@@ -78,6 +78,25 @@ describe("classifyConcurrencyError", () => {
     expect(outcome?.reuseIdempotencyKey).toBe(false);
   });
 
+  it("giữ câu nghiệp vụ của BE cho 409 mã miền (trùng mã quét, item đang nhập)", () => {
+    const outcome = classifyConcurrencyError({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: {
+          error_code: "DUPLICATE_ITEM_IN_DOCUMENT",
+          message: "Một item chỉ được scan một lần trong cùng phiếu nhập.",
+        },
+      },
+    });
+
+    expect(outcome?.action).toBe("STOP");
+    expect(outcome?.message).toBe(
+      "Một item chỉ được scan một lần trong cùng phiếu nhập.",
+    );
+    expect(outcome?.message).not.toContain("tải lại");
+  });
+
   it("428 PRECONDITION_REQUIRED là lỗi thiếu header, không phải race", () => {
     expect(classifyConcurrencyError(axiosError(428))?.action).toBe("STOP");
   });

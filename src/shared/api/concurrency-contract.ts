@@ -72,7 +72,8 @@ const MESSAGE_KEYS: Record<ConcurrencyAction, MessageKey> = {
 
 interface ErrorBodyShape {
   error_code?: unknown;
-  error?: { code?: unknown };
+  message?: unknown;
+  error?: { code?: unknown; message?: unknown };
 }
 
 function readStatus(error: unknown): number | undefined {
@@ -94,6 +95,24 @@ function readCode(error: unknown): string | undefined {
   if (typeof fromBody === "string" && fromBody !== "") return fromBody;
   return typeof record.code === "string" && record.code !== ""
     ? record.code
+    : undefined;
+}
+
+/**
+ * Câu nghiệp vụ BE gửi kèm. Với 409 mã miền (trùng mã quét, item đang nhập ở
+ * phiếu khác…) câu này mới nói đúng người dùng sai gì; thay nó bằng câu
+ * "trạng thái phiếu không cho phép" khiến mọi lỗi quét trùng thành lỗi tải lại.
+ */
+function readMessage(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const record = error as {
+    response?: { data?: ErrorBodyShape };
+    data?: ErrorBodyShape;
+  };
+  const body = record.response?.data ?? record.data;
+  const message = body?.message ?? body?.error?.message;
+  return typeof message === "string" && message.trim() !== ""
+    ? message.trim()
     : undefined;
 }
 
@@ -127,8 +146,10 @@ export function classifyConcurrencyError(
   }
   if (status === 409) {
     // Mã miền cụ thể (ITEM_ALREADY_MATCHED, CONTAINER_CLOSED…) đều là biến thể của
-    // lớp STATE_CONFLICT: dừng lại, không retry.
-    return build("STOP", code ?? "STATE_CONFLICT", status);
+    // lớp STATE_CONFLICT: dừng lại, không retry. Giữ câu nghiệp vụ BE gửi kèm —
+    // nếu thay bằng câu "trạng thái phiếu" chung thì lỗi quét trùng mã cũng bị
+    // báo nhầm thành lỗi trạng thái phiếu.
+    return build("STOP", code ?? "STATE_CONFLICT", status, readMessage(error));
   }
   return null;
 }
@@ -137,12 +158,13 @@ function build(
   action: ConcurrencyAction,
   code: string,
   status?: number,
+  specificMessage?: string,
 ): ConcurrencyOutcome {
   return {
     action,
     code,
     status,
-    message: tStatic(MESSAGE_KEYS[action]),
+    message: specificMessage ?? tStatic(MESSAGE_KEYS[action]),
     reuseIdempotencyKey: action === "RELOAD_THEN_RETRY",
   };
 }

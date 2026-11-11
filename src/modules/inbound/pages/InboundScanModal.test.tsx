@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { ApiEnvelopeError } from "@/shared/api/api-error";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -716,6 +717,34 @@ describe("IN-03 · hỏi loại SKU mới khi quét lần đầu", () => {
       },
     };
   }
+
+  it("mã đã quét trùng báo đúng mã, không báo lỗi trạng thái phiếu", async () => {
+    mockHooks([]);
+    vi.mocked(useScanInbound).mockReturnValue({
+      isPending: false,
+      mutateAsync: vi.fn().mockRejectedValue(
+        new ApiEnvelopeError({
+          status: "error",
+          error_code: "DUPLICATE_ITEM_IN_DOCUMENT",
+          message: "Một item chỉ được scan một lần trong cùng phiếu nhập.",
+        }),
+      ),
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("HN1|SKU=DUP-1|ITEM=SN-DUP");
+
+    expect(
+      await screen.findByText(
+        "Mã này đã được quét trong phiếu nhập này. Mỗi mã chỉ ghi nhận một lần — hãy kiểm tra lại tem/mã.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Trạng thái phiếu không cho phép thao tác này/),
+    ).not.toBeInTheDocument();
+  });
 
   it("hỏi loại rồi gửi lại kèm new_sku_type khi chọn Linh kiện", async () => {
     const scanMutate = vi

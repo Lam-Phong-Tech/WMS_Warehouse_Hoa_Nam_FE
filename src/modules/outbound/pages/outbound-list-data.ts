@@ -34,7 +34,10 @@ function isIntegerAtLeast(value: unknown, minimum: number): value is number {
  * A changing/incomplete page set is an error, never a successful partial list.
  */
 async function fetchAllOutboundRows(
-  params: Pick<OutboundListParams, "search" | "status" | "sortOrder">,
+  params: Pick<
+    OutboundListParams,
+    "search" | "status" | "sortOrder" | "fromDate" | "toDate"
+  >,
   signal?: AbortSignal,
 ): Promise<OutboundDocumentRecord[]> {
   const rowsById = new Map<string, OutboundDocumentRecord>();
@@ -120,6 +123,8 @@ export async function fetchOutboundRowsForRecipient(
         search: params.search,
         status: params.status,
         sortOrder: params.sortOrder,
+        fromDate: params.fromDate,
+        toDate: params.toDate,
       },
       signal,
     ),

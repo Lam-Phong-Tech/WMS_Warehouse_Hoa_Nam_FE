@@ -49,6 +49,10 @@ export function localizeNotification(
     };
   }
   const original = { title: item.title, body: item.body };
+  const systemEvent =
+    Object.hasOwn(events, item.event_key) ||
+    item.event_key === "user.account_changed" ||
+    item.event_key === "security.alert_raised";
   /**
    * Bản BE cũ đã lưu sẵn câu tiếng Việt dùng từ vay "case". Chuông thông báo
    * đọc đúng dòng đã lưu đó (language = vi trả nguyên bản), nên đổi tại đây để
@@ -56,6 +60,17 @@ export function localizeNotification(
    * cho hai event bảo hành; nội dung tự soạn khác không bị chạm.
    */
   if (language === "vi") {
+    // Thông báo hệ thống do BE sinh từng lưu lẫn thuật ngữ "Post Issue" /
+    // "Post Receipt". Người dùng Việt đọc chuông phải thấy hành động nghiệp vụ,
+    // không phải tên endpoint. Chỉ đổi event hệ thống, không chạm tin tự soạn.
+    const operationalTerms = (value: string) =>
+      systemEvent
+        ? value
+            .replace(/\bPost Issue\b/g, "ghi nhận xuất kho")
+            .replace(/\bPost Receipt\b/g, "ghi nhận nhập kho")
+        : value;
+    const title = operationalTerms(item.title);
+    const body = operationalTerms(item.body);
     if (
       item.event_key === "warranty.case_created" ||
       item.event_key === "warranty.status_changed"
@@ -64,9 +79,9 @@ export function localizeNotification(
         value
           .replace(/Case bảo hành/g, "Ca bảo hành")
           .replace(/case bảo hành/g, "ca bảo hành");
-      return { title: toCa(item.title), body: toCa(item.body) };
+      return { title: toCa(title), body: toCa(body) };
     }
-    return original;
+    return { title, body };
   }
   const payload = item.payload ?? {};
   const text = (...values: unknown[]): string => {

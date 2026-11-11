@@ -194,6 +194,56 @@ describe("AlignedMvpOutboundPage RBAC gating (OUT-01, WWHN-209)", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("giữ bộ lọc ngày tạo trong nút Bộ lọc và gửi fromDate/toDate", async () => {
+    grantOnly(["outbound.view"]);
+    renderWithProviders(<AlignedMvpOutboundPage />);
+    await screen.findByText("PX-20260820-0001");
+
+    const toggle = screen.getByRole("button", { name: "Bộ lọc" });
+    const panel = document.getElementById("hn-outbound-extra-filters");
+    expect(panel).not.toBeNull();
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(panel).not.toBeVisible();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(panel).toBeVisible();
+
+    fireEvent.click(
+      within(panel as HTMLElement).getByRole("button", { name: "Từ ngày" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "7 ngày qua" }));
+
+    await waitFor(() => {
+      const lastCall =
+        serviceMocks.fetchOutboundDocuments.mock.calls.at(-1)?.[0];
+      expect(lastCall).toEqual(
+        expect.objectContaining({
+          fromDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          toDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        }),
+      );
+    });
+    const lastCall = serviceMocks.fetchOutboundDocuments.mock.calls.at(
+      -1,
+    )?.[0] as {
+      fromDate: string;
+      toDate: string;
+    };
+    expect(
+      lastCall.fromDate.localeCompare(lastCall.toDate),
+    ).toBeLessThanOrEqual(0);
+    // Khoảng ngày đã chọn hiện ngay trên nút, không cần mở lại lịch.
+    expect(
+      (panel as HTMLElement).querySelector('[data-date-value="from"]')
+        ?.textContent,
+    ).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    expect(
+      (panel as HTMLElement).querySelector('[data-date-value="to"]')
+        ?.textContent,
+    ).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+  });
+
   it("lỗi tải danh sách: render ApiErrorAlert thay vì màn trắng (hợp đồng UI_STATE)", async () => {
     grantOnly(["outbound.view"]);
     serviceMocks.fetchOutboundDocuments.mockRejectedValue(

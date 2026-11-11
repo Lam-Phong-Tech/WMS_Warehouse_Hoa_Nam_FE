@@ -695,6 +695,12 @@ export const MESSAGES_EN: MessageTree = {
       replayed:
         "This scan was already recorded. The system returned the earlier result — the scanned count did not increase.",
       invalidCode: "Invalid scan code.",
+      duplicateCode:
+        "This code was already scanned into this receipt. Each code is recorded only once - check the label/code.",
+      alreadyReceiving:
+        "This code belongs to another unfinished receipt. Complete or cancel that receipt before scanning it here.",
+      alreadyRegistered:
+        "This code is already registered in the system and cannot be scanned into a new receipt.",
       emptyInput: "Please scan or type a code.",
       inputPlaceholder: "Scan a product or a component box code (BOX-…)",
       hint: "Scan a product or a component box code — the system detects it automatically: a labelled product/component records +1, a box code (BOX-…) opens a quantity field.",
@@ -845,6 +851,10 @@ export const MESSAGES_EN: MessageTree = {
       searchAria: "Search issue notes",
       statusFilterAria: "Filter issue note status",
       statusFilterPlaceholder: "Status: All",
+      filterButton: "Filters",
+      clearFilters: "Clear filters",
+      dateFilterLabel: "Created date",
+      dateFilterAria: "Filter issue notes by created date",
       sortLabel: "Sort by",
       sortAria: "Sort the issue note list",
       sortNewest: "Newest first",

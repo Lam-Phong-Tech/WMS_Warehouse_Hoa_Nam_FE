@@ -695,6 +695,12 @@ export const MESSAGES_VI = {
       replayed:
         "Lần quét này đã được ghi nhận trước đó. Hệ thống trả lại kết quả cũ — số đã quét không tăng thêm.",
       invalidCode: "Mã quét không hợp lệ.",
+      duplicateCode:
+        "Mã này đã được quét trong phiếu nhập này. Mỗi mã chỉ ghi nhận một lần — hãy kiểm tra lại tem/mã.",
+      alreadyReceiving:
+        "Mã này đang thuộc một phiếu nhập khác chưa hoàn tất. Hãy hoàn tất hoặc hủy phiếu đó trước khi quét.",
+      alreadyRegistered:
+        "Mã này đã được đăng ký trong hệ thống nên không thể quét vào phiếu nhập mới.",
       emptyInput: "Vui lòng quét hoặc nhập một mã.",
       inputPlaceholder: "Quét sản phẩm hoặc mã hộp linh kiện (BOX-…)",
       hint: "Quét sản phẩm hoặc mã hộp linh kiện — hệ thống tự nhận diện: sản phẩm/linh kiện dán mã ghi nhận +1, mã hộp (BOX-…) mở ô nhập số lượng.",
@@ -845,6 +851,10 @@ export const MESSAGES_VI = {
       searchAria: "Tìm phiếu xuất",
       statusFilterAria: "Lọc trạng thái phiếu xuất",
       statusFilterPlaceholder: "Trạng thái: Tất cả",
+      filterButton: "Bộ lọc",
+      clearFilters: "Xóa lọc",
+      dateFilterLabel: "Ngày tạo phiếu",
+      dateFilterAria: "Lọc phiếu xuất theo ngày tạo",
       sortLabel: "Sắp xếp theo",
       sortAria: "Sắp xếp danh sách phiếu xuất",
       sortNewest: "Mới nhất",
@@ -5404,7 +5414,7 @@ export const MESSAGES_VI = {
       reset: "Đặt lại",
       ordersHint: "Lệnh nháp cần xác nhận để hoàn tất xếp khay",
       pendingHint:
-        "Chỉ hiển thị BOX đã Post Receipt và chưa có lệnh xếp khay đang hoạt động",
+        "Chỉ hiển thị BOX đã ghi nhận nhập kho và chưa có lệnh xếp khay đang hoạt động",
       summaryAria: "Tổng hợp hàng chờ xếp khay",
       pendingBoxes: "BOX chờ xếp khay",
       componentSkus: "SKU linh kiện",

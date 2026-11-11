@@ -94,7 +94,7 @@ describe("OUT-01 recipient filtering across API pages", () => {
     expect(fetchOutboundDocuments).toHaveBeenCalledTimes(1);
   });
 
-  it("forwards search, status and sort for every page before exact filtering and pagination", async () => {
+  it("forwards search, status, dates and sort for every page before exact filtering and pagination", async () => {
     const rows = [
       record("6"),
       record("5", "Đại lý A1"),
@@ -111,6 +111,8 @@ describe("OUT-01 recipient filtering across API pages", () => {
       recipientName: "Đại lý A",
       search: "PX-",
       status: "DRAFT",
+      fromDate: "2026-11-01",
+      toDate: "2026-11-11",
       sortOrder: "desc",
       page: 2,
       per_page: 1,
@@ -131,6 +133,8 @@ describe("OUT-01 recipient filtering across API pages", () => {
       expect(fetchOutboundDocuments).toHaveBeenNthCalledWith(page, {
         search: "PX-",
         status: "DRAFT",
+        fromDate: "2026-11-01",
+        toDate: "2026-11-11",
         sortOrder: "desc",
         page,
         per_page: 100,

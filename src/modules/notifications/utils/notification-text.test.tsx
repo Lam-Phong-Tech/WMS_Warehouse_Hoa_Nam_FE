@@ -81,6 +81,38 @@ describe("notification content locale", () => {
     expect(status.body).toBe("Ca bảo hành chuyển từ RECEIVED sang CHECKING.");
   });
 
+  it("việt hóa Post Issue / Post Receipt trong thông báo hệ thống đã lưu", () => {
+    const t = (key: Parameters<typeof translate>[1]) => translate("vi", key);
+    const outbound = localizeNotification(item, "vi", t);
+    expect(outbound.body).toBe(
+      "Phiếu xuất PX-20261105-ABC đã ghi nhận xuất kho thành công; tồn kho đã được trừ.",
+    );
+    expect(outbound.body).not.toMatch(/Post Issue/);
+
+    const inbound = localizeNotification(
+      {
+        ...item,
+        event_key: "inbound.completed",
+        title: "Đã hoàn tất nhập kho",
+        body: "Phiếu nhập PN-TEST-01 đã Post Receipt thành công.",
+      },
+      "vi",
+      t,
+    );
+    expect(inbound.body).toBe(
+      "Phiếu nhập PN-TEST-01 đã ghi nhận nhập kho thành công.",
+    );
+    expect(inbound.body).not.toMatch(/Post Receipt/);
+
+    // Tin tự soạn không bị thay chữ.
+    const custom = localizeNotification(
+      { ...item, event_key: "custom.message" },
+      "vi",
+      t,
+    );
+    expect(custom.body).toBe(item.body);
+  });
+
   it("translates the same cached notification immediately when switching VI → EN → ZH", () => {
     useLanguageStore.setState({ language: "vi" });
     const { result } = renderHook(() => useNotificationText()(item));
@@ -133,7 +165,7 @@ describe("notification content locale", () => {
     ).toEqual({ title: item.title, body: item.body });
     expect(localizeNotification(item, "vi", t)).toEqual({
       title: item.title,
-      body: item.body,
+      body: "Phiếu xuất PX-20261105-ABC đã ghi nhận xuất kho thành công; tồn kho đã được trừ.",
     });
     expect(
       localizeNotification({ ...item, payload: null }, "en", t).body,
