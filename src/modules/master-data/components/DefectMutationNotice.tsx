@@ -192,7 +192,7 @@ export function DefectMutationNotice({
           </div>
         ) : null}
       </div>
-      {notice.kind === "success" && onDismiss ? (
+      {onDismiss ? (
         <button
           type="button"
           className="hn-defect-mutation-dismiss"

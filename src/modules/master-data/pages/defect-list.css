@@ -1055,8 +1055,13 @@
 }
 .hn-defect-mutation--form {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   gap: 6px 12px;
+}
+.hn-defect-mutation--form .hn-defect-mutation-dismiss {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: start;
 }
 .hn-defect-mutation--form .hn-defect-mutation-copy {
   display: contents;

@@ -3094,6 +3094,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       const result = await query.refetch();
       if (recoverySession.current !== session) return;
       if (result.isError || result.error) {
+        setNotice(null);
         setFormError(
           copy(
             "Không thể tải dữ liệu mới. Vui lòng thử lại; bản đang nhập vẫn được giữ nguyên.",
@@ -3106,15 +3107,18 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         (row) => row.defect_id === recordId,
       );
       if (current) openEdit(current);
-      else
+      else {
+        setNotice(null);
         setFormError(
           copy(
             "Hồ sơ không còn trong kết quả hiện tại. Đóng biểu mẫu và cập nhật danh sách để kiểm tra lại.",
             "This record is no longer in the current results. Close the form and refresh the list to check it.",
           ),
         );
+      }
     } catch {
       if (recoverySession.current !== session) return;
+      setNotice(null);
       setFormError(
         copy(
           "Không thể tải dữ liệu mới. Vui lòng thử lại.",
@@ -3223,7 +3227,6 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           ]),
         ),
       }));
-      toast.error(getMutationErrorMessage(error));
       const normalized = normalizeError(error);
       const transportCode =
         typeof error === "object" && error !== null && "code" in error
@@ -3240,20 +3243,27 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       const duplicate =
         Boolean(serverFieldErrors.defectCode) ||
         /DUPLICATE|ALREADY_EXISTS/i.test(normalized.code ?? "");
-      setNotice({
-        kind: unknown
-          ? "unknown"
-          : conflict
-            ? "conflict"
-            : duplicate
-              ? "duplicate"
-              : normalized.status === 422
-                ? "validation"
-                : "failed",
-        code: payload.defect_code,
-        editing: Boolean(editing),
-      });
-      setFormError(message ?? "");
+      // Lỗi đã nằm gọn dưới ô nhập thì không dựng thêm banner chung cùng câu.
+      if (Object.keys(serverFieldErrors).length > 0 && !message) {
+        setNotice(null);
+      } else {
+        setNotice({
+          kind: unknown
+            ? "unknown"
+            : conflict
+              ? "conflict"
+              : duplicate
+                ? "duplicate"
+                : normalized.status === 422
+                  ? "validation"
+                  : "failed",
+          code: payload.defect_code,
+          editing: Boolean(editing),
+          // Một nguồn lỗi duy nhất ở đầu form: toast trước đây đè lên khối này,
+          // còn formError lặp lại đúng câu đó thành khung thứ hai.
+          message: message ?? undefined,
+        });
+      }
     }
   };
 
@@ -3703,7 +3713,11 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 onRetry={() => defectFormRef.current?.requestSubmit()}
                 busy={isSaving || reloadingRecord || verificationCode !== null}
               />
-              {formError && <UiAlert tone="error">{formError}</UiAlert>}
+              {formError && !notice ? (
+                <UiAlert tone="error" onClose={() => setFormError("")}>
+                  {formError}
+                </UiAlert>
+              ) : null}
               <div className="hn-defect-fields">
                 <UiTextField
                   id="defect-code"

@@ -21,6 +21,7 @@ import {
   useMvpSkus,
   useSetMvpSkuPublished,
   useUpdateMvpAgency,
+  useUpdateMvpDefect,
 } from "@/modules/master-data/hooks/use-mvp-master";
 
 const { mutation } = vi.hoisted(() => ({
@@ -113,7 +114,7 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useCreateMvpAgency: mutation,
   useUpdateMvpAgency: vi.fn(mutation),
   useCreateMvpDefect: mutation,
-  useUpdateMvpDefect: mutation,
+  useUpdateMvpDefect: vi.fn(mutation),
 }));
 
 function CurrentSkuLocation() {
@@ -159,6 +160,9 @@ describe("API-backed MVP master screens", () => {
       (() => mutation()) as never,
     );
     vi.mocked(useUpdateMvpAgency).mockImplementation(
+      (() => mutation()) as never,
+    );
+    vi.mocked(useUpdateMvpDefect).mockImplementation(
       (() => mutation()) as never,
     );
   });
@@ -708,6 +712,45 @@ describe("API-backed MVP master screens", () => {
     fireEvent.click(filtersToggle);
     expect(overview).toBeVisible();
     expect(search).toHaveValue("motor");
+  });
+
+  it("lỗi lưu bệnh/lỗi chỉ hiện một khối có nút đóng, không toast trùng", async () => {
+    const toastError = vi.spyOn(toast, "error");
+    const message =
+      "Chưa có phiên bản bản ghi hợp lệ từ máy chủ. Vui lòng tải lại trước khi thao tác.";
+    const mutateAsync = vi.fn().mockRejectedValue(
+      new ApiEnvelopeError({
+        status: "error",
+        message,
+      }),
+    );
+    vi.mocked(useUpdateMvpDefect).mockReturnValue({
+      isPending: false,
+      mutateAsync,
+    } as never);
+
+    render(
+      <MemoryRouter>
+        <DefectMasterScreen />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByText("Không chạy motor"));
+    await screen.findByRole("dialog");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Lưu danh mục lỗi" }),
+    );
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    // Chỉ khối DefectMutationNotice, không thêm banner formError thứ hai.
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getAllByText(message)).toHaveLength(1);
+    expect(toastError).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Đóng thông báo" }));
+    await waitFor(() =>
+      expect(screen.queryByText(message)).not.toBeInTheDocument(),
+    );
+    toastError.mockRestore();
   });
 
   it("loads defect data and supports legacy add deep link", () => {
