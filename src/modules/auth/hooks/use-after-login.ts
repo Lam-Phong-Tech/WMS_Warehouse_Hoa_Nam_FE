@@ -35,6 +35,10 @@ export function useAfterLogin(): (data: AuthenticatedLogin) => void {
           description: tStatic("auth.login.replacedPreviousSessionBody"),
         });
       }
+      if (data.user.must_change_password) {
+        navigate(ROUTES.CHANGE_PASSWORD, { replace: true });
+        return;
+      }
       const from = (location.state as LoginLocationState | null)?.from;
       const redirectParam = new URLSearchParams(location.search).get(
         "redirect",

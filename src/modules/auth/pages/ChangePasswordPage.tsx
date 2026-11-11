@@ -18,6 +18,7 @@ import { useT } from "@/shared/i18n/useT";
 export function ChangePasswordPage() {
   const t = useT();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const changePassword = useChangePassword();
   const changePasswordSchema = useMemo(() => buildChangePasswordSchema(t), [t]);
   const { control, handleSubmit, setError } = useForm<ChangePasswordFormValues>(
@@ -50,6 +51,8 @@ export function ChangePasswordPage() {
     if (!errorMessage) return;
     if (/mật khẩu hiện tại/i.test(errorMessage)) {
       setError("currentPassword", { type: "server", message: errorMessage });
+    } else if (/mật khẩu mới không được trùng/i.test(errorMessage)) {
+      setError("newPassword", { type: "server", message: errorMessage });
     }
   }, [errorMessage, setError]);
 
@@ -63,18 +66,25 @@ export function ChangePasswordPage() {
       baselineScreen="login"
       showBaselineHeading
       title={t("auth.changePassword.title")}
-      subtitle={null}
+      subtitle={
+        user?.password_expired
+          ? t("auth.changePassword.expiredSubtitle")
+          : t("auth.changePassword.subtitle")
+      }
       loadingText={
         changePassword.isPending ? t("auth.changePassword.updating") : null
       }
     >
-      {errorMessage && !/mật khẩu hiện tại/i.test(errorMessage) && (
-        <Box sx={{ marginBottom: "14px" }}>
-          <UiAlert tone="error" title={t("auth.changePassword.errorTitle")}>
-            {errorMessage}
-          </UiAlert>
-        </Box>
-      )}
+      {errorMessage &&
+        !/mật khẩu hiện tại|mật khẩu mới không được trùng/i.test(
+          errorMessage,
+        ) && (
+          <Box sx={{ marginBottom: "14px" }}>
+            <UiAlert tone="error" title={t("auth.changePassword.errorTitle")}>
+              {errorMessage}
+            </UiAlert>
+          </Box>
+        )}
 
       <form onSubmit={onSubmit} noValidate>
         <Box

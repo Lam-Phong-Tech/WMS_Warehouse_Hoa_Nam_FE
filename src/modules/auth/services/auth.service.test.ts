@@ -354,4 +354,29 @@ describe("authService contract — BE m1 /api/v1/auth/*", () => {
     });
     expect(challenge.challenge_id).toBe("ch-1");
   });
+
+  it("giữ nguyên cờ hết hạn mật khẩu 90 ngày (must_change_password, password_expired, password_expires_at)", async () => {
+    postMock.mockResolvedValueOnce({
+      access_token: "<expired-pwd-token>",
+      token_type: "bearer",
+      expires_in: 3600,
+      user: {
+        ...USER,
+        must_change_password: true,
+        password_expired: true,
+        password_expires_at: "2026-11-11T00:00:00+00:00",
+      },
+    });
+
+    const result = await authService.login({
+      email: "qa@example.com",
+      password: "<password>",
+    });
+
+    expect(result.kind).toBe("authenticated");
+    if (result.kind !== "authenticated") throw new Error("unreachable");
+    expect(result.user.must_change_password).toBe(true);
+    expect(result.user.password_expired).toBe(true);
+    expect(result.user.password_expires_at).toBe("2026-11-11T00:00:00+00:00");
+  });
 });

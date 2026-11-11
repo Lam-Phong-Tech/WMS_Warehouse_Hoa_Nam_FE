@@ -5114,6 +5114,7 @@ export const MESSAGES_ZH: MessageTree = {
     "changePassword": {
       "title": "更改密码",
       "subtitle": "在继续使用系统之前设置新密码。",
+      "expiredSubtitle": "您的密码已满 90 天有效期，请重新设置新密码以继续使用系统。",
       "updating": "正在更新密码...",
       "errorTitle": "无法更改密码",
       "failed": "密码更改失败",
@@ -5958,6 +5959,10 @@ export const MESSAGES_ZH: MessageTree = {
     "burst": {
       "title": "{count} 条新通知",
       "description": "打开通知铃铛查看详情。"
+    },
+    "accessDenied": {
+      "title": "内容访问权限已撤销",
+      "body": "您已无权查看此通知内容。"
     },
     "page": {
       "subtitle": "与您相关的所有系统通知 - 入站/出库、保修、帐户、安全。",

@@ -54,6 +54,10 @@ export interface MeResponse {
   code: string;
   status?: string;
   version?: number;
+  must_change_password?: boolean;
+  password_expired?: boolean;
+  password_expires_at?: string | null;
+  password_changed_at?: string | null;
   roles: MeRoleAssignment[];
   inactive_roles?: MeRoleAssignment[];
   permissions: string[];

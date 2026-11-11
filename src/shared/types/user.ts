@@ -25,6 +25,10 @@ export interface User {
   } | null;
   last_login_at?: string | null;
   status?: string;
+  must_change_password?: boolean;
+  password_expired?: boolean;
+  password_expires_at?: string | null;
+  password_changed_at?: string | null;
   roles?: UserRoleAssignment[];
   inactive_roles?: UserRoleAssignment[];
   permissions?: string[];

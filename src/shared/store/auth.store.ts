@@ -87,7 +87,7 @@ export const useAuthStore = create<AuthState>()(
           currentContext: contexts[0] ?? null,
           isAuthenticated: true,
           bootstrapError: null,
-          requiresPasswordChange: false,
+          requiresPasswordChange: Boolean(user?.must_change_password),
           profile: null,
           permissionCodes: [],
           isSuperAdmin: false,

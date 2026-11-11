@@ -525,6 +525,13 @@ export function ProfilePage() {
                 <div>
                   <h2>{t("auth.personal.password")}</h2>
                   <p aria-label={t("auth.personal.password")}>••••••••••••</p>
+                  {me?.password_expires_at ? (
+                    <p className="hn-personal-muted">
+                      {t("auth.personal.passwordExpiresAt", {
+                        date: formatDate(me.password_expires_at) || me.password_expires_at,
+                      })}
+                    </p>
+                  ) : null}
                 </div>
                 <ActionButton
                   kind="edit"

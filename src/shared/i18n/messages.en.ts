@@ -4981,6 +4981,8 @@ export const MESSAGES_EN: MessageTree = {
     changePassword: {
       title: "Change password",
       subtitle: "Set a new password before continuing to use the system.",
+      expiredSubtitle:
+        "Your password has reached the 90-day rotation limit. Please set a new password to continue using the system.",
       updating: "Updating password...",
       errorTitle: "Unable to change password",
       failed: "Password change failed",
@@ -5933,6 +5935,10 @@ export const MESSAGES_EN: MessageTree = {
     burst: {
       title: "{count} new notifications",
       description: "Open the notification bell to review them.",
+    },
+    accessDenied: {
+      title: "Content access revoked",
+      body: "You no longer have permission to view this notification.",
     },
     page: {
       subtitle:

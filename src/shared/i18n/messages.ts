@@ -5017,6 +5017,8 @@ export const MESSAGES_VI = {
     changePassword: {
       title: "Đổi mật khẩu",
       subtitle: "Thiết lập mật khẩu mới trước khi tiếp tục sử dụng hệ thống.",
+      expiredSubtitle:
+        "Mật khẩu của bạn đã quá hạn 90 ngày. Vui lòng đặt lại mật khẩu mới để tiếp tục sử dụng hệ thống.",
       updating: "Đang cập nhật mật khẩu...",
       errorTitle: "Không thể đổi mật khẩu",
       failed: "Đổi mật khẩu thất bại",
@@ -5966,6 +5968,10 @@ export const MESSAGES_VI = {
     burst: {
       title: "{count} thông báo mới",
       description: "Mở chuông thông báo để xem chi tiết.",
+    },
+    accessDenied: {
+      title: "Không còn quyền xem nội dung",
+      body: "Bạn không còn quyền xem nội dung thông báo này.",
     },
     page: {
       subtitle:
