@@ -105,6 +105,9 @@
 .hn-iam-user-table {
   width: 100%;
   min-width: 0;
+  /* Tách khung bảng khỏi bộ lọc phía trên; panel cha vẫn giữ một border ngoài. */
+  margin-top: 8px;
+  border-top: 1px solid var(--ops-line);
 }
 .hn-iam-user-table table {
   width: 100%;
