@@ -226,6 +226,7 @@ export function IamEffectivePermissionsScreen({
         <UiAutocomplete
           aria-label={t("iam.effectiveUi.pickUser")}
           placeholder={t("iam.effectiveUi.pickUser")}
+          filterMode="server"
           value={selectedUser?.user_id ?? null}
           onChange={(value) =>
             setSelectedUser(
@@ -240,7 +241,9 @@ export function IamEffectivePermissionsScreen({
           }
           options={userOptions.map((user) => ({
             value: user.user_id,
-            label: `${user.display_name} · ${user.username || user.email || ""}`,
+            // Tên + email là hai thứ người dùng dùng để tìm; username nội bộ
+            // thường là UUID nên chỉ hiện khi tài khoản chưa có email.
+            label: `${user.display_name} · ${user.email || user.username || ""}`,
           }))}
         />
         {usersQuery.isError ? (

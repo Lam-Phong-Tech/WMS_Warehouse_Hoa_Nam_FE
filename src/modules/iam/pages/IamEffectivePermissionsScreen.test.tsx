@@ -83,6 +83,34 @@ async function pickUser() {
 }
 afterEach(cleanupTestState);
 describe("IamEffectivePermissionsScreen", () => {
+  it("hiện email và tìm người dùng bằng email qua máy chủ", async () => {
+    setup();
+    renderWithProviders(<IamEffectivePermissionsScreen />);
+    const picker = screen.getByRole("combobox", {
+      name: "Chọn hoặc tìm người dùng",
+    });
+    fireEvent.mouseDown(picker);
+    expect(
+      await screen.findByRole("option", {
+        name: "Nguyễn Minh · minh@example.com",
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(picker, { target: { value: "minh@example.com" } });
+    await waitFor(() => {
+      expect(mocks.users).toHaveBeenLastCalledWith(
+        expect.objectContaining({ keyword: "minh@example.com" }),
+      );
+    });
+    // Server đã lọc; client không được lọc lại bằng nhãn (email không nằm
+    // trong username) làm mất kết quả.
+    expect(
+      await screen.findByRole("option", {
+        name: "Nguyễn Minh · minh@example.com",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("refreshes the selected user from query data and retains that refreshed selection outside search results", async () => {
     setup();
     const onViewUser = vi.fn();
