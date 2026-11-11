@@ -906,14 +906,6 @@ export default function PackingLabelPrintReport() {
             </option>
           </select>
         </div>
-        <div className="hn-pkg-label__scope">
-          <span>
-            {t("packingLabelReport.periodCaption", {
-              from: period.range[0].format("DD/MM/YYYY"),
-              to: period.range[1].format("DD/MM/YYYY"),
-            })}
-          </span>
-        </div>
         {report.capped && (
           <UiAlert tone="warning">
             {t("packingLabelReport.historyCapped")}

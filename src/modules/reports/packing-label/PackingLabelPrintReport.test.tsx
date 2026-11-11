@@ -303,8 +303,8 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
       screen.queryByRole("combobox", { name: "Print attempt type" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText(/Label creation period:.*Vietnam time/),
-    ).toBeInTheDocument();
+      screen.queryByText(/Label creation period:.*Vietnam time/),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Refresh" }),
     ).not.toBeInTheDocument();
