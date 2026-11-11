@@ -78,7 +78,83 @@ describe("notification content locale", () => {
       t,
     );
     expect(status.title).toBe("Ca bảo hành đổi trạng thái");
-    expect(status.body).toBe("Ca bảo hành chuyển từ RECEIVED sang CHECKING.");
+    expect(status.body).toBe(
+      "Ca bảo hành chuyển từ Đã tiếp nhận sang Đang kiểm tra.",
+    );
+  });
+
+  it("việt hóa Post/reversal/movement và mã trạng thái còn sót trong thông báo hệ thống", () => {
+    const t = (
+      key: Parameters<typeof translate>[1],
+      vars?: Parameters<typeof translate>[2],
+    ) => translate("vi", key, vars);
+
+    const posted = localizeNotification(
+      {
+        ...item,
+        event_key: "reversal.posted",
+        title: "Đã Post điều chỉnh tồn kho",
+        body: "Reversal REV-20261112044401-KBGXSA đã Post; movement điều chỉnh đã ghi.",
+        payload: { doc_no: "REV-20261112044401-KBGXSA" },
+      },
+      "vi",
+      t,
+    );
+    expect(posted.title).toBe("Đã ghi nhận điều chỉnh tồn kho");
+    expect(posted.body).toBe(
+      "Phiếu điều chỉnh REV-20261112044401-KBGXSA đã ghi nhận; biến động điều chỉnh đã ghi.",
+    );
+
+    const created = localizeNotification(
+      {
+        ...item,
+        event_key: "reversal.created",
+        title: "Đã tạo phiếu điều chỉnh (reversal)",
+        body: "Reversal REV-20261112044401-KBGXSA đang chờ xác nhận hàng vật lý quay lại kho.",
+        payload: { doc_no: "REV-20261112044401-KBGXSA" },
+      },
+      "vi",
+      t,
+    );
+    expect(created.title).toBe("Đã tạo phiếu điều chỉnh");
+    expect(created.body).toBe(
+      "Phiếu điều chỉnh REV-20261112044401-KBGXSA đang chờ xác nhận hàng vật lý quay lại kho.",
+    );
+
+    // Bản BE cũ không bọc "(reversal)" mà nối thẳng vào tiêu đề.
+    expect(
+      localizeNotification(
+        {
+          ...item,
+          event_key: "reversal.created",
+          title: "Đã tạo phiếu điều chỉnh reversal",
+          body: "Reversal REV-2 đang chờ xác nhận.",
+          payload: { doc_no: "REV-2" },
+        },
+        "vi",
+        t,
+      ).title,
+    ).toBe("Đã tạo phiếu điều chỉnh");
+
+    for (const [from, to, expected] of [
+      ["REPAIRING", "COMPLETED", "Đang sửa chữa sang Hoàn tất"],
+      ["CHECKING", "REPAIRING", "Đang kiểm tra sang Đang sửa chữa"],
+      ["RECEIVED", "CHECKING", "Đã tiếp nhận sang Đang kiểm tra"],
+    ] as const) {
+      const status = localizeNotification(
+        {
+          ...item,
+          event_key: "warranty.status_changed",
+          title: "Ca bảo hành đổi trạng thái",
+          body: `Ca bảo hành chuyển từ ${from} sang ${to}.`,
+          payload: null,
+        },
+        "vi",
+        t,
+      );
+      expect(status.body).toBe(`Ca bảo hành chuyển từ ${expected}.`);
+      expect(status.body).not.toMatch(/\b[A-Z]{3,}\b/);
+    }
   });
 
   it("việt hóa Post Issue / Post Receipt trong thông báo hệ thống đã lưu", () => {

@@ -60,14 +60,47 @@ export function localizeNotification(
    * cho hai event bảo hành; nội dung tự soạn khác không bị chạm.
    */
   if (language === "vi") {
-    // Thông báo hệ thống do BE sinh từng lưu lẫn thuật ngữ "Post Issue" /
-    // "Post Receipt". Người dùng Việt đọc chuông phải thấy hành động nghiệp vụ,
-    // không phải tên endpoint. Chỉ đổi event hệ thống, không chạm tin tự soạn.
+    // Thông báo hệ thống do BE sinh từng lưu lẫn thuật ngữ tiếng Anh: tên
+    // endpoint ("Post Issue" / "Post Receipt"), nghiệp vụ ("Reversal",
+    // "movement") và mã trạng thái bảo hành ("REPAIRING", "COMPLETED"…).
+    // Người dùng Việt đọc chuông phải thấy hành động/trạng thái nghiệp vụ,
+    // không phải mã kỹ thuật. Chỉ đổi event hệ thống, không chạm tin tự soạn.
+    const statusLabels = new Map(
+      Object.entries(states).map(([code, key]) => [
+        code,
+        t(`notifications.content.states.${key}`),
+      ]),
+    );
+    const statusPattern = new RegExp(
+      `\\b(${[...statusLabels.keys()]
+        .sort((left, right) => right.length - left.length)
+        .join("|")})\\b`,
+      "g",
+    );
     const operationalTerms = (value: string) =>
       systemEvent
         ? value
+            // Bản BE cũ ghi "(reversal)" ngay sau tên phiếu; bỏ hẳn thay vì
+            // để lại một từ tiếng Anh trong tiêu đề tiếng Việt. Bản còn cũ
+            // hơn nối thẳng "reversal" (không ngoặc) nên gộp luôn trường hợp
+            // đó để không thành "phiếu điều chỉnh phiếu điều chỉnh".
+            .replace(/ \(reversal\)/gi, "")
+            .replace(/\b(phiếu điều chỉnh)\s+reversal\b/gi, "$1")
             .replace(/\bPost Issue\b/g, "ghi nhận xuất kho")
             .replace(/\bPost Receipt\b/g, "ghi nhận nhập kho")
+            .replace(/\bPost\b/g, "ghi nhận")
+            .replace(
+              /\breversal\b/gi,
+              (_match: string, offset: number, source: string) => {
+                // "Reversal" đứng đầu câu vẫn phải viết hoa.
+                const before = source.slice(0, offset).trimEnd();
+                return !before || /[.!?]$/.test(before)
+                  ? "Phiếu điều chỉnh"
+                  : "phiếu điều chỉnh";
+              },
+            )
+            .replace(/\bmovement\b/gi, "biến động")
+            .replace(statusPattern, (code) => statusLabels.get(code) ?? code)
         : value;
     const title = operationalTerms(item.title);
     const body = operationalTerms(item.body);
