@@ -276,12 +276,21 @@
 :is(.hn-reversal-screen, .hn-reversal-dialog) table tbody tr:hover {
   background: color-mix(in srgb, var(--rev-pale) 55%, var(--rev-surface));
 }
+/* Nút mũi tên trong hàng đang hover phải ăn cùng tông với hàng, không tách
+   riêng thành một mảng màu khác (yêu cầu người dùng); hover trên nền trắng
+   (không hover hàng) giữ nguyên var(--ops-pale) theo quy cách nút mũi tên. */
+:is(.hn-reversal-screen, .hn-reversal-dialog) table tbody tr:hover .hn-row-action:hover {
+  background: color-mix(in srgb, var(--rev-pale) 55%, var(--rev-surface));
+}
 .hn-reversal-screen table :is(td, th):last-child {
   position: sticky;
   right: 0;
   z-index: 1;
   background: var(--rev-surface);
   box-shadow: -4px 0 8px color-mix(in srgb, var(--rev-ink) 5%, transparent);
+}
+.hn-reversal-screen table tbody tr:hover > :is(td, th):last-child {
+  background: color-mix(in srgb, var(--rev-pale) 55%, var(--rev-surface));
 }
 .hn-reversal-screen table th:last-child {
   background: var(--ops-table-header);

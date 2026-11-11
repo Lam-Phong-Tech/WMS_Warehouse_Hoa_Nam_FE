@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import {
+  Box,
   UiDrawer,
+  UiFormField,
   UiPagination,
   UiStatusBadge,
-  UiTextField,
+  UiVuexyDateField,
 } from "@/shared/ui";
 import { ActionIconButton } from "@/shared/components/actions";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
+import { businessToday } from "@/shared/utils/date-time";
 import { useT } from "@/shared/i18n/useT";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { formatDateTime } from "@/shared/utils/format-date";
@@ -40,6 +44,7 @@ export function IamRoleHistoryDrawer({
 }) {
   const t = useT();
   const dialog = useDialogExit(onClose);
+  const today = businessToday();
   const [page, setPage] = useState(1);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -90,26 +95,72 @@ export function IamRoleHistoryDrawer({
         ) : (
           <>
             <div className="hn-iam-role-history-filters">
-              <UiTextField
+              <UiFormField
                 label={t("shared.datePicker.fromDate")}
-                type="date"
-                value={from}
-                onChange={(event) => {
-                  setFrom(event.target.value);
-                  setPage(1);
-                }}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-              <UiTextField
+                htmlFor="iam-role-history-from"
+              >
+                <Box
+                  className="hn-iam-role-history-date"
+                  role="group"
+                  aria-label={t("shared.datePicker.fromDate")}
+                >
+                  <UiVuexyDateField
+                    id="iam-role-history-from"
+                    field="iam-role-history-from"
+                    aria-label={t("shared.datePicker.fromDate")}
+                    value={from ? dayjs(from) : null}
+                    maxDate={today}
+                    onChange={(next) => {
+                      setFrom(next?.format("YYYY-MM-DD") ?? "");
+                      setPage(1);
+                    }}
+                  />
+                  {from ? (
+                    <ActionIconButton
+                      kind="close"
+                      className="hn-iam-role-history-date-clear"
+                      label={`${t("shared.form.autocompleteClear")}: ${t("shared.datePicker.fromDate")}`}
+                      onClick={() => {
+                        setFrom("");
+                        setPage(1);
+                      }}
+                    />
+                  ) : null}
+                </Box>
+              </UiFormField>
+              <UiFormField
                 label={t("shared.datePicker.toDate")}
-                type="date"
-                value={to}
-                onChange={(event) => {
-                  setTo(event.target.value);
-                  setPage(1);
-                }}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
+                htmlFor="iam-role-history-to"
+              >
+                <Box
+                  className="hn-iam-role-history-date"
+                  role="group"
+                  aria-label={t("shared.datePicker.toDate")}
+                >
+                  <UiVuexyDateField
+                    id="iam-role-history-to"
+                    field="iam-role-history-to"
+                    aria-label={t("shared.datePicker.toDate")}
+                    value={to ? dayjs(to) : null}
+                    maxDate={today}
+                    onChange={(next) => {
+                      setTo(next?.format("YYYY-MM-DD") ?? "");
+                      setPage(1);
+                    }}
+                  />
+                  {to ? (
+                    <ActionIconButton
+                      kind="close"
+                      className="hn-iam-role-history-date-clear"
+                      label={`${t("shared.form.autocompleteClear")}: ${t("shared.datePicker.toDate")}`}
+                      onClick={() => {
+                        setTo("");
+                        setPage(1);
+                      }}
+                    />
+                  ) : null}
+                </Box>
+              </UiFormField>
             </div>
             {query.isError ? (
               <ApiErrorAlert

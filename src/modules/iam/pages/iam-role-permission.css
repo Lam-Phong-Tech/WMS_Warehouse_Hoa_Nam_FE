@@ -519,6 +519,30 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
+.hn-iam-role-history-date {
+  position: relative;
+  min-width: 0;
+}
+.hn-iam-role-history-date:has(.hn-iam-role-history-date-clear)
+  [data-date-value] {
+  padding-right: 24px;
+}
+.hn-iam-role-history-date-clear {
+  position: absolute;
+  top: 50%;
+  right: 32px;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ops-muted);
+  font-size: 12px;
+}
+.hn-iam-role-history-date-clear:hover {
+  color: var(--ops-heading);
+  background: var(--ops-pale);
+}
 .hn-iam-role-metadata-actions {
   display: flex;
   flex-wrap: wrap;

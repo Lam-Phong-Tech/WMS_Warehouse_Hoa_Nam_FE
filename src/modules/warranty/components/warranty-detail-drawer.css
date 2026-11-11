@@ -58,6 +58,54 @@
   overscroll-behavior-x: contain;
 }
 
+/* Ô ngày dùng chung Vuexy + nút X, khớp ô "Ngày chứng từ" / "Ngày mua" ở các
+   drawer khác thay vì input date native. */
+.hn-war-detail-date {
+  position: relative;
+  min-width: 0;
+}
+
+.hn-war-detail-date .hn-vuexy-date-field {
+  height: var(--ops-control-height);
+  border-color: var(--war-dialog-border);
+  border-radius: var(--ops-radius-control);
+  background: var(--war-dialog-surface);
+  color: var(--war-dialog-ink);
+}
+
+.hn-war-detail-date .hn-vuexy-date-field:hover:not(:disabled),
+.hn-war-detail-date .hn-vuexy-date-field[aria-expanded="true"],
+.hn-war-detail-date .hn-vuexy-date-field:focus-visible {
+  border-color: var(--war-dialog-primary);
+  box-shadow: 0 0 0 3px var(--ops-focus-ring);
+}
+
+.hn-war-detail-date[aria-invalid="true"] .hn-vuexy-date-field {
+  border-color: var(--wms-error);
+}
+
+.hn-war-detail-date:has(.hn-war-detail-date-clear) [data-date-value] {
+  padding-right: 24px;
+}
+
+.hn-war-detail-date-clear {
+  position: absolute;
+  top: 50%;
+  right: 32px;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--war-dialog-muted);
+  font-size: 12px;
+}
+
+.hn-war-detail-date-clear:hover {
+  color: var(--war-dialog-ink);
+  background: var(--war-dialog-soft);
+}
+
 @media (max-width: 599px) {
   .hn-war-detail-header {
     padding: 16px 56px 14px 16px;

@@ -1814,7 +1814,7 @@ export function InboundScanModal({
               {t("inbound.cancel.back")}
             </ActionButton>
             <ActionButton
-              kind="confirm"
+              kind="deactivate"
               disabled={!cancelReason.trim() || cancelMutation.isPending}
               onClick={() => void handleCancel()}
             >

@@ -34,12 +34,24 @@ export const mvpMasterKeys = {
 
 export function useMvpSkus(
   params: MasterListParams,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; live?: boolean },
 ) {
+  const { live = false, ...queryOptions } = options ?? {};
   return useQuery({
     queryKey: mvpMasterKeys.skus(params),
     queryFn: () => getMvpSkus(params),
-    ...options,
+    // Danh sách SKU trên MST-01 là dữ liệu dùng chung giữa nhiều phiên:
+    // không giữ cache master 10 phút, nếu không thay đổi từ phiên khác chỉ
+    // hiện sau khi F5. Chỉ bật live-refresh cho màn danh sách, không bật cho
+    // các modal chọn SKU dùng cùng hook.
+    ...(live
+      ? {
+          staleTime: 15 * 1000,
+          refetchOnWindowFocus: true,
+          refetchInterval: 30 * 1000,
+        }
+      : {}),
+    ...queryOptions,
   });
 }
 

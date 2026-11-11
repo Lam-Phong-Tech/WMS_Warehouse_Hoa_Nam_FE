@@ -1,7 +1,15 @@
 import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-value";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { UiIcon, UiPagination, UiSelect, UiTextField } from "@/shared/ui";
+import type { Dayjs } from "dayjs";
+import {
+  UiIcon,
+  UiPagination,
+  UiSelect,
+  UiTextField,
+  UiVuexyDateField,
+} from "@/shared/ui";
+import { businessToday } from "@/shared/utils/date-time";
 import { ActionButton } from "@/shared/components/actions";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
@@ -48,6 +56,7 @@ const SORT_ACCESSORS = {
     row.supplier?.displayName ?? row.supplier?.name ?? "",
   scanned: (row: InboundDocument) => row.scanned,
   status: (row: InboundDocument) => row.status,
+  createdAt: (row: InboundDocument) => row.createdAt ?? "",
 };
 
 function displayValue(value?: string) {
@@ -65,6 +74,8 @@ function InboundListScreen() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | undefined>();
   const [pendingInfo, setPendingInfo] = useState<boolean | undefined>();
+  const [createdFrom, setCreatedFrom] = useState<Dayjs | null>(null);
+  const [createdTo, setCreatedTo] = useState<Dayjs | null>(null);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
@@ -78,6 +89,8 @@ function InboundListScreen() {
   const query = useInboundDocuments({
     search: search || undefined,
     status,
+    fromDate: createdFrom?.format("YYYY-MM-DD"),
+    toDate: createdTo?.format("YYYY-MM-DD"),
     page,
     per_page: perPage,
     pendingProductInfo: pendingInfo,
@@ -93,7 +106,12 @@ function InboundListScreen() {
   );
   const loading = query.isLoading;
   const hasFilters = Boolean(
-    searchInput || status || pendingInfo !== undefined || sortOrder !== "desc",
+    searchInput ||
+      status ||
+      pendingInfo !== undefined ||
+      createdFrom ||
+      createdTo ||
+      sortOrder !== "desc",
   );
 
   useEffect(() => {
@@ -149,6 +167,8 @@ function InboundListScreen() {
     setSearch("");
     setStatus(undefined);
     setPendingInfo(undefined);
+    setCreatedFrom(null);
+    setCreatedTo(null);
     setSortOrder("desc");
     setPage(1);
   };
@@ -371,6 +391,43 @@ function InboundListScreen() {
               setPage(1);
             }}
           />
+          <div className="hn-inbound-date-filter">
+            <span className="hn-inbound-date-label">
+              {t("inbound.list.dateFrom")}
+            </span>
+            <UiVuexyDateField
+              id="hn-inbound-created-from"
+              field="inbound-created-from"
+              aria-label={t("inbound.list.dateFromAria")}
+              value={createdFrom}
+              maxDate={createdTo ?? businessToday()}
+              onChange={(next) => {
+                setCreatedFrom(next);
+                if (next && createdTo && next.isAfter(createdTo, "day"))
+                  setCreatedTo(next);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="hn-inbound-date-filter">
+            <span className="hn-inbound-date-label">
+              {t("inbound.list.dateTo")}
+            </span>
+            <UiVuexyDateField
+              id="hn-inbound-created-to"
+              field="inbound-created-to"
+              aria-label={t("inbound.list.dateToAria")}
+              value={createdTo}
+              minDate={createdFrom}
+              maxDate={businessToday()}
+              onChange={(next) => {
+                setCreatedTo(next);
+                if (next && createdFrom && next.isBefore(createdFrom, "day"))
+                  setCreatedFrom(next);
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
       </section>
       <section
@@ -421,9 +478,9 @@ function InboundListScreen() {
                   "hn-inbound-desktop hn-inbound-col-progress",
                 )}
                 {sortHeader(
-                  tUi("dashboard.composition.colStatus"),
-                  "status",
-                  "hn-inbound-col-status",
+                  t("inbound.list.colCreated"),
+                  "createdAt",
+                  "hn-inbound-col-created-date",
                 )}
                 <th className="hn-inbound-col-created">
                   {t("reverse.detail.fieldCreatedBy")}
@@ -451,6 +508,9 @@ function InboundListScreen() {
                     >
                       {displayValue(row.code)}
                     </button>
+                    <div className="hn-inbound-code-status">
+                      {statusBadge(row)}
+                    </div>
                   </td>
                   <td className="hn-inbound-supplier">
                     <span
@@ -468,12 +528,13 @@ function InboundListScreen() {
                   <td className="hn-inbound-desktop hn-inbound-progress-cell">
                     {progress(row)}
                   </td>
-                  <td className="hn-inbound-status-cell">{statusBadge(row)}</td>
-                  <td className="hn-inbound-created-cell">
-                    <span>{displayValue(row.createdBy)}</span>
+                  <td className="hn-inbound-created-date-cell">
                     <time dateTime={row.createdAt || undefined}>
                       {formatDateTime(row.createdAt)}
                     </time>
+                  </td>
+                  <td className="hn-inbound-created-cell">
+                    <span>{displayValue(row.createdBy)}</span>
                   </td>
                   <td className="hn-inbound-actions-cell">{rowActions(row)}</td>
                 </tr>

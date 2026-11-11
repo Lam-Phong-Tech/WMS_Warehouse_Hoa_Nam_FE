@@ -7,6 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import type { ComponentProps } from "react";
+import type { Dayjs } from "dayjs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DashboardSnapshot } from "./DashboardSnapshot";
 import { dashboardNow } from "./overview-data";
@@ -59,12 +60,33 @@ const baseProps = {
   forbidden: false,
   onRetry: vi.fn(),
   onNavigate: vi.fn(),
+  onLogout: vi.fn(),
 };
 
 function renderSnapshot(
   overrides: Partial<ComponentProps<typeof DashboardSnapshot>> = {},
 ) {
   return render(<DashboardSnapshot {...baseProps} {...overrides} />);
+}
+
+async function pickSnapshotDate(
+  field: "Từ ngày" | "Đến ngày",
+  panelMonth: Dayjs,
+  target: Dayjs,
+) {
+  fireEvent.click(screen.getByRole("button", { name: field }));
+  const panel = await screen.findByRole("dialog", { name: field });
+  const monthsBack = panelMonth
+    .startOf("month")
+    .diff(target.startOf("month"), "month");
+  for (let index = 0; index < monthsBack; index += 1) {
+    fireEvent.click(within(panel).getByRole("button", { name: "Tháng trước" }));
+  }
+  fireEvent.click(
+    within(panel).getByRole("button", {
+      name: target.format("DD/MM/YYYY"),
+    }),
+  );
 }
 
 afterEach(() => {
@@ -189,18 +211,21 @@ describe("DashboardSnapshot MAP-01 parity", () => {
     ).toBeDisabled();
   });
 
-  it("chặn custom range vượt quá 90 ngày và cho phép đúng 90 ngày", () => {
+  it("chặn custom range vượt quá 90 ngày và cho phép đúng 90 ngày", async () => {
     const { container } = renderSnapshot();
 
     fireEvent.click(screen.getByRole("button", { name: /7 ngày gần nhất/i }));
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Tùy chỉnh" }));
 
-    const fromInput = screen.getByLabelText("Từ ngày");
-    const apply = screen.getByRole("button", { name: "Áp dụng" });
+    const fromField = screen.getByRole("button", { name: "Từ ngày" });
+    expect(fromField).toHaveAttribute("data-date-field", "snapshot-date-from");
+    expect(
+      container.querySelector('.snapshot-date-fields input[type="date"]'),
+    ).toBeNull();
 
-    fireEvent.change(fromInput, {
-      target: { value: now.subtract(90, "day").format("YYYY-MM-DD") },
-    });
+    const apply = screen.getByRole("button", { name: "Áp dụng" });
+    const tooLong = now.subtract(90, "day");
+    await pickSnapshotDate("Từ ngày", now.subtract(6, "day"), tooLong);
 
     expect(
       screen.getByText("Khoảng thời gian tối đa 90 ngày."),
@@ -210,9 +235,7 @@ describe("DashboardSnapshot MAP-01 parity", () => {
       container.querySelector(".snapshot-calendar .is-invalid-range"),
     ).not.toBeNull();
 
-    fireEvent.change(fromInput, {
-      target: { value: now.subtract(89, "day").format("YYYY-MM-DD") },
-    });
+    await pickSnapshotDate("Từ ngày", tooLong, now.subtract(89, "day"));
 
     expect(
       screen.queryByText("Khoảng thời gian tối đa 90 ngày."),

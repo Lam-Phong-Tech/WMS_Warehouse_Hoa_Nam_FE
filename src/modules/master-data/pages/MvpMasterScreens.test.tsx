@@ -6,7 +6,7 @@ import {
   waitForElementToBeRemoved,
   within,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Link, useLocation } from "react-router-dom";
 import {
   AgencyMasterScreen,
@@ -15,7 +15,7 @@ import {
 } from "@/modules/master-data/pages/MvpMasterScreens";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
-import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
+import { useMvpSkus, useSetMvpSkuPublished } from "@/modules/master-data/hooks/use-mvp-master";
 
 const { mutation } = vi.hoisted(() => ({
   mutation: () => ({
@@ -102,7 +102,7 @@ vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useMvpSkuHasStock: () => ({ data: false, isLoading: false }),
   useCreateMvpSku: mutation,
   useUpdateMvpSku: mutation,
-  useSetMvpSkuPublished: mutation,
+  useSetMvpSkuPublished: vi.fn(mutation),
   useCreateMvpAgency: mutation,
   useUpdateMvpAgency: mutation,
   useCreateMvpDefect: mutation,
@@ -113,10 +113,44 @@ function CurrentSkuLocation() {
   return <output data-testid="sku-location">{useLocation().search}</output>;
 }
 
+const DEFAULT_SKU_ROW = {
+  sku_id: "sku-1",
+  sku_code: "DCH-DRILL-DJZ10A-220V-V1",
+  sku_name: "Máy khoan Dongcheng DJZ10A 220V",
+  sku_type: "PRODUCT",
+  brand_id: "brand-1",
+  category_id: "cat-1",
+  unit: "cái",
+  is_serial_tracked: true,
+  status: "ACTIVE",
+  min_stock: 2,
+  max_stock: 10,
+  published_to_app: false,
+  version: 3,
+};
+
+function defaultSkusResult() {
+  return {
+    data: { data: [DEFAULT_SKU_ROW], meta: {} },
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  };
+}
+
 describe("API-backed MVP master screens", () => {
   beforeEach(() => {
     useAuthStore.setState({ isSuperAdmin: true, permissionCodes: [] });
     window.sessionStorage.removeItem("hn-sku-overview-open");
+  });
+
+  afterEach(() => {
+    vi.mocked(useMvpSkus).mockImplementation(
+      () => defaultSkusResult() as never,
+    );
+    vi.mocked(useSetMvpSkuPublished).mockImplementation(
+      (() => mutation()) as never,
+    );
   });
 
   it("opens the agency editor from anywhere on an editable row", async () => {
@@ -492,6 +526,67 @@ describe("API-backed MVP master screens", () => {
         within(drawer).getByText("Ứng dụng phân vùng").parentElement,
       ).toHaveTextContent("Đang hiển thị"),
     );
+  });
+
+  it("tự tải lại danh sách và tự ẩn banner khi publish gặp 412", async () => {
+    const row = { ...DEFAULT_SKU_ROW };
+    const refetch = vi.fn().mockResolvedValue({
+      data: { data: [{ ...row, version: 4 }], meta: {} },
+      isError: false,
+    });
+    vi.mocked(useMvpSkus).mockReturnValue({
+      data: { data: [row], meta: {} },
+      isLoading: false,
+      error: null,
+      refetch,
+    } as never);
+    vi.mocked(useSetMvpSkuPublished).mockReturnValue({
+      isPending: false,
+      mutateAsync: vi.fn().mockRejectedValue({
+        isAxiosError: true,
+        response: {
+          status: 412,
+          data: {
+            error_code: "STALE_VERSION",
+            message: "Hồ sơ App PV đã được cập nhật bởi phiên khác.",
+          },
+        },
+      }),
+    } as never);
+
+    render(
+      <MemoryRouter>
+        <SkuMasterScreen />
+      </MemoryRouter>,
+    );
+
+    const tableRow = screen.getByText(row.sku_code).closest("tr");
+    fireEvent.click(
+      within(tableRow as HTMLTableRowElement).getByRole("button", {
+        name: "Xem chi tiết",
+      }),
+    );
+    const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+    fireEvent.click(
+      within(drawer).getByRole("button", { name: "Đưa lên ứng dụng" }),
+    );
+    const confirm = screen.getByRole("dialog", {
+      name: "Đưa SKU lên ứng dụng phân vùng?",
+    });
+    fireEvent.click(
+      within(confirm).getByRole("button", { name: "Đưa lên ứng dụng" }),
+    );
+
+    const staleCopy =
+      "Hồ sơ sản phẩm đã được cập nhật ở phiên khác. Danh sách vừa được tải lại; hãy kiểm tra rồi thao tác lại.";
+    await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
+    await screen.findByText(staleCopy);
+    expect(refetch).toHaveBeenCalledTimes(1);
+
+    await waitForElementToBeRemoved(() => screen.queryByText(staleCopy), {
+      timeout: 7000,
+    });
+    expect(screen.queryByText(staleCopy)).not.toBeInTheDocument();
   });
 
   it("loads agency data and opens add/edit modal", () => {

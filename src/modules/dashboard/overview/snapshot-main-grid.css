@@ -5,7 +5,7 @@
  * shrink the chart, cap tasks, invent filler items or use offsets/height timers.
  */
 .hn-dashboard-snapshot .snapshot-main-grid {
-  grid-template-rows: min-content minmax(0, 1fr) min-content;
+  grid-template-rows: min-content minmax(0, 1fr) min-content min-content;
   align-items: start;
 }
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-chart-card {
@@ -35,7 +35,12 @@
 }
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-recent {
   grid-column: 1 / -1;
+  grid-row: 4;
+}
+.hn-dashboard-snapshot .snapshot-main-grid > .snapshot-link-cards {
+  grid-column: 1 / -1;
   grid-row: 3;
+  margin: 0;
 }
 .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-stock {
   grid-column: 2;
@@ -65,6 +70,23 @@
     grid-column: auto;
     grid-row: auto;
   }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-link-cards {
+    grid-column: auto;
+    grid-row: auto;
+    order: 4;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-chart-card {
+    order: 1;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-priority {
+    order: 2;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-stock {
+    order: 3;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-recent {
+    order: 5;
+  }
   .hn-dashboard-snapshot
     .snapshot-main-grid
     > .snapshot-chart-card[data-flow-view="table"] {
@@ -80,6 +102,23 @@
   .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-card {
     grid-column: auto;
     grid-row: auto;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-link-cards {
+    grid-column: auto;
+    grid-row: auto;
+    order: 4;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-chart-card {
+    order: 1;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-priority {
+    order: 2;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-stock {
+    order: 3;
+  }
+  .hn-dashboard-snapshot .snapshot-main-grid > .snapshot-recent {
+    order: 5;
   }
   .hn-dashboard-snapshot
     .snapshot-main-grid

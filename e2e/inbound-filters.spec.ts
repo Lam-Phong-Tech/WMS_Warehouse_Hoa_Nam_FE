@@ -111,6 +111,46 @@ for (const { mode, width, sidebar } of cases) {
     const more = filters.getByRole("button", { name: "Bộ lọc", exact: true });
     await more.click();
     await expect(more).toHaveAttribute("aria-expanded", "true");
+
+    const dateLabels = await page.evaluate(() => {
+      const format = (date: Date, locale: string) =>
+        new Intl.DateTimeFormat(locale, {
+          timeZone: "Asia/Ho_Chi_Minh",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(date);
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 86_400_000);
+      return {
+        from: format(yesterday, "en-GB"),
+        to: format(now, "en-GB"),
+        fromIso: format(yesterday, "en-CA"),
+        toIso: format(now, "en-CA"),
+      };
+    });
+
+    const fromDate = page.getByRole("button", {
+      name: "Lọc phiếu nhập từ ngày tạo",
+    });
+    await fromDate.click();
+    await page.getByRole("button", { name: dateLabels.from }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__inboundFilterRequests.at(-1)))
+      .toMatchObject({ from_date: dateLabels.fromIso });
+
+    const toDate = page.getByRole("button", {
+      name: "Lọc phiếu nhập đến ngày tạo",
+    });
+    await toDate.click();
+    await page.getByRole("button", { name: dateLabels.to }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__inboundFilterRequests.at(-1)))
+      .toMatchObject({
+        from_date: dateLabels.fromIso,
+        to_date: dateLabels.toIso,
+      });
+
     const sort = screen.getByRole("combobox", {
       name: "Sắp xếp danh sách phiếu nhập",
       exact: true,
@@ -172,6 +212,8 @@ for (const { mode, width, sidebar } of cases) {
     await expect(search).toHaveValue("");
     await expect(status).toContainText("Trạng thái: Tất cả");
     await expect(info).toContainText("Thông tin SKU: Tất cả");
+    await expect(fromDate).toContainText("Chọn ngày");
+    await expect(toDate).toContainText("Chọn ngày");
     await expect(
       filters.getByRole("button", { name: "Xóa lọc", exact: true }),
     ).toHaveCount(0);

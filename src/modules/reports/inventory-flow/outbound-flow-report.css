@@ -3938,15 +3938,21 @@
 /* Table toolbar: shared SKU rules, immediate filters and conditional clear. */
 .hn-outbound-report .outbound-reference-filters.outbound-table-filters {
   display: grid;
-  grid-template-columns:
-    minmax(300px, 1.6fr) minmax(220px, 1fr) minmax(240px, 1fr)
-    auto;
   align-items: center;
   gap: 12px;
   padding: 16px 0;
   margin: 0;
   border: 0;
   background: transparent;
+}
+
+/* Desktop ≥980px only — tablet dùng 2 cột (979px) / 1 cột (767px) bên trên. */
+@media (min-width: 980px) {
+  .hn-outbound-report .outbound-reference-filters.outbound-table-filters {
+    grid-template-columns:
+      minmax(300px, 1.6fr) minmax(220px, 1fr) minmax(240px, 1fr)
+      auto;
+  }
 }
 .hn-outbound-report .outbound-table-filters .outbound-table-search {
   width: 100%;
@@ -3985,6 +3991,13 @@
   white-space: nowrap;
   cursor: pointer;
 }
+
+/*
+ * Desktop table layout only. Trước đây khối này nằm ngoài media query nên
+ * `min-width: 1000px` + `display: table` đè cả rule tablet 700px và card mobile
+ * 639px, làm bảng bị cắt ở 768px. Dưới 980px dùng rule 979/639 phía trên.
+ */
+@media (min-width: 980px) {
 .hn-outbound-report .outbound-report-table {
   overflow-x: auto;
 }
@@ -4093,4 +4106,5 @@
   padding: 12px 8px;
   background: transparent;
   border-bottom: 1px solid var(--ops-line);
+}
 }

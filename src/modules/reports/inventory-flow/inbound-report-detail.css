@@ -314,3 +314,144 @@
     flex-direction: column;
   }
 }
+
+/* ── Giao diện tối ───────────────────────────────────────────────────────
+ * Trang chi tiết dùng bảng màu sáng cố định; trên shell tối nó thành một
+ * khối trắng tách hẳn khỏi khung. Các override dưới đây chỉ chạy ở dark và
+ * dùng token --ops-* để đồng bộ surface/chữ/viền với phần còn lại của app.
+ */
+:root[data-theme="dark"] .inbound-report-detail {
+  color: var(--ops-text);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__header {
+  border-color: var(--ops-line);
+  background: linear-gradient(
+    115deg,
+    var(--ops-surface),
+    color-mix(in srgb, var(--ops-surface) 88%, var(--ops-link) 12%)
+  );
+}
+
+:root[data-theme="dark"] .inbound-report-detail__back {
+  color: var(--ops-muted);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__back:hover {
+  color: var(--ops-link);
+}
+
+:root[data-theme="dark"] .inbound-report-detail h1,
+:root[data-theme="dark"] .inbound-report-detail h2,
+:root[data-theme="dark"] .inbound-report-detail__timeline strong {
+  color: var(--ops-heading);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__heading-row p,
+:root[data-theme="dark"] .inbound-report-detail__info dd {
+  color: var(--ops-text);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__actions small,
+:root[data-theme="dark"] .inbound-report-detail__info dt,
+:root[data-theme="dark"] .inbound-report-detail__timeline time,
+:root[data-theme="dark"] .inbound-report-detail__timeline span,
+:root[data-theme="dark"] .inbound-report-detail__timeline small,
+:root[data-theme="dark"] .inbound-report-detail__muted,
+:root[data-theme="dark"] .inbound-report-detail__records-bar {
+  color: var(--ops-muted);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__source {
+  border-color: var(--ops-link);
+  background: transparent;
+  color: var(--ops-link);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__export {
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__status {
+  color: var(--ops-success);
+  background: var(--ops-success-soft);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__status[data-status="SCANNING"] {
+  color: var(--ops-link);
+  background: var(--ops-pale);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__status[data-status="DRAFT"] {
+  color: var(--ops-warning);
+  background: var(--ops-warning-soft);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__status[data-status="CANCELLED"] {
+  color: var(--ops-muted);
+  background: var(--ops-pale);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__info,
+:root[data-theme="dark"] .inbound-report-detail__panel {
+  border-color: var(--ops-line);
+  background: var(--ops-surface);
+  box-shadow: var(--ops-shadow-card);
+}
+
+:root[data-theme="dark"] .inbound-report-detail th {
+  background: var(--ops-table-header);
+  color: var(--ops-heading);
+}
+
+:root[data-theme="dark"] .inbound-report-detail td {
+  border-bottom-color: var(--ops-line);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__total {
+  background: var(--ops-pale);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__timeline li {
+  border-left-color: var(--ops-pale);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__timeline li::before {
+  background: var(--ops-link);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__tabs {
+  border-bottom-color: var(--ops-line);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__tabs button {
+  border-color: var(--ops-line);
+  background: var(--ops-surface);
+  color: var(--ops-text);
+}
+
+:root[data-theme="dark"]
+  .inbound-report-detail__tabs
+  button[aria-selected="true"] {
+  border-color: var(--ops-primary);
+  background: var(--ops-primary);
+  color: var(--ops-on-primary);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__records-bar input {
+  border-color: var(--ops-line);
+  background: var(--ops-canvas);
+  color: var(--ops-text);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__error {
+  border-color: var(--ops-danger);
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger-text);
+}
+
+:root[data-theme="dark"] .inbound-report-detail__error button {
+  color: var(--ops-link);
+}

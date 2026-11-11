@@ -208,8 +208,14 @@ export function UiSelect({
           slotProps: {
             paper: {
               className: menuClassName,
+              /*
+               * Trần bề rộng ĐẶT INLINE, không qua sx: các màn khai class riêng
+               * cho menu (.hn-war04-menu…) có selector specificity cao hơn
+               * class của sx nên từng ghi đè mất trần này và menu lại nở theo
+               * nội dung. Inline style thắng mọi class.
+               */
+              style: { maxWidth: anchorWidth ?? 520 },
               sx: {
-                maxWidth: anchorWidth ?? 520,
                 maxHeight: OPTION_LIST_MAX_HEIGHT + 16,
               },
             },

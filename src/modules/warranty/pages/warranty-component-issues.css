@@ -647,10 +647,11 @@
     background-position: -200% 0;
   }
 }
+/* Trần bề rộng do UiSelect đo theo ô chọn (inline style thắng mọi class) —
+   không đặt max-width ở đây, nếu không menu lại nở theo nội dung. */
 .hn-war04-menu.MuiPaper-root {
   border: 1px solid var(--war-line);
   border-radius: var(--ops-radius-card);
-  max-width: min(360px, calc(100vw - 24px));
   background: var(--war-surface);
 }
 .hn-war04-menu .MuiMenuItem-root {
@@ -964,8 +965,10 @@
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  padding-top: 9px;
-  padding-bottom: 9px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  white-space: normal;
+  line-height: 20px;
 }
 @container hn-war04 (min-width: 651px) and (max-width: 1400px) {
   .hn-war04-compact .hn-war04-component-summary {

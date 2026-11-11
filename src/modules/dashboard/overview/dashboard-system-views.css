@@ -413,7 +413,7 @@
 .snapshot-recent-table table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 860px;
+  min-width: 980px;
   table-layout: fixed;
   font-size: 14px;
   line-height: 22px;
@@ -459,13 +459,48 @@
   text-align: center;
   white-space: nowrap;
 }
-.snapshot-recent-table :is(th, td):nth-child(6) {
+.snapshot-recent-table :is(th, td):nth-child(7) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 .snapshot-recent-table :is(th, td):last-child {
   padding-inline: 8px;
   text-align: center;
+}
+.snapshot-recent-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ops-pale);
+  color: var(--ops-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: left;
+  white-space: normal;
+}
+.snapshot-recent-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+.snapshot-recent-status[data-tone="success"] {
+  background: var(--ops-success-soft);
+  color: var(--ops-success);
+}
+.snapshot-recent-status[data-tone="warning"] {
+  background: var(--ops-warning-soft);
+  color: var(--ops-warning);
+}
+.snapshot-recent-status[data-tone="danger"] {
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger);
 }
 .snapshot-card.snapshot-recent .snapshot-recent-state {
   color: var(--ops-muted);

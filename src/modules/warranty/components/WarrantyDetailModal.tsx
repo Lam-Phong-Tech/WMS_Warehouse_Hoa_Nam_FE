@@ -1,6 +1,7 @@
 import "./warranty-dialog.css";
 import "./warranty-detail-drawer.css";
 import { useEffect, useId, useState, type ReactNode } from "react";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import {
@@ -14,9 +15,11 @@ import {
   UiAlert,
   UiDialog,
   UiFormAutocomplete,
+  UiFormField,
   UiStatusBadge,
   UiTabs,
   UiTextField,
+  UiVuexyDateField,
   type UiStatusTone,
   type UiTabItem,
   type DrawerProps,
@@ -99,7 +102,6 @@ import {
 } from "@/shared/validation/file-rules";
 import {
   checkDate,
-  dateInputBounds,
   futureDateBounds,
   pastDateBounds,
 } from "@/shared/validation/date-rules";
@@ -778,9 +780,7 @@ export function WarrantyDetailModal({
   // ngày mua ≤ hôm nay (BE before_or_equal:today), ngày dự kiến ≥ hôm nay
   // (BE after_or_equal:today), cả hai nằm trong cửa sổ chung của dự án.
   const purchaseBounds = pastDateBounds();
-  const purchaseInput = dateInputBounds(purchaseBounds);
   const estimatedBounds = futureDateBounds();
-  const estimatedInput = dateInputBounds(estimatedBounds);
   const correctPhoneLiveCheck =
     canViewPii && correctForm.customer_phone
       ? validatePhone(correctForm.customer_phone)
@@ -2295,56 +2295,125 @@ export function WarrantyDetailModal({
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <UiTextField
-                fullWidth
-                type="date"
+              <UiFormField
                 label={t("warranty.detail.editEstimatedDate")}
-                value={correctForm.estimated_completion_date}
-                onChange={(event) => {
-                  setCorrectForm((current) => ({
-                    ...current,
-                    estimated_completion_date: event.target.value,
-                  }));
-                  if (correctFieldErrors.estimated_completion_date) {
-                    setCorrectFieldErrors((current) => ({
-                      ...current,
-                      estimated_completion_date: "",
-                    }));
-                  }
-                }}
+                htmlFor="warranty-edit-estimated-date"
                 error={Boolean(correctFieldErrors.estimated_completion_date)}
                 helperText={correctFieldErrors.estimated_completion_date}
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  htmlInput: { ...estimatedInput },
-                }}
-              />
+              >
+                <Box
+                  className="hn-war-detail-date"
+                  role="group"
+                  aria-label={t("warranty.detail.editEstimatedDate")}
+                  aria-invalid={Boolean(
+                    correctFieldErrors.estimated_completion_date,
+                  )}
+                >
+                  <UiVuexyDateField
+                    id="warranty-edit-estimated-date"
+                    field="warranty-edit-estimated-date"
+                    aria-label={t("warranty.detail.editEstimatedDate")}
+                    value={
+                      correctForm.estimated_completion_date
+                        ? dayjs(correctForm.estimated_completion_date)
+                        : null
+                    }
+                    onChange={(next) => {
+                      setCorrectForm((current) => ({
+                        ...current,
+                        estimated_completion_date:
+                          next?.format("YYYY-MM-DD") ?? "",
+                      }));
+                      if (correctFieldErrors.estimated_completion_date) {
+                        setCorrectFieldErrors((current) => ({
+                          ...current,
+                          estimated_completion_date: "",
+                        }));
+                      }
+                    }}
+                    minDate={estimatedBounds.minDate}
+                    maxDate={estimatedBounds.maxDate}
+                  />
+                  {correctForm.estimated_completion_date ? (
+                    <ActionIconButton
+                      kind="close"
+                      className="hn-war-detail-date-clear"
+                      label={`${t("shared.form.autocompleteClear")}: ${t("warranty.detail.editEstimatedDate")}`}
+                      onClick={() => {
+                        setCorrectForm((current) => ({
+                          ...current,
+                          estimated_completion_date: "",
+                        }));
+                        if (correctFieldErrors.estimated_completion_date) {
+                          setCorrectFieldErrors((current) => ({
+                            ...current,
+                            estimated_completion_date: "",
+                          }));
+                        }
+                      }}
+                    />
+                  ) : null}
+                </Box>
+              </UiFormField>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <UiTextField
-                fullWidth
-                type="date"
+              <UiFormField
                 label={t("warranty.detail.editPurchaseDate")}
-                value={correctForm.purchase_date}
-                onChange={(event) => {
-                  setCorrectForm((current) => ({
-                    ...current,
-                    purchase_date: event.target.value,
-                  }));
-                  if (correctFieldErrors.purchase_date) {
-                    setCorrectFieldErrors((current) => ({
-                      ...current,
-                      purchase_date: "",
-                    }));
-                  }
-                }}
+                htmlFor="warranty-edit-purchase-date"
                 error={Boolean(correctFieldErrors.purchase_date)}
                 helperText={correctFieldErrors.purchase_date}
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  htmlInput: { ...purchaseInput },
-                }}
-              />
+              >
+                <Box
+                  className="hn-war-detail-date"
+                  role="group"
+                  aria-label={t("warranty.detail.editPurchaseDate")}
+                  aria-invalid={Boolean(correctFieldErrors.purchase_date)}
+                >
+                  <UiVuexyDateField
+                    id="warranty-edit-purchase-date"
+                    field="warranty-edit-purchase-date"
+                    aria-label={t("warranty.detail.editPurchaseDate")}
+                    value={
+                      correctForm.purchase_date
+                        ? dayjs(correctForm.purchase_date)
+                        : null
+                    }
+                    onChange={(next) => {
+                      setCorrectForm((current) => ({
+                        ...current,
+                        purchase_date: next?.format("YYYY-MM-DD") ?? "",
+                      }));
+                      if (correctFieldErrors.purchase_date) {
+                        setCorrectFieldErrors((current) => ({
+                          ...current,
+                          purchase_date: "",
+                        }));
+                      }
+                    }}
+                    minDate={purchaseBounds.minDate}
+                    maxDate={purchaseBounds.maxDate}
+                  />
+                  {correctForm.purchase_date ? (
+                    <ActionIconButton
+                      kind="close"
+                      className="hn-war-detail-date-clear"
+                      label={`${t("shared.form.autocompleteClear")}: ${t("warranty.detail.editPurchaseDate")}`}
+                      onClick={() => {
+                        setCorrectForm((current) => ({
+                          ...current,
+                          purchase_date: "",
+                        }));
+                        if (correctFieldErrors.purchase_date) {
+                          setCorrectFieldErrors((current) => ({
+                            ...current,
+                            purchase_date: "",
+                          }));
+                        }
+                      }}
+                    />
+                  ) : null}
+                </Box>
+              </UiFormField>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <UiTextField
@@ -2536,31 +2605,67 @@ export function WarrantyDetailModal({
               ))}
             </UiTextField>
             {statusValue === "REPAIRING" ? (
-              <UiTextField
-                fullWidth
-                type="date"
-                required
+              <UiFormField
                 label={t("warranty.detail.statusEstimatedDate")}
-                value={statusForm.estimated_completion_date}
-                onChange={(event) => {
-                  setStatusForm((current) => ({
-                    ...current,
-                    estimated_completion_date: event.target.value,
-                  }));
-                  if (statusFieldErrors.estimated_completion_date) {
-                    setStatusFieldErrors((current) => ({
-                      ...current,
-                      estimated_completion_date: "",
-                    }));
-                  }
-                }}
+                required
+                htmlFor="warranty-status-estimated-date"
                 error={Boolean(statusFieldErrors.estimated_completion_date)}
                 helperText={statusFieldErrors.estimated_completion_date}
-                slotProps={{
-                  inputLabel: { shrink: true },
-                  htmlInput: { ...estimatedInput },
-                }}
-              />
+              >
+                <Box
+                  className="hn-war-detail-date"
+                  role="group"
+                  aria-label={t("warranty.detail.statusEstimatedDate")}
+                  aria-invalid={Boolean(
+                    statusFieldErrors.estimated_completion_date,
+                  )}
+                >
+                  <UiVuexyDateField
+                    id="warranty-status-estimated-date"
+                    field="warranty-status-estimated-date"
+                    aria-label={t("warranty.detail.statusEstimatedDate")}
+                    value={
+                      statusForm.estimated_completion_date
+                        ? dayjs(statusForm.estimated_completion_date)
+                        : null
+                    }
+                    onChange={(next) => {
+                      setStatusForm((current) => ({
+                        ...current,
+                        estimated_completion_date:
+                          next?.format("YYYY-MM-DD") ?? "",
+                      }));
+                      if (statusFieldErrors.estimated_completion_date) {
+                        setStatusFieldErrors((current) => ({
+                          ...current,
+                          estimated_completion_date: "",
+                        }));
+                      }
+                    }}
+                    minDate={estimatedBounds.minDate}
+                    maxDate={estimatedBounds.maxDate}
+                  />
+                  {statusForm.estimated_completion_date ? (
+                    <ActionIconButton
+                      kind="close"
+                      className="hn-war-detail-date-clear"
+                      label={`${t("shared.form.autocompleteClear")}: ${t("warranty.detail.statusEstimatedDate")}`}
+                      onClick={() => {
+                        setStatusForm((current) => ({
+                          ...current,
+                          estimated_completion_date: "",
+                        }));
+                        if (statusFieldErrors.estimated_completion_date) {
+                          setStatusFieldErrors((current) => ({
+                            ...current,
+                            estimated_completion_date: "",
+                          }));
+                        }
+                      }}
+                    />
+                  ) : null}
+                </Box>
+              </UiFormField>
             ) : null}
             {statusValue &&
             WARRANTY_DIAGNOSIS_REQUIRED_TARGETS.includes(statusValue) ? (

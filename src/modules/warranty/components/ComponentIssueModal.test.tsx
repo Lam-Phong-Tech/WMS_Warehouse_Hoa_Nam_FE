@@ -339,4 +339,30 @@ describe("ComponentIssueModal (COMP-01)", () => {
       expect(createComponentIssue).toHaveBeenCalled();
     });
   });
+
+  it("nút Xóa hoạt động: giảm về một dòng rồi bị vô hiệu hóa; thêm dòng thì bật lại", async () => {
+    vi.mocked(fetchAvailableQtyBySku).mockResolvedValue({ "sku-1": 1 });
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <ComponentIssueModal caseId="wc-1" caseActive onClose={() => {}} />,
+    );
+
+    // Ban đầu chỉ có 1 dòng → nút Xóa bị khóa để luôn giữ tối thiểu một dòng.
+    expect(await screen.findByRole("button", { name: "Xóa" })).toBeDisabled();
+
+    // Thêm dòng thứ hai → cả hai dòng đều có nút Xóa, cả hai đều bật.
+    await user.click(
+      screen.getByRole("button", { name: /Thêm dòng linh kiện/ }),
+    );
+    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Xóa" })).toHaveLength(2);
+    for (const button of screen.getAllByRole("button", { name: "Xóa" }))
+      expect(button).toBeEnabled();
+
+    // Xóa dòng thứ hai → còn một dòng → nút Xóa khóa lại.
+    await user.click(screen.getAllByRole("button", { name: "Xóa" })[1]);
+    expect(screen.getAllByRole("combobox")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Xóa" })).toBeDisabled();
+  });
 });

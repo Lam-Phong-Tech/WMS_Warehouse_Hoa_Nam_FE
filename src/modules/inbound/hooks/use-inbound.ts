@@ -30,6 +30,10 @@ type InboundListParams = {
   status?: string;
   page?: number;
   per_page?: number;
+  /** Lọc theo ngày tạo phiếu (YYYY-MM-DD), bao gồm ngày này. */
+  fromDate?: string;
+  /** Lọc theo ngày tạo phiếu (YYYY-MM-DD), bao gồm ngày này. */
+  toDate?: string;
   /** Lọc phiếu còn SKU chưa đủ thông tin; bỏ trống = không lọc. */
   pendingProductInfo?: boolean;
   /** "Sắp xếp theo": desc = Mới nhất (tạo/sửa gần nhất), asc = Cũ nhất. */

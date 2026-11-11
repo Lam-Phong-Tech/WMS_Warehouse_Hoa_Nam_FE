@@ -977,9 +977,9 @@ export function ComponentIssueModal({
               {t("warranty.componentIssue.cancelBack")}
             </ActionButton>
             <ActionButton
-              kind="confirm"
-              onClick={() => void handleCancel()}
+              kind="deactivate"
               disabled={cancelMutation.isPending}
+              onClick={() => void handleCancel()}
             >
               {t("warranty.componentIssue.cancelConfirm")}
             </ActionButton>

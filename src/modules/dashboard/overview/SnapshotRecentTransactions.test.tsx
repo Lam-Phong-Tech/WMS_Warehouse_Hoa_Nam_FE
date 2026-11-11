@@ -53,6 +53,16 @@ describe("recent transaction report links", () => {
       within(table).getByRole("columnheader", { name: "Ghi sổ" }),
     ).toBeInTheDocument();
     expect(
+      within(table).getByRole("columnheader", { name: "Trạng thái" }),
+    ).toBeInTheDocument();
+    for (const status of [
+      "Đã nhập kho",
+      "Đã xuất kho",
+      "Đã ghi sổ phiếu đảo",
+    ]) {
+      expect(within(table).getByText(status)).toBeInTheDocument();
+    }
+    expect(
       screen.getByRole("button", { name: "Xem DOC-0" }),
     ).toBeInTheDocument();
 
@@ -65,12 +75,20 @@ describe("recent transaction report links", () => {
       "Document",
       "Type",
       "Partner",
+      "Status",
       "Quantity",
       "View detail",
     ]) {
       expect(
         within(table).getByRole("columnheader", { name: header }),
       ).toBeInTheDocument();
+    }
+    for (const status of [
+      "Received into stock",
+      "Issued from stock",
+      "Stock adjustment posted",
+    ]) {
+      expect(within(table).getByText(status)).toBeInTheDocument();
     }
     for (const type of ["Inbound", "Outbound", "Reversal"]) {
       expect(within(table).getByText(type)).toBeInTheDocument();

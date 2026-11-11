@@ -36,6 +36,10 @@ type ListParams = {
   per_page?: number;
   search?: string;
   status?: string;
+  /** Lọc theo ngày tạo phiếu (YYYY-MM-DD), bao gồm ngày này. */
+  fromDate?: string;
+  /** Lọc theo ngày tạo phiếu (YYYY-MM-DD), bao gồm ngày này. */
+  toDate?: string;
   /**
    * Chỉ lấy phiếu còn SKU mới chưa đủ thông tin (true) hoặc phần còn lại
    * (false). Bỏ trống = không lọc. Lọc chạy TRONG SQL ở BE nên trang 1 không bị
@@ -390,6 +394,8 @@ export async function fetchInboundDocuments(
         per_page: params.per_page ?? 20,
         keyword: params.search?.trim() || undefined,
         status: params.status || undefined,
+        from_date: params.fromDate || undefined,
+        to_date: params.toDate || undefined,
         pending_product_info:
           params.pendingProductInfo === undefined
             ? undefined

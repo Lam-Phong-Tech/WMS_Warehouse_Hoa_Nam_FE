@@ -460,16 +460,16 @@
   border-bottom: 1px solid var(--in-line);
 }
 .hn-inbound-table .hn-inbound-col-code {
-  width: 20%;
+  width: 22%;
 }
 .hn-inbound-table .hn-inbound-col-supplier {
-  width: 25%;
+  width: 24%;
 }
 .hn-inbound-table .hn-inbound-col-progress {
-  width: 18%;
+  width: 17%;
 }
-.hn-inbound-table .hn-inbound-col-status {
-  width: 18%;
+.hn-inbound-table .hn-inbound-col-created-date {
+  width: 14%;
 }
 .hn-inbound-table .hn-inbound-col-actions {
   width: 13%;
@@ -900,7 +900,7 @@
     max-width: 154px;
     align-self: end;
   }
-  .hn-inbound-list .hn-inbound-status-cell {
+  .hn-inbound-list .hn-inbound-created-date-cell {
     grid-column: 1;
     grid-row: 3;
   }
@@ -1019,6 +1019,23 @@
 .hn-inbound-extra-filters[hidden] {
   display: none;
 }
+.hn-inbound-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.hn-inbound-date-label {
+  color: var(--in-ink);
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hn-inbound-extra-filters .hn-vuexy-date-field {
+  min-height: 44px;
+  min-width: 150px;
+}
 .hn-inbound-list-card {
   padding: 0;
   overflow: hidden;
@@ -1096,20 +1113,31 @@
   gap: 4px;
 }
 .hn-inbound-table .hn-inbound-col-index { width: 56px; }
-.hn-inbound-table .hn-inbound-col-code { width: 24%; }
+.hn-inbound-table .hn-inbound-col-code { width: 23%; }
 .hn-inbound-table .hn-inbound-col-supplier { width: auto; }
-.hn-inbound-table .hn-inbound-col-progress { width: 19%; }
-.hn-inbound-table .hn-inbound-col-status { width: 160px; }
-.hn-inbound-table .hn-inbound-col-created { width: 200px; }
+.hn-inbound-table .hn-inbound-col-progress { width: 18%; }
+.hn-inbound-table .hn-inbound-col-created-date { width: 150px; }
+.hn-inbound-table .hn-inbound-col-created { width: 190px; }
 .hn-inbound-table .hn-inbound-col-actions { width: 64px; }
-.hn-inbound-created-cell > :is(span, time) {
+.hn-inbound-created-cell > span,
+.hn-inbound-created-date-cell > time {
   display: block;
   overflow-wrap: anywhere;
 }
-.hn-inbound-created-cell > time {
-  color: var(--in-muted);
-  font-size: 12px;
+.hn-inbound-created-date-cell {
+  white-space: nowrap;
+}
+.hn-inbound-created-date-cell > time {
+  color: var(--in-text);
+  font-size: 13px;
   line-height: 20px;
+}
+.hn-inbound-code-status {
+  margin-top: 4px;
+}
+.hn-inbound-code-status .hn-inbound-status {
+  padding: 2px 8px;
+  font-size: 11px;
 }
 .hn-inbound-list .hn-inbound-table .hn-inbound-actions-cell { text-align: center; }
 .hn-inbound-list .hn-inbound-table th .hn-sortable-th {
@@ -1165,10 +1193,16 @@
 @container hn-inbound (max-width: 700px) {
   .hn-inbound-table .hn-inbound-col-created,
   .hn-inbound-table .hn-inbound-created-cell { display: none; }
-}
-@container hn-inbound (max-width: 560px) {
+}@container hn-inbound (max-width: 560px) {
   .hn-inbound-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hn-inbound-filter:not(.hn-inbound-search) { grid-column: 1 / -1; }
+  .hn-inbound-extra-filters { align-items: stretch; }
+  .hn-inbound-date-filter { flex: 1 1 100%; }
+  .hn-inbound-extra-filters .hn-vuexy-date-field {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+  }
   .hn-inbound-list .hn-inbound-table { min-width: 0; }
   .hn-inbound-list .hn-inbound-index { display: none; }
   .hn-inbound-list .hn-inbound-table tbody tr { height: auto; }

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import dayjs from "dayjs";
 import { toast } from "sonner";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -93,11 +94,18 @@ async function openRepairingStatusDialog() {
     await within(dialog).findByRole("combobox", { name: /Trạng thái mới/ }),
   );
   fireEvent.click(await screen.findByRole("option", { name: "Đang sửa chữa" }));
-  fireEvent.change(within(dialog).getByLabelText(/Ngày dự kiến sửa xong/), {
-    target: {
-      value: new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10),
-    },
+  const estimatedDate = dayjs().add(7, "day");
+  fireEvent.click(
+    within(dialog).getByRole("button", { name: /Ngày dự kiến sửa xong/ }),
+  );
+  const calendar = await screen.findByRole("dialog", {
+    name: /Ngày dự kiến sửa xong/,
   });
+  fireEvent.click(
+    within(calendar).getByRole("button", {
+      name: estimatedDate.format("DD/MM/YYYY"),
+    }),
+  );
   fireEvent.change(within(dialog).getByLabelText(/Kết quả kiểm tra/), {
     target: { value: "Đã xác nhận lỗi" },
   });

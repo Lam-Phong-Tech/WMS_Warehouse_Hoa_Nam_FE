@@ -6,7 +6,31 @@ import { useT } from "@/shared/i18n/useT";
 import { RowActionButton } from "@/shared/components/actions";
 import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { ROUTES } from "@/shared/constants/routes";
+import {
+  INBOUND_STATUS_LABELS,
+  OUTBOUND_STATUS_LABELS,
+  REVERSAL_STATUS_LABELS,
+  businessLabel,
+} from "@/shared/constants/business-labels";
 import "./dashboard-system-views.css";
+
+function statusLabel(type: "INBOUND" | "OUTBOUND" | "REVERSAL", status: string) {
+  const labels =
+    type === "INBOUND"
+      ? INBOUND_STATUS_LABELS
+      : type === "OUTBOUND"
+        ? OUTBOUND_STATUS_LABELS
+        : REVERSAL_STATUS_LABELS;
+  return businessLabel(labels, status);
+}
+
+function statusTone(type: "INBOUND" | "OUTBOUND" | "REVERSAL", status: string) {
+  if (!status) return "neutral";
+  if (status === "CANCELLED") return "danger";
+  if (status === "DRAFT" || status === "SCANNING") return "warning";
+  // Trong phạm vi "Giao dịch gần đây", phiếu nhập/xuất/hoàn tác đã ghi sổ.
+  return type === "REVERSAL" || status === "POSTED" ? "success" : "neutral";
+}
 
 export function SnapshotRecentTransactions({
   onNavigate,
@@ -60,7 +84,7 @@ export function SnapshotRecentTransactions({
         >
           <table>
             <colgroup>
-              {[6, 14, 24, 12, 24, 12, 8].map((width, index) => (
+              {[5, 12, 21, 10, 17, 15, 11, 9].map((width, index) => (
                 <col key={index} style={{ width: `${width}%` }} />
               ))}
             </colgroup>
@@ -71,6 +95,7 @@ export function SnapshotRecentTransactions({
                 <th>{t("dashboardSnapshot.document")}</th>
                 <th>{t("dashboardSnapshot.type")}</th>
                 <th>{t("dashboardSnapshot.partner")}</th>
+                <th>{t("dashboard.composition.colStatus")}</th>
                 <th>{t("dashboardSnapshot.quantity")}</th>
                 <th aria-label={t("common.viewDetail")} />
               </tr>
@@ -103,6 +128,17 @@ export function SnapshotRecentTransactions({
                           : t("dashboardSnapshot.reversal")}
                     </td>
                     <td>{document.party || "—"}</td>
+                    <td>
+                      <span
+                        className="snapshot-recent-status"
+                        data-tone={statusTone(
+                          document.type,
+                          document.status,
+                        )}
+                      >
+                        {statusLabel(document.type, document.status)}
+                      </span>
+                    </td>
                     <td>
                       {document.qty === null
                         ? "—"

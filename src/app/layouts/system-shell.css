@@ -412,6 +412,23 @@
   }
 }
 
+/*
+ * Tablet 768–979px: thanh breadcrumb cạnh search bị ép cụt ở đúng 768px
+ * (breakpoint cũ chỉ ẩn dưới 767px). Ẩn breadcrumb và cho ô tìm kiếm co giãn;
+ * desktop ≥980px giữ nguyên breadcrumb + bề rộng search hiện hành.
+ */
+@media (max-width: 979px) {
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-breadcrumb {
+    display: none;
+  }
+
+  .hn-system-shell:not(.hn-map-shell) .hn-topbar .topbar-search-wrap {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 40px;
+  }
+}
+
 @media (max-width: 767px) {
   .hn-system-shell:not(.hn-map-shell) .hn-topbar {
     gap: 7px;

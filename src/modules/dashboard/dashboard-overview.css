@@ -352,13 +352,19 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
-.hn-dash .custom-range-fields label {
+.hn-dash .custom-range-field {
   display: grid;
   gap: 5px;
+  min-width: 0;
+}
+.hn-dash .custom-range-field > span {
   color: var(--muted);
   font-size: 11.5px;
   line-height: 17px;
   font-weight: 600;
+}
+.hn-dash .custom-range-field[data-invalid="true"] .hn-vuexy-date-field {
+  border-color: var(--map-danger, var(--red));
 }
 .hn-dash .date-picker-field {
   position: relative;
@@ -3516,20 +3522,16 @@
   gap: 12px;
   padding: 5px 24px;
 }
-.snapshot-date-fields label {
+.snapshot-date-field {
   display: grid;
   gap: 5px;
+  min-width: 0;
   color: var(--muted);
   font-size: 12px;
 }
-.snapshot-date-fields input {
-  min-height: 43px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
+.snapshot-date-field .hn-vuexy-date-field {
+  height: 43px;
   border-radius: 7px;
-  color: var(--hnd-info-fg);
-  font: inherit;
-  font-weight: 700;
 }
 .snapshot-date-error,
 .snapshot-date-summary {
@@ -3842,7 +3844,6 @@
   }
 }
 
-
 /* ── SystemHNWeb MAP-01 fidelity lock (2026-09-14) ─────────────────────────
    Exact published SystemHNWeb palette comes from AUTH_BASELINE and is injected
    as --map-* by MainLayout. This layer is intentionally scoped to ?screen=MAP-01
@@ -3863,11 +3864,7 @@
 }
 :is(.hn-map-shell, .hn-map-drawer) .hn-mvp-brand {
   min-height: 72px;
-  border-bottom-color: color-mix(
-    in srgb,
-    var(--map-white) 14%,
-    transparent
-  );
+  border-bottom-color: color-mix(in srgb, var(--map-white) 14%, transparent);
 }
 :is(.hn-map-shell, .hn-map-drawer) .hn-mvp-brand .hn-mvp-logo {
   border-color: color-mix(in srgb, var(--map-white) 70%, transparent);
@@ -3895,9 +3892,7 @@
   box-shadow: 0 4px 13px color-mix(in srgb, var(--map-navy) 28%, transparent);
   color: var(--map-white);
 }
-:is(.hn-map-shell, .hn-map-drawer)
-  .hn-mvp-submenu
-  .hn-mvp-nav-btn::before {
+:is(.hn-map-shell, .hn-map-drawer) .hn-mvp-submenu .hn-mvp-nav-btn::before {
   border-color: color-mix(in srgb, var(--map-white) 64%, transparent);
 }
 :is(.hn-map-shell, .hn-map-drawer)
@@ -3935,8 +3930,7 @@
   margin: 0;
   padding: 8px 22px;
   border: 0;
-  border-bottom: 1px solid
-    color-mix(in srgb, var(--map-white) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--map-white) 10%, transparent);
   border-radius: 0;
   background: var(--map-navy);
   box-shadow: none;
@@ -4494,9 +4488,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .snapshot-calendar-days button,
-  .snapshot-date-fields input,
   .snapshot-custom-dialog footer button {
     min-height: 44px;
+  }
+  .snapshot-date-field .hn-vuexy-date-field {
+    height: 44px;
   }
   .snapshot-calendar-days button {
     height: 44px;
@@ -4517,4 +4513,59 @@
     transform: none;
     opacity: 0.38;
   }
+}
+
+/* ── Chữ trên nền tối: sắc sáng/trắng thay cho xanh đậm ───────────────────
+ * MAP-01 dùng --primary-dark (tím) và --ops-primary (xanh) cho tiêu đề,
+ * legend và nhãn trục. Trên nền tối các sắc này tụt tương phản. Ở dark,
+ * chữ không mang nghĩa hành động chuyển sang --ops-heading/--ops-text;
+ * link/CTA giữ --ops-link để vẫn nhận ra là bấm được.
+ */
+:root[data-theme="dark"] .hn-dash {
+  --hnd-info-fg: var(--ops-heading);
+}
+
+:root[data-theme="dark"] .hn-dash .snapshot-heading h1,
+:root[data-theme="dark"] .hn-dash .snapshot-card h2,
+:root[data-theme="dark"] .hn-dash .snapshot-priority-row strong,
+:root[data-theme="dark"] .hn-dash .snapshot-link-cards > button,
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__legend > span {
+  color: var(--ops-heading);
+}
+
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__axis-title {
+  fill: var(--ops-heading);
+}
+
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__tick,
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__tick--stock {
+  fill: var(--ops-text);
+}
+
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__grid {
+  stroke: rgba(231, 227, 252, 0.16);
+}
+
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__right-tick {
+  stroke: rgba(231, 227, 252, 0.28);
+}
+
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__tooltip {
+  border-color: var(--ops-line);
+  background: var(--hnd-surface-bg);
+  color: var(--ops-text);
+}
+
+:root[data-theme="dark"] .hn-dash .snapshot-filter > button {
+  border-color: var(--ops-link);
+  color: var(--ops-link);
+}
+
+:root[data-theme="dark"] .hn-dash .snapshot-priority-row > i {
+  border-color: var(--ops-link);
+  color: var(--ops-link);
+}
+
+:root[data-theme="dark"] .hn-dash .snapshot-card header > button {
+  color: var(--ops-link);
 }

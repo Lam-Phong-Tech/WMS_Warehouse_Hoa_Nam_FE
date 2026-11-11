@@ -38,13 +38,21 @@ export function DeviceVerificationPanel({
   const [digits, setDigits] = useState<string[]>(() =>
     Array.from({ length: MFA_OTP_LENGTH }, () => ""),
   );
-  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(
+    () => Date.now() + RESEND_COOLDOWN_SECONDS * 1000,
+  );
   const [now, setNow] = useState(() => Date.now());
   const [resentNotice, setResentNotice] = useState(false);
 
   useEffect(() => {
     if (cooldownUntil === null) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 500);
+    const tick = () => {
+      const current = Date.now();
+      setNow(current);
+      if (current >= cooldownUntil) setCooldownUntil(null);
+    };
+    tick();
+    const timer = window.setInterval(tick, 500);
     return () => window.clearInterval(timer);
   }, [cooldownUntil]);
 

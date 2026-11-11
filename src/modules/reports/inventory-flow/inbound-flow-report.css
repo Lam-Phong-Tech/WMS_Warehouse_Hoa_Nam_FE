@@ -2129,6 +2129,40 @@
   .inbound-table-search {
     width: 100%;
   }
+
+  /*
+   * Tablet 768–979px: bảng 8 cột không còn đủ chỗ. Giữ cột nhận diện + số
+   * lượng + trạng thái + hành động; ngày chuyển xuống dưới mã phiếu. Người tạo
+   * và cột ngày riêng ẩn đi, đúng mức ưu tiên cột của hướng dẫn UI cho tablet.
+   */
+  .inbound-created-by,
+  .inbound-desktop-date {
+    display: none;
+  }
+  .inbound-tablet-only {
+    display: block;
+  }
+  .inbound-table-wrap table {
+    min-width: 700px;
+  }
+  .inbound-table-wrap th.inbound-index-cell {
+    width: 6%;
+  }
+  .inbound-table-wrap th.inbound-code-cell {
+    width: 24%;
+  }
+  .inbound-table-wrap th.inbound-supplier-cell {
+    width: 28%;
+  }
+  .inbound-table-wrap th.is-number {
+    width: 12%;
+  }
+  .inbound-table-wrap th.inbound-status-cell {
+    width: 20%;
+  }
+  .inbound-table-wrap th.inbound-action-cell {
+    width: 10%;
+  }
 }
 
 @media (max-width: 639px) {
@@ -2756,32 +2790,34 @@
   box-shadow: none;
 }
 
-.hn-inbound-report .inbound-filter-grid {
-  grid-template-columns: minmax(360px, 1.5fr) minmax(260px, 1fr) minmax(
-      230px,
-      0.9fr
-    );
-  gap: 12px;
-  align-items: center;
-}
+@media (min-width: 980px) {
+  .hn-inbound-report .inbound-filter-grid {
+    grid-template-columns: minmax(360px, 1.5fr) minmax(260px, 1fr) minmax(
+        230px,
+        0.9fr
+      );
+    gap: 12px;
+    align-items: center;
+  }
 
-.hn-inbound-report .inbound-filter-field--date,
-.hn-inbound-report .inbound-filter-field[data-filter="supplier"],
-.hn-inbound-report .inbound-filter-field[data-filter="status"] {
-  grid-row: auto;
-  min-width: 0;
-}
+  .hn-inbound-report .inbound-filter-field--date,
+  .hn-inbound-report .inbound-filter-field[data-filter="supplier"],
+  .hn-inbound-report .inbound-filter-field[data-filter="status"] {
+    grid-row: auto;
+    min-width: 0;
+  }
 
-.hn-inbound-report .inbound-filter-field--date {
-  grid-column: 1;
-}
+  .hn-inbound-report .inbound-filter-field--date {
+    grid-column: 1;
+  }
 
-.hn-inbound-report .inbound-filter-field[data-filter="supplier"] {
-  grid-column: 2;
-}
+  .hn-inbound-report .inbound-filter-field[data-filter="supplier"] {
+    grid-column: 2;
+  }
 
-.hn-inbound-report .inbound-filter-field[data-filter="status"] {
-  grid-column: 3;
+  .hn-inbound-report .inbound-filter-field[data-filter="status"] {
+    grid-column: 3;
+  }
 }
 
 .hn-inbound-report .inbound-filter-combobox__trigger,

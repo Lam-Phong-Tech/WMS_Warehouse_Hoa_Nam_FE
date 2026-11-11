@@ -14,8 +14,10 @@ import { parseDateTime } from "@/shared/utils/date-time";
  */
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import dayjs from "dayjs";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { useLogout } from "@/modules/auth/hooks/use-logout";
 import {
   ROUTES,
   SKU_PENDING_INFO_ROUTE,
@@ -109,6 +111,7 @@ function periodDelta(
 export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const logout = useLogout();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const isProfileLoaded = useAuthStore((state) => state.isProfileLoaded);
@@ -645,6 +648,17 @@ export default function DashboardPage() {
     );
   };
 
+  /**
+   * Nút "Đăng xuất" trên màn bị chặn quyền phải thu hồi phiên thật: `useLogout`
+   * gọi POST /auth/logout, xoá store + cache rồi mới về /login. Trước đây nút chỉ
+   * điều hướng nên refresh cookie và quyền cũ vẫn sống.
+   */
+  const handleLogout = () => {
+    logout.mutate(undefined, {
+      onSuccess: () => toast.success(t("shared.user.logoutSuccess")),
+    });
+  };
+
   const periodName = t(PERIOD_NAME_KEYS[period]);
   /**
    * Cùng định dạng DD/MM/YYYY với dòng "Đang xem: …" ngay dưới dải nút kỳ —
@@ -773,6 +787,7 @@ export default function DashboardPage() {
           liveThreshold
           onRetry={refreshAll}
           onNavigate={navigate}
+          onLogout={handleLogout}
         />
       </div>
     );

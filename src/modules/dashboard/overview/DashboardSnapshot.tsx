@@ -22,6 +22,7 @@ import { SnapshotFlowTable } from "./SnapshotFlowTable";
 import { SnapshotRecentTransactions } from "./SnapshotRecentTransactions";
 import { SnapshotThresholdSummary } from "./SnapshotThresholdSummary";
 import { greetingKeyForHour } from "./greeting";
+import { UiVuexyDateField } from "@/shared/ui";
 
 export type ChartState = "ready" | "loading" | "empty" | "failed" | "forbidden";
 
@@ -291,6 +292,7 @@ export function DashboardSnapshot({
   liveThreshold = false,
   onRetry,
   onNavigate,
+  onLogout,
 }: {
   name: string;
   cards: KpiCardModel[];
@@ -312,6 +314,8 @@ export function DashboardSnapshot({
   liveThreshold?: boolean;
   onRetry: () => void;
   onNavigate: (route: string) => void;
+  /** Thu hồi phiên thật (POST /auth/logout) rồi mới về màn đăng nhập. */
+  onLogout: () => void;
 }) {
   const t = useT();
   const [filterOpen, setFilterOpen] = useState(false);
@@ -500,11 +504,7 @@ export function DashboardSnapshot({
             <button type="button" onClick={() => window.history.back()}>
               {t("dashboard.snapshot.back")}
             </button>
-            <button
-              type="button"
-              className="is-outline"
-              onClick={() => onNavigate("/login")}
-            >
+            <button type="button" className="is-outline" onClick={onLogout}>
               {t("dashboard.snapshot.logout")}
             </button>
           </div>
@@ -732,6 +732,50 @@ export function DashboardSnapshot({
                     </div>
                   )}
                 </article>
+                <section className="snapshot-link-cards">
+                  <button
+                    type="button"
+                    onClick={() => onNavigate("/master-data/warehouse")}
+                  >
+                    <span className="is-orange">
+                      <DashIcon name="package-search" />
+                    </span>
+                    <div>
+                      <strong>
+                        {t("dashboard.snapshot.warehouseInfoTitle")}
+                      </strong>
+                      <small>{t("dashboard.snapshot.warehouseInfoCopy")}</small>
+                    </div>
+                    <DashIcon name="arrow-right" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onNavigate("/dashboard?screen=MAP-01&view=stock")
+                    }
+                  >
+                    <span className="is-green">
+                      <DashIcon name="chart-column-big" />
+                    </span>
+                    <div>
+                      <strong>{t("dashboard.snapshot.stockQuickTitle")}</strong>
+                      <small>{t("dashboard.snapshot.stockQuickCopy")}</small>
+                    </div>
+                    <DashIcon name="arrow-right" />
+                  </button>
+                  <button type="button" onClick={() => onNavigate("/inbound")}>
+                    <span>
+                      <DashIcon name="calendar-days" />
+                    </span>
+                    <div>
+                      <strong>
+                        {t("dashboard.snapshot.dailyScheduleTitle")}
+                      </strong>
+                      <small>{t("dashboard.snapshot.dailyScheduleCopy")}</small>
+                    </div>
+                    <DashIcon name="arrow-right" />
+                  </button>
+                </section>
                 {liveRecent ? (
                   <SnapshotRecentTransactions onNavigate={onNavigate} />
                 ) : (
@@ -809,51 +853,6 @@ export function DashboardSnapshot({
                   </article>
                 )}
               </section>
-
-              <section className="snapshot-link-cards">
-                <button
-                  type="button"
-                  onClick={() => onNavigate("/master-data/warehouse")}
-                >
-                  <span className="is-orange">
-                    <DashIcon name="package-search" />
-                  </span>
-                  <div>
-                    <strong>
-                      {t("dashboard.snapshot.warehouseInfoTitle")}
-                    </strong>
-                    <small>{t("dashboard.snapshot.warehouseInfoCopy")}</small>
-                  </div>
-                  <DashIcon name="arrow-right" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onNavigate("/dashboard?screen=MAP-01&view=stock")
-                  }
-                >
-                  <span className="is-green">
-                    <DashIcon name="chart-column-big" />
-                  </span>
-                  <div>
-                    <strong>{t("dashboard.snapshot.stockQuickTitle")}</strong>
-                    <small>{t("dashboard.snapshot.stockQuickCopy")}</small>
-                  </div>
-                  <DashIcon name="arrow-right" />
-                </button>
-                <button type="button" onClick={() => onNavigate("/inbound")}>
-                  <span>
-                    <DashIcon name="calendar-days" />
-                  </span>
-                  <div>
-                    <strong>
-                      {t("dashboard.snapshot.dailyScheduleTitle")}
-                    </strong>
-                    <small>{t("dashboard.snapshot.dailyScheduleCopy")}</small>
-                  </div>
-                  <DashIcon name="arrow-right" />
-                </button>
-              </section>
             </>
           )}
         </>
@@ -908,32 +907,36 @@ export function DashboardSnapshot({
               </button>
             </div>
             <div className="snapshot-date-fields">
-              <label>
-                {t("dashboard.snapshot.fromDate")}
-                <input
-                  type="date"
-                  value={draft.from}
-                  max={todayIso}
-                  onFocus={() => setRangePickMode("from")}
-                  onChange={(event) => {
+              <div className="snapshot-date-field">
+                <span>{t("dashboard.snapshot.fromDate")}</span>
+                <UiVuexyDateField
+                  id="snapshot-date-from"
+                  field="snapshot-date-from"
+                  aria-label={t("dashboard.snapshot.fromDate")}
+                  value={draft.from ? dayjs(draft.from) : null}
+                  maxDate={businessNow}
+                  onChange={(next) => {
+                    if (!next) return;
                     setRangePickMode("to");
-                    setDraft({ ...draft, from: event.target.value });
+                    setDraft({ ...draft, from: next.format(ISO) });
                   }}
                 />
-              </label>
-              <label>
-                {t("dashboard.snapshot.toDate")}
-                <input
-                  type="date"
-                  value={draft.to}
-                  max={todayIso}
-                  onFocus={() => setRangePickMode("to")}
-                  onChange={(event) => {
+              </div>
+              <div className="snapshot-date-field">
+                <span>{t("dashboard.snapshot.toDate")}</span>
+                <UiVuexyDateField
+                  id="snapshot-date-to"
+                  field="snapshot-date-to"
+                  aria-label={t("dashboard.snapshot.toDate")}
+                  value={draft.to ? dayjs(draft.to) : null}
+                  maxDate={businessNow}
+                  onChange={(next) => {
+                    if (!next) return;
                     setRangePickMode("from");
-                    setDraft({ ...draft, to: event.target.value });
+                    setDraft({ ...draft, to: next.format(ISO) });
                   }}
                 />
-              </label>
+              </div>
             </div>
             {invalid ? (
               <p className="snapshot-date-error">{invalidReason}</p>

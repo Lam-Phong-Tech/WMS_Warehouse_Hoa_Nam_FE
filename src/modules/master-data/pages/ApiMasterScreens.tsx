@@ -433,18 +433,33 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [publishError, setPublishError] = useState<unknown>(null);
+  const [publishErrorStale, setPublishErrorStale] = useState(false);
   const [mutationNotice, setMutationNotice] =
     useState<SkuListMutationNoticeValue | null>(null);
 
-  const query = useMvpSkus({
-    keyword: keyword.trim(),
-    status,
-    sku_type: type,
-    brand_id: brandId,
-    information_status: informationStatus,
-    page,
-    per_page: perPage,
-  });
+  useEffect(() => {
+    if (!publishError) return;
+    // Banner lỗi publish chỉ là phản hồi tạm thời; toast đã thông báo ngay.
+    // Tự ẩn sau 5 giây để không chiếm chỗ vĩnh viễn; nút Đóng vẫn giữ.
+    const timer = window.setTimeout(() => {
+      setPublishError(null);
+      setPublishErrorStale(false);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [publishError]);
+
+  const query = useMvpSkus(
+    {
+      keyword: keyword.trim(),
+      status,
+      sku_type: type,
+      brand_id: brandId,
+      information_status: informationStatus,
+      page,
+      per_page: perPage,
+    },
+    { live: true },
+  );
   const catalogsQuery = useMvpProductCatalogs();
   const createMutation = useCreateMvpSku();
   const updateMutation = useUpdateMvpSku();
@@ -481,6 +496,17 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     [catalogs.packageVariants],
   );
   const rows = apiRows;
+  useEffect(() => {
+    // Danh sách tự refresh 30 giây/lần; giữ drawer chi tiết đang mở đồng bộ
+    // với version mới nhất để lần bật/tắt publish kế tiếp không bị 412 oan.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- State follows refreshed query data.
+    setViewing((current) => {
+      if (!current) return current;
+      const id = current.sku_id ?? current.id ?? "";
+      const fresh = apiRows.find((row) => (row.sku_id ?? row.id) === id);
+      return fresh ?? current;
+    });
+  }, [apiRows]);
   const pagination = resolveApiPagination(query.data?.meta, {
     page,
     pageSize: perPage,
@@ -499,6 +525,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const togglePublish = async (record: SkuRecord) => {
     if (!canPublish) return;
     setPublishError(null);
+    setPublishErrorStale(false);
     const willPublish = !record.published_to_app;
     const skuCode = record.sku_code ?? record.code;
     const recordId = record.sku_id ?? record.id ?? "";
@@ -532,7 +559,38 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           : t("masterData.sku.unpublished"),
       );
     } catch (error) {
-      toast.error(getMutationErrorMessage(error));
+      const normalized = normalizeError(error);
+      const stale =
+        normalized.status === 412 ||
+        /STALE_VERSION|VERSION_CONFLICT|CONCURRENCY/i.test(
+          normalized.code ?? "",
+        );
+
+      if (stale) {
+        // Phiên khác đã đổi hồ sơ: tự tải lại danh sách ngay, cập nhật lại
+        // record đang mở (hoặc đóng drawer nếu bản ghi rời trang hiện tại).
+        // Không tự retry publish để tránh ghi đè thay đổi của phiên kia.
+        const refreshed = await query.refetch();
+        if (!refreshed.isError) {
+          const freshRows = refreshed.data?.data ?? [];
+          setViewing((current) => {
+            if (!current) return current;
+            const currentId = current.sku_id ?? current.id ?? "";
+            return (
+              freshRows.find(
+                (row) => (row.sku_id ?? row.id) === currentId,
+              ) ?? null
+            );
+          });
+          setPublishErrorStale(true);
+        } else {
+          setPublishErrorStale(false);
+          toast.error(getMutationErrorMessage(error));
+        }
+      } else {
+        setPublishErrorStale(false);
+        toast.error(getMutationErrorMessage(error));
+      }
       setPublishError(error);
     }
   };
@@ -1085,16 +1143,21 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               action={
                 <ActionButton
                   kind="close"
-                  onClick={() => setPublishError(null)}
+                  onClick={() => {
+                    setPublishError(null);
+                    setPublishErrorStale(false);
+                  }}
                 >
                   {t("common.close")}
                 </ActionButton>
               }
             >
-              {getApiErrorMessage(
-                publishError,
-                t("masterData.sku.errPublishToggle"),
-              )}
+              {publishErrorStale
+                ? t("pv.admin.publishStale")
+                : getApiErrorMessage(
+                    publishError,
+                    t("masterData.sku.errPublishToggle"),
+                  )}
             </UiAlert>
           </Box>
         ) : null}

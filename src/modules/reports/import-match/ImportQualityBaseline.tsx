@@ -870,6 +870,8 @@ export default function ImportQualityBaseline() {
           <ResponsiveDataTable<ImportMatchBatch>
             actionColumnWidth="5%"
             hideActionHeader
+            /* 768–979px vẫn là tablet: dùng card thay bảng 1000px bị cắt. */
+            mobileBreakpoint="lg"
             headerCellStyle={{
               backgroundColor: "#d2edf7",
               backgroundImage: "none",

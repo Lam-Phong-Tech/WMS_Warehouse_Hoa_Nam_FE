@@ -1844,3 +1844,33 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/*
+ * Tablet 768–979px: bảng 7 cột hạ min-width từ 780px xuống 700px để vừa
+ * vùng nội dung 768px, không phát sinh cuộn ngang cấp trang. Cột thao tác
+ * được nới 6% → 12% (nút 40px + padding không còn tràn khỏi ô), phần lấy từ
+ * cột đại lý. Từ 980px trở lên giữ nguyên 1100px/780px hiện hành; ≤640px đã
+ * chuyển sang card.
+ */
+@media (min-width: 641px) and (max-width: 979px) {
+  #recipient-agency-rpt07 .rpt07-table {
+    min-width: 700px;
+  }
+
+  /* Nới cột nhận diện và cột thao tác, lấy lại từ hai cột số liệu ngắn. */
+  #recipient-agency-rpt07 .rpt07-table col:nth-child(2) {
+    width: 28% !important;
+  }
+
+  #recipient-agency-rpt07 .rpt07-table col:nth-child(5) {
+    width: 16% !important;
+  }
+
+  #recipient-agency-rpt07 .rpt07-table col:nth-child(6) {
+    width: 16% !important;
+  }
+
+  #recipient-agency-rpt07 .rpt07-table col:last-child {
+    width: 12% !important;
+  }
+}

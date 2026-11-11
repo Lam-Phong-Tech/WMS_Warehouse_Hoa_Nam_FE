@@ -38,6 +38,7 @@ import DashboardPage from "./DashboardPage";
 const today = dayjs().format("YYYY-MM-DD");
 const mockedGet = vi.mocked(http.get);
 const mockedGetPage = vi.mocked(http.getPage);
+const mockedPost = vi.mocked(http.post);
 
 const overview = {
   period: { from_date: today, to_date: today },
@@ -161,6 +162,28 @@ function CurrentLocation() {
     <output data-testid="current-location">
       {location.pathname + location.search + location.hash}
     </output>
+  );
+}
+
+async function pickDashboardFromDate(target: dayjs.Dayjs) {
+  const trigger = document.querySelector(
+    "#dashboard-date-from",
+  ) as HTMLButtonElement | null;
+  expect(trigger).not.toBeNull();
+  expect(trigger?.tagName).toBe("BUTTON");
+  fireEvent.click(trigger as HTMLButtonElement);
+  const panel = await screen.findByRole("dialog", { name: "Từ ngày" });
+  const panelMonth = dayjs().subtract(6, "day");
+  const monthsBack = panelMonth
+    .startOf("month")
+    .diff(target.startOf("month"), "month");
+  for (let index = 0; index < monthsBack; index += 1) {
+    fireEvent.click(within(panel).getByRole("button", { name: "Tháng trước" }));
+  }
+  fireEvent.click(
+    within(panel).getByRole("button", {
+      name: target.format("DD/MM/YYYY"),
+    }),
   );
 }
 
@@ -312,6 +335,34 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     // Chip trạng thái ở header GIỮ LẠI: đó là chỗ duy nhất còn nói ra lý do màn
     // trống, bỏ nốt thì không phân biệt được với lúc mất mạng.
     expect(screen.getByText("Giới hạn quyền")).toBeInTheDocument();
+  });
+
+  it("nút Đăng xuất trên màn không có quyền gọi API đăng xuất", async () => {
+    useAuthStore.setState({
+      isProfileLoaded: true,
+      isSuperAdmin: false,
+      permissionCodes: ["inventory.view"],
+    });
+
+    renderDashboard("/dashboard?screen=MAP-01");
+
+    // Sau khi store đăng xuất, cờ isProfileLoaded tắt và các query có thể được
+    // bật lại trong một nhịp render trước khi điều hướng. Giữ chúng ở trạng thái
+    // pending để test chỉ quan tâm đúng hành vi cần kiểm: gọi API đăng xuất.
+    mockedGet.mockImplementation(() => new Promise<never>(() => undefined));
+
+    // Màn MAP-01 bị chặn quyền vẫn dựng nút "Đăng xuất". Nút phải thu hồi
+    // phiên thật (POST /auth/logout) rồi mới điều hướng, không được chỉ đổi
+    // route về /login và để phiên cũ sống tiếp.
+    fireEvent.click(screen.getByRole("button", { name: "Đăng xuất" }));
+
+    await waitFor(() =>
+      expect(mockedPost).toHaveBeenCalledWith(
+        API_ENDPOINTS.LOGOUT,
+        {},
+        { withCredentials: true },
+      ),
+    );
   });
 
   it("thiếu warranty.view thì bỏ HẲN mọi nội dung bảo hành khỏi màn", async () => {
@@ -601,17 +652,19 @@ describe("DashboardPage — biểu đồ theo kỳ KPI", () => {
     await screen.findByText("Xuất sản phẩm đã ghi sổ");
 
     fireEvent.click(screen.getByRole("button", { name: "Tùy chọn" }));
-    const from = dayjs().subtract(300, "day").format("YYYY-MM-DD");
-    fireEvent.change(
-      document.querySelector("#dashboard-date-from") as HTMLInputElement,
-      { target: { value: from } },
-    );
-    await screen.findByText("Xuất sản phẩm đã ghi sổ");
+    const fromDate = dayjs().subtract(300, "day");
+    const from = fromDate.format("YYYY-MM-DD");
+    await pickDashboardFromDate(fromDate);
+    expect(document.querySelector('input[type="date"]')).toBeNull();
 
     // 300 ngày + 300 ngày kỳ trước > 366 ⇒ from_date là đúng đầu kỳ đang xem.
-    expect(mockedGet).toHaveBeenCalledWith(
-      API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW,
-      expect.objectContaining({ params: { from_date: from, to_date: today } }),
+    await waitFor(() =>
+      expect(mockedGet).toHaveBeenCalledWith(
+        API_ENDPOINTS.REPORTS_DASHBOARD_OVERVIEW,
+        expect.objectContaining({
+          params: { from_date: from, to_date: today },
+        }),
+      ),
     );
     expect(
       screen.getAllByText("kỳ dài, không so với kỳ trước").length,
