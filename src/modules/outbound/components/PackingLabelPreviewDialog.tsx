@@ -124,7 +124,10 @@ export function PackingLabelPreviewDialog({
       }
     >
       <Stack spacing={1.5} sx={{ alignItems: "center" }}>
-        {/* Khung mô phỏng tem: khổ đứng ~10x15cm, viền đậm như tem thật. */}
+        {/* Khung mô phỏng tem: khổ đứng ~10x15cm, viền đậm như tem thật.
+            Tỷ lệ 2/3 chỉ là kích thước TỐI THIỂU: danh sách sản phẩm dài làm
+            khung cao thêm theo nội dung, để cả phiếu cuộn trong DialogContent
+            thay vì khóa chiều cao rồi cho riêng phần sản phẩm tự cuộn. */}
         <Box
           sx={{
             width: "100%",
@@ -137,7 +140,9 @@ export function PackingLabelPreviewDialog({
             fontFamily: "var(--wms-font-family)",
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden",
+            // KHÔNG đặt overflow:hidden: nó biến khung thành scroll container
+            // và khóa chiều cao đúng 2/3, làm nội dung dài bị cắt thay vì cao
+            // thêm để cả phiếu cuộn trong DialogContent.
           }}
         >
           {/* Header: thương hiệu kho + khung góc đóng dấu (badge + QR). */}
@@ -295,7 +300,9 @@ export function PackingLabelPreviewDialog({
             ) : null}
           </Box>
 
-          {/* Sản phẩm. */}
+          {/* Sản phẩm. Không đặt overflow riêng: flex:1 giúp tem ngắn phủ kín
+              khung 2/3, còn danh sách dài thì khung tem cao lên và cả phiếu
+              cuộn ở DialogContent. */}
           <Box
             sx={{
               px: 1,
@@ -303,8 +310,6 @@ export function PackingLabelPreviewDialog({
               borderBottom: "1px solid",
               borderColor: "divider",
               flex: 1,
-              minHeight: 0,
-              overflow: "auto",
             }}
           >
             <Box
