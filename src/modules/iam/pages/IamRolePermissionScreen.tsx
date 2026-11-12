@@ -854,39 +854,40 @@ export function IamRolePermissionScreen({
                 });
               }}
             />
-            <MvpPageSizeSelector
-              menuClassName="hn-iam-menu"
-              value={rolePerPage}
-              onChange={(value) => {
-                void discardBefore(() => {
-                  setRolePerPage(value);
-                  setRolePage(1);
-                });
-              }}
-            />
-            {/* Tổng số + điều hướng trang đặt ngay cạnh ô tìm kiếm/số dòng mỗi
-             * trang (thay vì tách rời xuống dưới danh sách vai trò dài) để dễ tìm. */}
+            {/* Một hàng duy nhất dưới ô tìm kiếm: số dòng mỗi trang · tổng số ·
+             * điều hướng trang (thay vì tách rời thành nhiều hàng). */}
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
                 flexWrap: "wrap",
                 gap: 1,
               }}
             >
+              <MvpPageSizeSelector
+                menuClassName="hn-iam-menu"
+                value={rolePerPage}
+                onChange={(value) => {
+                  void discardBefore(() => {
+                    setRolePerPage(value);
+                    setRolePage(1);
+                  });
+                }}
+              />
               <UiText variant="secondary">
                 {t("iam.role.total", { count: rolePagination.total })}
               </UiText>
-              <UiPagination
-                page={rolePagination.current}
-                pageSize={rolePerPage}
-                total={rolePagination.total}
-                showTotal={false}
-                onPageChange={(page) =>
-                  void discardBefore(() => setRolePage(page))
-                }
-              />
+              <Box sx={{ marginLeft: "auto" }}>
+                <UiPagination
+                  page={rolePagination.current}
+                  pageSize={rolePerPage}
+                  total={rolePagination.total}
+                  showTotal={false}
+                  onPageChange={(page) =>
+                    void discardBefore(() => setRolePage(page))
+                  }
+                />
+              </Box>
             </Box>
             {rolesQuery.isError ? (
               <ApiErrorAlert
