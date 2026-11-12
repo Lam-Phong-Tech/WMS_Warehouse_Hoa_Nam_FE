@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { UiPagination, UiSelect } from "@/shared/ui";
+import { FILTER_WIDTH, UiPagination, UiSelect } from "@/shared/ui";
 import { useT } from "@/shared/i18n/useT";
 import { formatQuantity } from "@/shared/utils/format-number";
 
@@ -94,6 +94,7 @@ export function InventoryRecordList<T>({
           <UiSelect
             value={pageSize}
             aria-label={t("shared.table.perPageAria")}
+            minWidth={FILTER_WIDTH.pageSize}
             options={[10, 20, 50].map((size) => ({
               value: size,
               label: t("shared.table.perPage", { size }),

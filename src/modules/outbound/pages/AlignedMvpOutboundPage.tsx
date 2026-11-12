@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { BarChartOutlined, FilterOutlined } from "@/shared/components/icons";
 import {
+  FILTER_WIDTH,
   UiAutocomplete,
   UiIcon,
   UiPagination,
@@ -675,6 +676,7 @@ export default function AlignedMvpOutboundPage() {
                   value={perPage}
                   aria-label={t("outbound.list.pageSizeAria")}
                   menuClassName="hn-outbound-menu"
+                  minWidth={FILTER_WIDTH.pageSize}
                   options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
                     value: size,
                     label: `${size} / trang`,

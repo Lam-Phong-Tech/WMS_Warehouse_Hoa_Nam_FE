@@ -64,6 +64,23 @@ describe("UiPagination", () => {
     expect(onPageSizeChange).toHaveBeenCalledWith(20);
   });
 
+  it("ô chọn cỡ trang đủ rộng để '20 / trang' không xuống dòng", () => {
+    renderUi(
+      <UiPagination
+        page={1}
+        pageSize={10}
+        total={25}
+        onPageChange={() => {}}
+        onPageSizeChange={() => {}}
+      />,
+    );
+    const selectRoot = screen
+      .getByRole("combobox", { name: "Số bản ghi mỗi trang" })
+      .closest(".MuiInputBase-root");
+    expect(selectRoot).not.toBeNull();
+    expect(selectRoot).toHaveStyle({ minWidth: "128px" });
+  });
+
   it("không truyền onPageSizeChange → ẩn Select cỡ trang", () => {
     renderUi(
       <UiPagination

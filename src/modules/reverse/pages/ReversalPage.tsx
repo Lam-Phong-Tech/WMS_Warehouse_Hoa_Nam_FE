@@ -2,7 +2,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useT } from "@/shared/i18n/useT";
-import { Box, UiPagination, UiSelect, UiTextField } from "@/shared/ui";
+import {
+  Box,
+  FILTER_WIDTH,
+  UiPagination,
+  UiSelect,
+  UiTextField,
+} from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -361,7 +367,7 @@ export default function ReversalPage() {
                 value={perPage}
                 aria-label={t("shared.table.rowsPerPageAria")}
                 menuClassName="hn-reversal-menu"
-                minWidth={76}
+                minWidth={FILTER_WIDTH.pageSize}
                 options={perPageOptions.map((size) => ({
                   value: size,
                   label: t("shared.table.perPage", { size }),

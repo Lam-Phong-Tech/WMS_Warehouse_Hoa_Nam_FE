@@ -8,6 +8,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Pagination from "@mui/material/Pagination";
 import Select from "@mui/material/Select";
 import { SPACING } from "@/shared/ui/tokens";
+import { FILTER_WIDTH } from "@/shared/ui/forms/control-width";
 import { UiText } from "./UiText";
 import { useT } from "@/shared/i18n/useT";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
@@ -87,6 +88,7 @@ export function UiPagination({
             size="small"
             value={safeSize}
             disabled={disabled}
+            sx={{ minWidth: FILTER_WIDTH.pageSize }}
             inputProps={{ "aria-label": t("shared.table.perPageAria") }}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
           >

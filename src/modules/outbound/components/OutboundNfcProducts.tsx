@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { RowActionButton } from "@/shared/components/actions";
 import { rowActivationProps } from "@/shared/components/data-display/row-activation";
-import { UiPagination, UiSelect } from "@/shared/ui";
+import { FILTER_WIDTH, UiPagination, UiSelect } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -260,6 +260,7 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
               <UiSelect
                 value={perPage}
                 aria-label={t("outbound.list.pageSizeAria")}
+                minWidth={FILTER_WIDTH.pageSize}
                 options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
                   value: size,
                   label: t("shared.table.perPage", { size }),

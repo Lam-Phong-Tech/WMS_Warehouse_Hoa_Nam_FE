@@ -14,8 +14,8 @@ import { TYPOGRAPHY } from "@/shared/ui/tokens";
 
 /** Thang bề rộng dùng chung cho control lọc — mọi thanh lọc lấy ở đây. */
 export const FILTER_WIDTH = {
-  /** Ô "N / trang". */
-  pageSize: 110,
+  /** Ô "N / trang" — đủ rộng để "20 / trang", "50 / trang" không xuống dòng. */
+  pageSize: 128,
   /**
    * Sàn cho dropdown lọc; nhãn dài hơn thì tự nới (fitSelectMinWidth). Đặt
    * vừa đủ để nhãn ngắn ("Loại: Tất cả") không cụt lủn, nhưng không đội bề

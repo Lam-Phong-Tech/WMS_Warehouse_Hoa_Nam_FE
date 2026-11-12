@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { AppPageHeader } from "@/app/layouts/AppPageHeader";
 import {
   Box,
+  FILTER_WIDTH,
   SEMANTIC_LIGHT,
   Stack,
   Tooltip,
@@ -850,7 +851,7 @@ export default function InventoryPage() {
                 value={perPage}
                 aria-label={t("inventory.balance.pageSizeAria")}
                 menuClassName="hn-inventory-menu"
-                minWidth={76}
+                minWidth={FILTER_WIDTH.pageSize}
                 options={pageSizeOptions(perPage).map((size) => ({
                   value: size,
                   label: t("shared.table.perPage", { size }),
