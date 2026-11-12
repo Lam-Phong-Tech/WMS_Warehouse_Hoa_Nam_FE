@@ -125,10 +125,10 @@ describe("RPT-08 shared report presentation", () => {
         (cell) => cell.textContent,
       ),
     ).toEqual(rows.map((_, index) => String(11 + index)));
-    fireEvent.change(
+    fireEvent.mouseDown(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
-      { target: { value: "20" } },
     );
+    fireEvent.click(screen.getByRole("option", { name: "20 / trang" }));
     expect(onPageSizeChange).toHaveBeenCalledWith(20);
   });
   it("keeps page numbers functional and disables previous on page one", () => {

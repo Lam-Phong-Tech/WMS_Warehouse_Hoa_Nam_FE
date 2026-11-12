@@ -2636,15 +2636,7 @@
 .hn-rpt02 .rpt02-page-size {
   margin-left: auto;
 }
-.hn-rpt02 .rpt02-page-size select {
-  min-height: 36px;
-  padding: 0 30px 0 12px;
-  border: 1px solid var(--ops-line);
-  border-radius: var(--ops-radius-control);
-  color: var(--ops-text);
-  background: var(--ops-surface);
-  font: inherit;
-}
+
 @container hn-rpt02 (max-width: 1000px) {
   .hn-rpt02 .rpt02-filter {
     grid-template-columns: repeat(2, minmax(0, 1fr));

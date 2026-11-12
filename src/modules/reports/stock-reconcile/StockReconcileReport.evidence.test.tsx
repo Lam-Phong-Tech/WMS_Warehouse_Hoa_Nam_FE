@@ -272,7 +272,8 @@ describe("stock reconciliation evidence navigation", () => {
           .closest("tr")!,
       ).getAllByRole("cell")[0],
     ).toHaveTextContent(/^11$/);
-    fireEvent.change(pageSize, { target: { value: "20" } });
+    fireEvent.mouseDown(pageSize);
+    fireEvent.click(screen.getByRole("option", { name: "20 / trang" }));
     expect(
       screen.getByRole("button", { name: /Xem bằng chứng PAGE-01/ }),
     ).toBeInTheDocument();

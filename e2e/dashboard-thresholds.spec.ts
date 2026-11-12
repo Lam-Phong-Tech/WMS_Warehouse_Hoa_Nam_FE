@@ -105,7 +105,10 @@ for (const theme of ["light", "dark"]) {
     ).toBeVisible();
     await expect(detail).toHaveCount(0);
     await page.getByRole("button", { name: "Xóa lọc", exact: true }).click();
-    await page.getByLabel("Số dòng mỗi trang").selectOption("50");
+    await page
+      .getByRole("combobox", { name: "Số dòng mỗi trang" })
+      .click();
+    await page.getByRole("option", { name: "50 / trang" }).click();
     await expect(
       page.getByText("Hiển thị 1–50 / 120 SKU", { exact: true }),
     ).toBeVisible();

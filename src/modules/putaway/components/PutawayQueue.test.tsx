@@ -136,13 +136,13 @@ describe("PTW-00 queue interactions", () => {
     rendered.rerender(<PutawayQueue {...input} tasks={[task(1), task(2)]} />);
     expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
     expect(screen.getByText("Hiển thị 1–2 / 2 BOX")).toBeInTheDocument();
-    await user.selectOptions(
+    await user.click(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
-      "20",
     );
+    await user.click(screen.getByRole("option", { name: "20 / trang" }));
     expect(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
-    ).toHaveValue("20");
+    ).toHaveTextContent("20 / trang");
   });
 
   it("offers a multi-box tray action for two or more pending BOX", async () => {

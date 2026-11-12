@@ -761,9 +761,12 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Bảng số liệu" }));
-    fireEvent.change(screen.getByLabelText("Số dòng mỗi trang"), {
-      target: { value: "10" },
-    });
+    fireEvent.mouseDown(
+      screen.getByLabelText("Số dòng mỗi trang"),
+    );
+    fireEvent.click(
+      screen.getByRole("option", { name: "10 / trang" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: /page 2|trang 2/i }));
     expect(screen.getByText("Hiển thị 11–14 / 14 bản ghi")).toBeInTheDocument();
     currentOverview = {
@@ -786,7 +789,9 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     expect(
       screen.getByRole("button", { name: /14 ngày gần nhất/ }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Số dòng mỗi trang")).toHaveValue("10");
+    expect(screen.getByLabelText("Số dòng mỗi trang")).toHaveTextContent(
+      "10 / trang",
+    );
     expect(screen.getByText("Hiển thị 11–14 / 14 bản ghi")).toBeInTheDocument();
   });
 

@@ -1,7 +1,7 @@
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
 import { useMemo, useState, type ReactNode } from "react";
-import { UiIcon, UiPagination, UiSelect } from "@/shared/ui";
+import { UiIcon, UiPagination, UiSelect, FILTER_WIDTH } from "@/shared/ui";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
 import { useClientSort } from "@/shared/components/data-display/useClientSort";
@@ -515,20 +515,19 @@ export function PutawayQueue(props: Props) {
             </span>
             <label className="ptw-page-size">
               <span>{t("putaway.queue.rows")}</span>
-              <select
+              <UiSelect
                 aria-label={t("putaway.queue.rowsPerPage")}
                 value={pageSize}
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value));
+                minWidth={FILTER_WIDTH.pageSize}
+                options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
+                  value: size,
+                  label: t("shared.table.perPage", { size }),
+                }))}
+                onChange={(value) => {
+                  setPageSize(Number(value));
                   setPage(1);
                 }}
-              >
-                {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                  <option key={size} value={size}>
-                    {t("shared.table.perPage", { size })}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
           </div>
           <UiPagination

@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { useState } from "react";
 import { useT } from "@/shared/i18n/useT";
-import { UiPagination } from "@/shared/ui";
+import { UiPagination, UiSelect, FILTER_WIDTH } from "@/shared/ui";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { activeLocale, type FlowRow, type TrendRow } from "./overview-data";
 import { stockFlowDays } from "./snapshot-stock-flow-model";
@@ -94,20 +94,19 @@ export function SnapshotFlowTable({
               total: days.length,
             })}
           </span>
-          <select
-            aria-label={t("shared.table.rowsPerPageAria")}
+          <UiSelect
             value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
+            aria-label={t("shared.table.rowsPerPageAria")}
+            minWidth={FILTER_WIDTH.pageSize}
+            options={[5, ...TABLE_PAGE_SIZE_OPTIONS].map((size) => ({
+              value: size,
+              label: t("shared.table.perPage", { size }),
+            }))}
+            onChange={(value) => {
+              setPageSize(Number(value));
               setPage(1);
             }}
-          >
-            {[5, ...TABLE_PAGE_SIZE_OPTIONS].map((size) => (
-              <option key={size} value={size}>
-                {t("shared.table.perPage", { size })}
-              </option>
-            ))}
-          </select>
+          />
         </div>
         <UiPagination
           page={currentPage}

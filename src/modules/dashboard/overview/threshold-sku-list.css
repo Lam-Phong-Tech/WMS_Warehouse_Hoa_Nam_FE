@@ -231,15 +231,7 @@
   gap: 14px;
   min-width: 0;
 }
-.threshold-pagination select {
-  height: 40px;
-  max-width: 100%;
-  padding: 0 10px;
-  border: 1px solid var(--ops-line);
-  border-radius: var(--ops-radius-control);
-  background: var(--ops-surface);
-  color: var(--ops-text);
-}
+
 .threshold-pagination > nav {
   margin-left: auto;
   min-width: 0;

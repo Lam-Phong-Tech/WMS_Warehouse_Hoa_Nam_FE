@@ -166,17 +166,17 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     const section = table.closest("section")!;
     await user.click(within(section).getByRole("button", { name: "2" }));
     expect(numbers()).toEqual(["11", "12"]);
-    await user.selectOptions(
+    await user.click(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
-      "20",
     );
+    await user.click(screen.getByRole("option", { name: "20" }));
     expect(numbers()).toEqual(
       Array.from({ length: 12 }, (_, i) => String(i + 1)),
     );
-    await user.selectOptions(
+    await user.click(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
-      "50",
     );
+    await user.click(screen.getByRole("option", { name: "50" }));
     expect(numbers()).toHaveLength(12);
   });
 

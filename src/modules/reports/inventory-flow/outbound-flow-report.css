@@ -1457,42 +1457,9 @@
   gap: 12px 24px;
 }
 .outbound-page-size {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  width: 110px;
-  height: 36px;
-  border: 1px solid var(--ops-line);
-  border-radius: 6px;
-  background: var(--ops-surface);
-  color: var(--ops-heading);
-  font-size: 13px;
-}
-.outbound-page-size select {
-  width: 100%;
-  height: 100%;
-  padding: 0 30px 0 12px;
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.outbound-page-size > svg {
-  position: absolute;
-  right: 10px;
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  color: var(--ops-muted);
-  pointer-events: none;
-}
-.outbound-page-size:focus-within {
-  outline: 2px solid var(--ops-link);
-  outline-offset: 2px;
+  gap: 8px;
 }
 .outbound-pagination {
   display: flex;

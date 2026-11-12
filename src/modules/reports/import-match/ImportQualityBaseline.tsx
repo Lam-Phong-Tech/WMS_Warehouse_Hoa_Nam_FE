@@ -13,6 +13,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import type { Dayjs } from "dayjs";
 import {
   Box,
+  FILTER_WIDTH,
   Stack,
   UiAlert,
   UiButton,
@@ -1007,20 +1008,16 @@ export default function ImportQualityBaseline() {
               / {fmt(pagination.total)}
               {" " + tUi("updatedUi.text_3c28fe9f81e1")}
             </Box>
-            <select
-              className="rpt04-page-size"
+            <UiSelect
               aria-label={tUi("shared.table.rowsPerPageAria")}
+              minWidth={FILTER_WIDTH.pageSize}
               value={pagination.perPage}
-              onChange={(event) =>
-                pagination.setPerPage(Number(event.target.value))
-              }
-            >
-              {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {tUi("shared.table.perPage", { size: String(size) })}
-                </option>
-              ))}
-            </select>
+              options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
+                value: size,
+                label: tUi("shared.table.perPage", { size: String(size) }),
+              }))}
+              onChange={(value) => pagination.setPerPage(Number(value))}
+            />
           </Box>
           <Stack
             className="hn-report-pagination"

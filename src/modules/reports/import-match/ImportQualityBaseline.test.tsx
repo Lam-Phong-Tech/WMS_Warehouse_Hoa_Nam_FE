@@ -62,10 +62,10 @@ it("numbers records across pages and resets numbering after filtering or changin
   );
   fireEvent.click(screen.getByRole("button", { name: "2" }));
   expect(numbers()).toEqual(["11", "12"]);
-  fireEvent.change(
+  fireEvent.mouseDown(
     screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
-    { target: { value: "20" } },
   );
+  fireEvent.click(screen.getByRole("option", { name: "20 / trang" }));
   expect(numbers()).toEqual(
     Array.from({ length: 12 }, (_, i) => String(i + 1)),
   );

@@ -22,8 +22,10 @@ import { checkDateRange, pastDateBounds } from "@/shared/validation/date-rules";
 import { toast } from "sonner";
 import {
   Box,
+  FILTER_WIDTH,
   Stack,
   UiStatusBadge,
+  UiSelect,
   type UiStatusTone,
   RADIUS,
   SEMANTIC_LIGHT as S,
@@ -1601,20 +1603,19 @@ export default function MovementTraceReport() {
             </span>
             <label className="trace-page-size">
               Số dòng/trang{" "}
-              <select
+              <UiSelect
                 aria-label="Số dòng mỗi trang"
                 value={ledgerPageSize}
-                onChange={(event) => {
-                  setLedgerPageSize(Number(event.target.value));
+                minWidth={FILTER_WIDTH.pageSize}
+                options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
+                  value: size,
+                  label: String(size),
+                }))}
+                onChange={(value) => {
+                  setLedgerPageSize(Number(value));
                   setLedgerPage(1);
                 }}
-              >
-                {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
           </div>
           <nav

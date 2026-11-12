@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { UiButton, UiPagination } from "@/shared/ui";
+import { UiButton, UiPagination, UiSelect, FILTER_WIDTH } from "@/shared/ui";
 import { ActionIconButton, RowActionButton } from "@/shared/components/actions";
 import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ResponsiveDataTable } from "@/shared/components/data-display/ResponsiveDataTable";
@@ -214,20 +214,19 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
                 {Math.min(start + pageSize, filtered.length)} /{" "}
                 {fmt(filtered.length)} SKU
               </span>
-              <select
-                aria-label="Số dòng mỗi trang"
+              <UiSelect
                 value={pageSize}
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value));
+                aria-label="Số dòng mỗi trang"
+                minWidth={FILTER_WIDTH.pageSize}
+                options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
+                  value: size,
+                  label: `${size} / trang`,
+                }))}
+                onChange={(value) => {
+                  setPageSize(Number(value));
                   resetPage();
                 }}
-              >
-                {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                  <option key={size} value={size}>
-                    {size} / trang
-                  </option>
-                ))}
-              </select>
+              />
             </div>
             <UiPagination
               page={current}

@@ -12,7 +12,7 @@ import {
   SearchOutlined,
   WarningOutlined,
 } from "@/shared/components/icons";
-import { Drawer } from "@/shared/ui";
+import { Drawer, UiSelect, FILTER_WIDTH } from "@/shared/ui";
 import { ReportDateRangePicker } from "../components/ReportDateRangePicker";
 import {
   hasPermission,
@@ -841,20 +841,19 @@ export default function GoodsTraceReport() {
                         Hiển thị {(page - 1) * pageSize + 1}–
                         {Math.min(page * pageSize, rows.length)} / {rows.length}{" "}
                         sự kiện{" "}
-                        <select
+                        <UiSelect
                           aria-label="Số dòng mỗi trang"
                           value={pageSize}
-                          onChange={(e) => {
-                            setPageSize(Number(e.target.value));
+                          minWidth={FILTER_WIDTH.pageSize}
+                          options={[10, 25, 50].map((n) => ({
+                            value: n,
+                            label: `${n} / trang`,
+                          }))}
+                          onChange={(value) => {
+                            setPageSize(Number(value));
                             setPage(1);
                           }}
-                        >
-                          {[10, 25, 50].map((n) => (
-                            <option key={n} value={n}>
-                              {n} / trang
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </div>
                       <div>
                         <button

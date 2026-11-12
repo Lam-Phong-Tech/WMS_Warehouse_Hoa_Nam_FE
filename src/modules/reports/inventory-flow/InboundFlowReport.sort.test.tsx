@@ -80,26 +80,34 @@ describe("RPT-01 · sắp xếp ngày nhập", () => {
       within(document.querySelector(".inbound-table-wrap tbody")!).getAllByRole(
         "row",
       );
-    const pageSize = screen.getByRole("combobox", {
-      name: "Số dòng mỗi trang",
-    });
+    const pageSize = () =>
+      screen.getByRole("combobox", {
+        name: "Số dòng mỗi trang",
+      });
+    const choosePageSize = (size: number) => {
+      fireEvent.mouseDown(pageSize());
+      fireEvent.click(
+        screen.getByRole("option", { name: `${size} / trang` }),
+      );
+    };
+    fireEvent.mouseDown(pageSize());
     expect(
-      within(pageSize)
-        .getAllByRole("option")
-        .map((option) => option.getAttribute("value")),
-    ).toEqual(["10", "20", "50"]);
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["10 / trang", "20 / trang", "50 / trang"]);
+    // Đóng menu bằng chính lựa chọn hiện tại trước khi thao tác tiếp.
+    fireEvent.click(screen.getByRole("option", { name: "10 / trang" }));
     expect(rows()).toHaveLength(10);
 
     fireEvent.click(screen.getByRole("button", { name: "2" }));
     expect(rows()).toHaveLength(1);
 
     for (const size of [20, 50]) {
-      fireEvent.change(pageSize, { target: { value: String(size) } });
+      choosePageSize(size);
       expect(rows()).toHaveLength(11);
       expect(rows()[0]).toHaveTextContent("PN-0001");
     }
 
-    fireEvent.change(pageSize, { target: { value: "10" } });
+    choosePageSize(10);
     expect(rows()).toHaveLength(10);
     expect(rows()[0]).toHaveTextContent("PN-0001");
   });

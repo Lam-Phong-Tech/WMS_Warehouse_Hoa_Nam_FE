@@ -16,7 +16,7 @@ import {
 } from "react";
 import dayjs from "dayjs";
 import { useSearchParams } from "react-router-dom";
-import { VuexyDemoIcon } from "@/shared/ui";
+import { VuexyDemoIcon, UiSelect, FILTER_WIDTH } from "@/shared/ui";
 import { ReportDateRangePicker } from "@/modules/reports/components/ReportDateRangePicker";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { InboundReportDetail } from "./InboundReportDetail";
@@ -1404,21 +1404,21 @@ export default function InboundFlowReport() {
                       })}
                 </span>
                 <label className="inbound-page-size">
-                  <select
+                  <UiSelect
                     value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value));
+                    onChange={(value) => {
+                      setPageSize(Number(value));
                       setPage(1);
                     }}
                     aria-label={tUi("shared.table.rowsPerPageAria")}
-                  >
-                    {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {tUi("shared.table.perPage", { size: String(size) })}
-                      </option>
-                    ))}
-                  </select>
-                  <Icon name="chevron-down" />
+                    minWidth={FILTER_WIDTH.pageSize}
+                    options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
+                      value: size,
+                      label: tUi("shared.table.perPage", {
+                        size: String(size),
+                      }),
+                    }))}
+                  />
                 </label>
               </div>
               <div className="inbound-pagination hn-report-pagination">

@@ -180,9 +180,12 @@ describe("DashboardSystemViews — định mức tồn", () => {
       within(within(table).getAllByRole("row")[1]).getAllByRole("cell")[0],
     ).toHaveTextContent("11");
     expect(within(table).queryByText("SKU-01")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Số dòng mỗi trang"), {
-      target: { value: "20" },
-    });
+    fireEvent.mouseDown(
+      screen.getByLabelText("Số dòng mỗi trang"),
+    );
+    fireEvent.click(
+      screen.getByRole("option", { name: "20 / trang" }),
+    );
     expect(screen.getByText("Hiển thị 1–20 / 25 SKU")).toBeInTheDocument();
     expect(within(table).getAllByRole("row")).toHaveLength(21);
   });

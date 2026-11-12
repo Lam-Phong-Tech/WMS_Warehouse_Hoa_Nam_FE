@@ -50,9 +50,12 @@ describe("SnapshotFlowTable pagination", () => {
     expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(
       2,
     );
-    fireEvent.change(screen.getByLabelText("Số dòng mỗi trang"), {
-      target: { value: "10" },
-    });
+    fireEvent.mouseDown(
+      screen.getByLabelText("Số dòng mỗi trang"),
+    );
+    fireEvent.click(
+      screen.getByRole("option", { name: "10 / trang" }),
+    );
     expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(
       10,
     );

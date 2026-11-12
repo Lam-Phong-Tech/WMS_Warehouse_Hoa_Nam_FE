@@ -1202,17 +1202,6 @@
   gap: 14px;
 }
 
-#recipient-agency-rpt07 .rpt07-page-size select {
-  min-height: 36px;
-  padding: 0 8px;
-  border: 1px solid var(--ops-line);
-  border-radius: var(--ops-radius-control);
-  background: var(--ops-surface);
-  color: var(--ops-text);
-  font: inherit;
-}
-
-#recipient-agency-rpt07 .rpt07-page-size select:focus-visible,
 #recipient-agency-rpt07 .rpt07-search-clear:focus-visible {
   outline: 2px solid var(--ops-link);
   outline-offset: 2px;

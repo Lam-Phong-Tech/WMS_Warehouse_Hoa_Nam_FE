@@ -9,7 +9,7 @@ import { ReportFilterCombobox } from "@/modules/reports/components/ReportFilterC
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import { Box } from "@/shared/ui";
+import { Box, FILTER_WIDTH, UiSelect } from "@/shared/ui";
 import {
   CheckCircleOutlined,
   FileTextOutlined,
@@ -1244,20 +1244,19 @@ export default function RecipientAgencyReport() {
                 )}
                 <label className="rpt07-page-size">
                   Số dòng/trang
-                  <select
+                  <UiSelect
                     aria-label="Số dòng mỗi trang"
                     value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value));
+                    minWidth={FILTER_WIDTH.pageSize}
+                    options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
+                      value: size,
+                      label: String(size),
+                    }))}
+                    onChange={(value) => {
+                      setPageSize(Number(value));
                       setPage(1);
                     }}
-                  >
-                    {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </label>
               </div>
               <Pagination

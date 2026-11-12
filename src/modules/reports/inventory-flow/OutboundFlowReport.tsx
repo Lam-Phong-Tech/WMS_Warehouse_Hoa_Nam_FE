@@ -17,7 +17,7 @@ import {
 import dayjs from "dayjs";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { VuexyDemoIcon } from "@/shared/ui";
+import { VuexyDemoIcon, UiSelect, FILTER_WIDTH } from "@/shared/ui";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { AlignedOutboundDetailModal } from "@/modules/outbound/components/AlignedOutboundDetailModal";
 import { OutboundIntakeModal } from "@/modules/outbound/components/OutboundIntakeModal";
@@ -1624,21 +1624,21 @@ export default function OutboundFlowReport() {
                       })}
                 </span>
                 <label className="outbound-page-size">
-                  <select
+                  <UiSelect
                     value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value));
+                    onChange={(value) => {
+                      setPageSize(Number(value));
                       setPage(1);
                     }}
                     aria-label={tUi("shared.table.rowsPerPageAria")}
-                  >
-                    {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                      <option key={size} value={size}>
-                        {tUi("shared.table.perPage", { size: String(size) })}
-                      </option>
-                    ))}
-                  </select>
-                  <Icon name="chevron-down" />
+                    minWidth={FILTER_WIDTH.pageSize}
+                    options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
+                      value: size,
+                      label: tUi("shared.table.perPage", {
+                        size: String(size),
+                      }),
+                    }))}
+                  />
                 </label>
               </div>
               <div className="outbound-pagination hn-report-pagination">

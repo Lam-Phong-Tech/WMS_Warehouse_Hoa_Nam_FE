@@ -15,7 +15,7 @@ import {
 } from "@/shared/constants/wms-permissions";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { VuexyDemoIcon } from "@/shared/ui";
+import { VuexyDemoIcon, UiSelect, FILTER_WIDTH } from "@/shared/ui";
 import {
   ISO_DATE,
   sumRows,
@@ -1727,24 +1727,25 @@ export default function StockReconcileReport() {
                                 / {displayRows.length} SKU
                               </span>
                               <label className="rpt02-page-size">
-                                <select
+                                <UiSelect
                                   value={pageSize}
                                   aria-label={tUi(
                                     "shared.table.rowsPerPageAria",
                                   )}
-                                  onChange={(event) => {
-                                    setPageSize(Number(event.target.value));
+                                  minWidth={FILTER_WIDTH.pageSize}
+                                  options={TABLE_PAGE_SIZE_OPTIONS.map(
+                                    (size) => ({
+                                      value: size,
+                                      label: tUi("shared.table.perPage", {
+                                        size: String(size),
+                                      }),
+                                    }),
+                                  )}
+                                  onChange={(value) => {
+                                    setPageSize(Number(value));
                                     setPage(1);
                                   }}
-                                >
-                                  {TABLE_PAGE_SIZE_OPTIONS.map((size) => (
-                                    <option key={size} value={size}>
-                                      {tUi("shared.table.perPage", {
-                                        size: String(size),
-                                      })}
-                                    </option>
-                                  ))}
-                                </select>
+                                />
                               </label>
                             </div>
                             <div className="hn-report-pagination">

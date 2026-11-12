@@ -189,16 +189,3 @@
 #rpt04-results .hn-report-pagination {
   margin-left: auto;
 }
-#rpt04-results .rpt04-page-size {
-  min-height: 36px;
-  border: 1px solid var(--ops-line);
-  border-radius: var(--ops-radius-control);
-  padding: 0 10px;
-  color: var(--ops-text);
-  background: var(--ops-surface);
-  font: inherit;
-}
-#rpt04-results .rpt04-page-size:focus-visible {
-  outline: 2px solid var(--ops-link);
-  outline-offset: 2px;
-}

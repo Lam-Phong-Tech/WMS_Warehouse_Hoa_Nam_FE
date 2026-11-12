@@ -10,7 +10,15 @@ import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import dayjs, { type Dayjs } from "dayjs";
-import { Box, Stack, UiAlert, UiButton, UiSpinner } from "@/shared/ui";
+import {
+  Box,
+  FILTER_WIDTH,
+  Stack,
+  UiAlert,
+  UiButton,
+  UiSelect,
+  UiSpinner,
+} from "@/shared/ui";
 import {
   CheckCircleOutlined,
   FileTextOutlined,
@@ -1447,29 +1455,16 @@ export default function WarrantyComponentsReport() {
                   }}
                 >
                   Số dòng/trang
-                  <Box
-                    component="select"
+                  <UiSelect
                     aria-label={tUi("shared.table.rowsPerPageAria")}
+                    minWidth={FILTER_WIDTH.pageSize}
                     value={pagination.perPage}
-                    onChange={(event) =>
-                      pagination.setPerPage(Number(event.target.value))
-                    }
-                    sx={{
-                      minHeight: 36,
-                      px: "10px",
-                      border: "1px solid var(--ops-line)",
-                      borderRadius: "var(--ops-radius-control)",
-                      bgcolor: "var(--ops-surface)",
-                      color: "var(--ops-text)",
-                      font: "inherit",
-                    }}
-                  >
-                    {[5, ...TABLE_PAGE_SIZE_OPTIONS].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </Box>
+                    options={[5, ...TABLE_PAGE_SIZE_OPTIONS].map((size) => ({
+                      value: size,
+                      label: String(size),
+                    }))}
+                    onChange={(value) => pagination.setPerPage(Number(value))}
+                  />
                 </Box>
                 <Box sx={{ color: "var(--ops-muted)", fontSize: 14 }}>
                   {range[0].format("DD/MM/YYYY")}–

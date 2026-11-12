@@ -276,9 +276,7 @@
   background: transparent;
   color: var(--ptw-muted);
 }
-.hn-putaway-page :is(.ptw-status-filter, .ptw-receipt-filter) select,
-.hn-putaway-page .ptw-page-size select,
-.hn-putaway-page select.ptw-page-size {
+.hn-putaway-page :is(.ptw-status-filter, .ptw-receipt-filter) select {
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -292,8 +290,7 @@
   cursor: pointer;
   transition: border-color 150ms ease;
 }
-.hn-putaway-page :is(.ptw-status-filter, .ptw-receipt-filter) select:hover,
-.hn-putaway-page .ptw-page-size select:hover {
+.hn-putaway-page :is(.ptw-status-filter, .ptw-receipt-filter) select:hover {
   border-color: var(--ptw-primary);
 }
 .hn-putaway-page .ptw-filter-actions {
@@ -642,13 +639,7 @@
   color: var(--ptw-muted);
   font-size: 14px;
 }
-.hn-putaway-page .ptw-page-size select,
-.hn-putaway-page select.ptw-page-size {
-  width: auto;
-  min-width: 60px;
-  height: 34px;
-  padding-block: 5px;
-}
+
 .hn-putaway-page .ptw-selection {
   display: flex;
   align-items: center;

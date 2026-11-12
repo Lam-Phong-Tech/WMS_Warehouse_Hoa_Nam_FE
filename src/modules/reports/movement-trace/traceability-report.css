@@ -1778,14 +1778,6 @@
   align-items: center;
   gap: 8px;
 }
-#traceability-rpt03 .trace-page-size select {
-  min-height: 36px;
-  border: 1px solid var(--ops-line);
-  border-radius: var(--ops-radius-control);
-  background: var(--ops-surface);
-  color: var(--ops-text);
-  font: inherit;
-}
 #traceability-rpt03 .trace-pagination nav {
   margin-left: auto;
 }

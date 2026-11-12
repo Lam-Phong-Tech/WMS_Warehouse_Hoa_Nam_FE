@@ -124,15 +124,7 @@
   gap: 14px;
 }
 
-.snapshot-flow-table-page-info select {
-  min-height: 36px;
-  padding: 4px 8px;
-  border: 1px solid var(--snapshot-line);
-  border-radius: var(--ops-radius-control);
-  background: var(--ops-surface);
-  color: var(--ops-text);
-  font: inherit;
-}
+
 
 .snapshot-flow-table-pagination > nav {
   margin-left: auto;

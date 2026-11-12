@@ -6,10 +6,12 @@ import type { ReportExportChoice } from "@/modules/reports/components/report-exp
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  FILTER_WIDTH,
   UiAlert,
   UiButton,
   UiDialog,
   UiDrawer,
+  UiSelect,
   UiTextField,
 } from "@/shared/ui";
 import {
@@ -1117,17 +1119,16 @@ export default function PackingLabelPrintReport() {
                   </span>
                   <label>
                     {t("packingLabelReport.rows")}{" "}
-                    <select
+                    <UiSelect
                       aria-label={t("packingLabelReport.rowsPerPage")}
                       value={pageSize}
-                      onChange={(e) => setPageSize(Number(e.target.value))}
-                    >
-                      {[10, 20, 50].map((n) => (
-                        <option key={n} value={n}>
-                          {t("packingLabelReport.perPage", { count: n })}
-                        </option>
-                      ))}
-                    </select>
+                      minWidth={FILTER_WIDTH.pageSize}
+                      options={[10, 20, 50].map((n) => ({
+                        value: n,
+                        label: t("packingLabelReport.perPage", { count: n }),
+                      }))}
+                      onChange={(value) => setPageSize(Number(value))}
+                    />
                   </label>
                 </div>
                 <nav
