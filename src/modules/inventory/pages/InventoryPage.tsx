@@ -56,6 +56,7 @@ import {
 } from "../hooks/use-inventory";
 import { BalanceDetailModal } from "../components/BalanceDetailModal";
 import { TraceModal } from "../components/TraceModal";
+import { movementTypeTone } from "../movement-tone";
 import type {
   InventoryBalanceRow,
   InventoryReconciliationStatus,
@@ -401,26 +402,29 @@ export default function InventoryPage() {
       width: "19%",
       sortType: "value",
       sortAccessor: (row) => row.type,
-      render: (row) => (
-        <Stack sx={{ alignItems: "flex-start" }}>
-          <UiStatusBadge
-            tone="neutral"
-            data-tone="neutral"
-            label={businessLabel(
-              MOVEMENT_TYPE_LABELS,
-              row.type,
-              t("inventory.fallback.movementType"),
-            )}
-          />
-          <UiText variant="secondary">
-            {businessLabel(
-              MOVEMENT_STATUS_LABELS,
-              row.status,
-              t("inventory.fallback.status"),
-            )}
-          </UiText>
-        </Stack>
-      ),
+      render: (row) => {
+        const tone = movementTypeTone(row.type);
+        return (
+          <Stack sx={{ alignItems: "flex-start" }}>
+            <UiStatusBadge
+              tone={tone}
+              data-tone={tone}
+              label={businessLabel(
+                MOVEMENT_TYPE_LABELS,
+                row.type,
+                t("inventory.fallback.movementType"),
+              )}
+            />
+            <UiText variant="secondary">
+              {businessLabel(
+                MOVEMENT_STATUS_LABELS,
+                row.status,
+                t("inventory.fallback.status"),
+              )}
+            </UiText>
+          </Stack>
+        );
+      },
     },
     {
       key: "sku",

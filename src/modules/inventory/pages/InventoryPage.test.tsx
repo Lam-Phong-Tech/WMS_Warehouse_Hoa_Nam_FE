@@ -228,6 +228,33 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(await screen.findByText("SKU-MV-001")).toBeInTheDocument();
   });
 
+  it("tô màu chip loại biến động theo từng loại", async () => {
+    mockQueries({
+      movements: [
+        { ...MOVEMENT_ROW, id: "mv-r", movementId: "MV-R", type: "RECEIPT" },
+        { ...MOVEMENT_ROW, id: "mv-i", movementId: "MV-I", type: "ISSUE" },
+        {
+          ...MOVEMENT_ROW,
+          id: "mv-c",
+          movementId: "MV-C",
+          type: "COMPONENT_ISSUE",
+        },
+        { ...MOVEMENT_ROW, id: "mv-v", movementId: "MV-V", type: "REVERSAL" },
+      ],
+    });
+    renderWithProviders(<InventoryPage />);
+    await screen.findByText("SKU-001");
+
+    fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
+
+    const chip = async (label: string) =>
+      (await screen.findByText(label)).closest(".MuiChip-root");
+    expect(await chip("Nhập kho")).toHaveAttribute("data-tone", "success");
+    expect(await chip("Xuất kho")).toHaveAttribute("data-tone", "primary");
+    expect(await chip("Xuất linh kiện")).toHaveAttribute("data-tone", "info");
+    expect(await chip("Phiếu đảo")).toHaveAttribute("data-tone", "warning");
+  });
+
   it("chỉ hiển thị vị trí trong chi tiết tồn kho của đúng dòng", async () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");

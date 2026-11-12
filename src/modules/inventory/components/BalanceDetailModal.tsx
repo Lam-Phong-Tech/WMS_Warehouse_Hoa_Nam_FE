@@ -30,6 +30,7 @@ import type { MessageKey } from "@/shared/i18n/messages";
 import type { InventoryBalanceRow } from "../services/inventoryService";
 import { useStockMovements, useBalanceSubledger } from "../hooks/use-inventory";
 import type { StockMovementRow } from "../services/inventoryService";
+import { movementTypeTone } from "../movement-tone";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { formatQuantity } from "@/shared/utils/format-number";
 import { localizedUnitLabel } from "@/shared/utils/format-unit";
@@ -142,16 +143,20 @@ export function BalanceDetailModal({
     {
       key: "type",
       header: t("inventory.detail.colMovementType"),
-      render: (row) => (
-        <UiStatusBadge
-          tone="neutral"
-          label={businessLabel(
-            MOVEMENT_TYPE_LABELS,
-            row.type,
-            t("inventory.fallback.movementType"),
-          )}
-        />
-      ),
+      render: (row) => {
+        const tone = movementTypeTone(row.type);
+        return (
+          <UiStatusBadge
+            tone={tone}
+            data-tone={tone}
+            label={businessLabel(
+              MOVEMENT_TYPE_LABELS,
+              row.type,
+              t("inventory.fallback.movementType"),
+            )}
+          />
+        );
+      },
     },
     {
       key: "qty",
