@@ -181,9 +181,9 @@ describe("WarrantyDetailModal (WAR-03)", () => {
    *  · hồ sơ mang sẵn ngày dự kiến ĐÃ QUA không được chặn submit âm thầm
    *    (ô ngày chỉ hiện ở REPAIRING nên lỗi của nó không có chỗ hiển thị);
    *  · thiếu "Kết quả xử lý" phải ra CÂU TIẾNG VIỆT (không phải khoá thô
-   *    warranty.noteRequired.completed) và hiện ngay cạnh nút Cập nhật.
+   *    warranty.noteRequired.completed) và chỉ hiện MỘT lần dưới ô nhập.
    */
-  it("CHECKING → COMPLETED: ngày dự kiến quá khứ không chặn; lỗi thiếu Kết quả xử lý là tiếng Việt và nhìn thấy được", async () => {
+  it("CHECKING → COMPLETED: ngày dự kiến quá khứ không chặn; lỗi thiếu Kết quả xử lý là tiếng Việt và chỉ hiện một lần", async () => {
     vi.mocked(fetchWarrantyCase).mockResolvedValue({
       ...DETAIL,
       estimated_completion_date: "2026-08-20",
@@ -221,16 +221,11 @@ describe("WarrantyDetailModal (WAR-03)", () => {
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
 
-    // Không im lặng: câu lỗi tiếng Việt hiện ở CẢ helperText của ô lẫn dòng
-    // nhắc role="alert" cạnh nút; tuyệt đối không lộ khoá i18n thô.
+    // Chỉ một câu lỗi dưới đúng ô nhập; không lặp lại ở footer/label.
     const messages = await within(dialog).findAllByText(
-      "Kết quả xử lý (bắt buộc)",
+      "Vui lòng nhập kết quả xử lý.",
     );
-    expect(messages.length).toBeGreaterThanOrEqual(2);
-    const footerAlert = within(dialog)
-      .getAllByRole("alert")
-      .find((el) => el.textContent?.includes("Kết quả xử lý (bắt buộc)"));
-    expect(footerAlert).toBeTruthy();
+    expect(messages).toHaveLength(1);
     expect(
       screen.queryByText("warranty.noteRequired.completed"),
     ).not.toBeInTheDocument();
@@ -373,6 +368,42 @@ describe("WarrantyDetailModal (WAR-03)", () => {
         }),
       ).not.toBeInTheDocument();
     });
+    expect(updateWarrantyCase).not.toHaveBeenCalled();
+  });
+
+  it("RETURNED thiếu tên người nhận chỉ hiện lỗi một lần", async () => {
+    vi.mocked(fetchWarrantyCase).mockResolvedValue({
+      ...DETAIL,
+      status: "COMPLETED",
+    } as never);
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+
+    await screen.findByText("BH-0001");
+    fireEvent.click(
+      screen.getByRole("button", { name: /Cập nhật trạng thái/ }),
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: "Cập nhật trạng thái bảo hành",
+    });
+    fireEvent.mouseDown(
+      await within(dialog).findByRole("combobox", { name: /Trạng thái mới/ }),
+    );
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Đã trả khách" }),
+    );
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+
+    const messages = await within(dialog).findAllByText(
+      "Vui lòng nhập tên người nhận.",
+    );
+    expect(messages).toHaveLength(1);
     expect(updateWarrantyCase).not.toHaveBeenCalled();
   });
 

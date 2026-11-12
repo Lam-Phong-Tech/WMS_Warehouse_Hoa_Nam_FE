@@ -929,17 +929,19 @@ export function WarrantyDetailModal({
       }
     }
     if (noteRequiredLabel && !statusForm.reason.trim()) {
-      // UAT TC_UI_10: key này từng được gán THÔ (không qua t()) nên helperText
-      // in nguyên "warranty.noteRequired.completed" ra màn hình.
-      errors.reason = t(noteRequiredLabel);
+      // Lỗi phải là câu hướng dẫn riêng, KHÔNG dùng lại đúng nhãn trường:
+      // trước đây cùng một chuỗi "Tên người nhận (bắt buộc)" xuất hiện ở
+      // label, helperText và footer nên người dùng thấy lỗi lặp 3 lần.
+      errors.reason =
+        statusValue === "RETURNED"
+          ? t("warranty.detail.errReturnReceiver")
+          : t("warranty.detail.errTreatmentResult");
     }
     setStatusFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   /** Lỗi đầu tiên đang chặn submit — hiển thị cạnh nút Cập nhật (TC_FUNC_01). */
-  const statusBlockingError =
-    Object.values(statusFieldErrors).find(Boolean) ?? "";
 
   const submitStatus = async () => {
     if (!detail) return;
@@ -2548,22 +2550,6 @@ export function WarrantyDetailModal({
           title={t("warranty.detail.statusTitle")}
           actions={
             <>
-              {/* UAT TC_FUNC_01: thân dialog cuộn được nên lỗi field có thể
-                  nằm khuất phía trên — nhắc ngay cạnh nút để mọi cú bấm
-                  "Cập nhật" đều có phản hồi nhìn thấy. */}
-              {statusBlockingError ? (
-                <Box
-                  role="alert"
-                  sx={{
-                    mr: "auto",
-                    color: "error.main",
-                    typography: "caption",
-                    maxWidth: 320,
-                  }}
-                >
-                  {statusBlockingError}
-                </Box>
-              ) : null}
               <ActionButton
                 kind="cancel"
                 onClick={() => {

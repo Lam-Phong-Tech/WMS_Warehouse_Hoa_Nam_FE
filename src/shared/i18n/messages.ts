@@ -1410,6 +1410,8 @@ export const MESSAGES_VI = {
       errCancelReason: "Hủy hồ sơ cần lý do/bằng chứng.",
       errCancelReasonShort: "Lý do hủy phải có ít nhất 5 ký tự.",
       errDefectRequired: "Chọn ít nhất một bệnh/lỗi trong danh mục.",
+      errReturnReceiver: "Vui lòng nhập tên người nhận.",
+      errTreatmentResult: "Vui lòng nhập kết quả xử lý.",
       errEstimatedDate:
         "Nhập ngày dự kiến sửa xong để báo khách trước khi chuyển sang Đang sửa chữa.",
       statusUpdated: "Đã cập nhật hồ sơ {code} → {status}",
