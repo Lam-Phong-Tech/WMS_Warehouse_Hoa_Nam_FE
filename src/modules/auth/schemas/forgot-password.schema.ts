@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
-import { STRONG_PASSWORD_REGEX } from "@/modules/auth/schemas/change-password.schema";
-import { PASSWORD_MAX_LENGTH } from "@/modules/auth/schemas/login.schema";
+import {
+  hasPasswordWhitespace,
+  NEW_PASSWORD_MAX_LENGTH,
+  STRONG_PASSWORD_REGEX,
+} from "@/modules/auth/schemas/change-password.schema";
 import { EMAIL_MAX_LENGTH } from "@/shared/constants/validation.constants";
 
 /**
@@ -49,11 +52,12 @@ export function buildResetPasswordFormSchema(t: TranslateFn) {
     .object({
       newPassword: z
         .string()
-        .min(8, t("auth.validation.newPasswordMin"))
-        .max(PASSWORD_MAX_LENGTH, t("auth.validation.passwordTooLong"))
+        .min(1, t("auth.validation.newPasswordRequired"))
+        .max(NEW_PASSWORD_MAX_LENGTH, t("auth.validation.newPasswordTooLong"))
+        .refine((v) => v.length >= 8, t("auth.validation.newPasswordMin"))
         .refine(
-          (v) => v === v.trim(),
-          t("auth.validation.passwordNoEdgeSpaces"),
+          (v) => !hasPasswordWhitespace(v),
+          t("auth.validation.passwordWhitespace"),
         )
         .refine(
           (v) => STRONG_PASSWORD_REGEX.test(v),
@@ -61,7 +65,8 @@ export function buildResetPasswordFormSchema(t: TranslateFn) {
         ),
       newPasswordConfirmation: z
         .string()
-        .min(1, t("auth.validation.confirmPasswordRequired")),
+        .min(1, t("auth.validation.confirmPasswordRequired"))
+        .max(NEW_PASSWORD_MAX_LENGTH, t("auth.validation.newPasswordTooLong")),
     })
     .refine((v) => v.newPassword === v.newPasswordConfirmation, {
       message: t("auth.validation.confirmPasswordMismatch"),

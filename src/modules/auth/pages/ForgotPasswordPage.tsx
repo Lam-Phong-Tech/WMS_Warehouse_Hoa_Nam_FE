@@ -14,6 +14,7 @@ import {
   type OtpFormValues,
   type ResetPasswordFormValues,
 } from "@/modules/auth/schemas/forgot-password.schema";
+import { NEW_PASSWORD_MAX_LENGTH } from "@/modules/auth/schemas/change-password.schema";
 import { Box, UiButton } from "@/shared/ui";
 import { AuthShell, AuthNote } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
@@ -408,6 +409,7 @@ export function ForgotPasswordPage() {
               placeholder={t("auth.fields.newPasswordPlaceholder")}
               type="password"
               startIcon="lock"
+              maxLength={NEW_PASSWORD_MAX_LENGTH}
               autoFocus
               disabled={isBusy || resetExpired}
             />
@@ -418,6 +420,7 @@ export function ForgotPasswordPage() {
               placeholder={t("auth.fields.confirmNewPasswordPlaceholder")}
               type="password"
               startIcon="lock"
+              maxLength={NEW_PASSWORD_MAX_LENGTH}
               disabled={isBusy || resetExpired}
             />
             <AuthNote sx={{ marginTop: 0 }}>

@@ -1,20 +1,48 @@
 import { z } from "zod";
 import { tStatic, type TranslateFn } from "@/shared/i18n/useT";
-import { PASSWORD_MAX_LENGTH } from "@/modules/auth/schemas/login.schema";
 
-// Rule khớp đúng API thật (POST /auth/change-password, xem
-// docs/employee-account-provisioning-flow.md mục 5): tối thiểu 8 ký tự, có ít
-// nhất 1 hoa, 1 thường, 1 ký tự đặc biệt, không khoảng trắng đầu/cuối.
-// BE (ResetPasswordRequest / StoreUserRequest) KHÔNG bắt buộc chữ số — đừng
-// thêm (?=.*d) ở đây kẻo FE chặt hơn BE. Trần 128 ký tự lấy theo LoginRequest.
+export const NEW_PASSWORD_MIN_LENGTH = 8;
+export const NEW_PASSWORD_MAX_LENGTH = 64;
+
+/**
+ * Mật khẩu mới phải có đủ chữ hoa, chữ thường, số và ký tự đặc biệt. Dấu cách
+ * được kiểm tra riêng để báo đúng thông điệp thay vì gộp vào lỗi độ mạnh.
+ */
 export const STRONG_PASSWORD_REGEX =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+export function hasPasswordWhitespace(value: string): boolean {
+  return /[\s\p{Z}]/u.test(value);
+}
+
+export type ChangePasswordIdentity = {
+  username?: string | null;
+  email?: string | null;
+};
+
+function personalFragments(identity: ChangePasswordIdentity): string[] {
+  const username = identity.username?.trim().toLowerCase() ?? "";
+  const email = identity.email?.trim().toLowerCase() ?? "";
+  const localPart = email.includes("@")
+    ? email.slice(0, email.indexOf("@"))
+    : email;
+
+  return [username, localPart].filter((fragment) => fragment.length >= 3);
+}
 
 /**
  * Factory nhận `t` để lỗi validate đổi theo ngôn ngữ — component dựng schema
- * bằng `useMemo(() => buildChangePasswordSchema(t), [t])`.
+ * bằng `useMemo(() => buildChangePasswordSchema(t, user), [t, user])`.
+ *
+ * Tài khoản tạo tự động có username dạng UUID; khi đó phần local của email là
+ * thứ người dùng nhận ra, nên kiểm tra cả hai giống backend.
  */
-export function buildChangePasswordSchema(t: TranslateFn) {
+export function buildChangePasswordSchema(
+  t: TranslateFn,
+  identity: ChangePasswordIdentity = {},
+) {
+  const fragments = personalFragments(identity);
+
   return z
     .object({
       currentPassword: z
@@ -22,19 +50,31 @@ export function buildChangePasswordSchema(t: TranslateFn) {
         .min(1, t("auth.validation.currentPasswordRequired")),
       newPassword: z
         .string()
-        .min(8, t("auth.validation.newPasswordMin"))
-        .max(PASSWORD_MAX_LENGTH, t("auth.validation.passwordTooLong"))
+        .min(1, t("auth.validation.newPasswordRequired"))
+        .max(NEW_PASSWORD_MAX_LENGTH, t("auth.validation.newPasswordTooLong"))
         .refine(
-          (v) => v === v.trim(),
-          t("auth.validation.passwordNoEdgeSpaces"),
+          (value) => value.length >= NEW_PASSWORD_MIN_LENGTH,
+          t("auth.validation.newPasswordMin"),
         )
         .refine(
-          (v) => STRONG_PASSWORD_REGEX.test(v),
+          (value) => !hasPasswordWhitespace(value),
+          t("auth.validation.passwordWhitespace"),
+        )
+        .refine(
+          (value) => STRONG_PASSWORD_REGEX.test(value),
           t("auth.validation.passwordStrength"),
+        )
+        .refine(
+          (value) =>
+            !fragments.some((fragment) =>
+              value.toLowerCase().includes(fragment),
+            ),
+          t("auth.validation.passwordContainsUsername"),
         ),
       newPasswordConfirmation: z
         .string()
-        .min(1, t("auth.validation.confirmPasswordRequired")),
+        .min(1, t("auth.validation.confirmPasswordRequired"))
+        .max(NEW_PASSWORD_MAX_LENGTH, t("auth.validation.newPasswordTooLong")),
     })
     .refine((v) => v.newPassword === v.newPasswordConfirmation, {
       message: t("auth.validation.confirmPasswordMismatch"),

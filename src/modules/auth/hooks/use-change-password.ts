@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { authService } from "@/modules/auth/services/auth.service";
-import { getMutationErrorMessage } from "@/shared/api/api-error";
 import { ROUTES } from "@/shared/constants/routes";
 import { useAuthStore } from "@/shared/store/auth.store";
 import type { ChangePasswordRequest } from "@/modules/auth/types/auth.types";
@@ -29,10 +28,7 @@ export function useChangePassword() {
       useAuthStore.persist.clearStorage();
       navigate(ROUTES.LOGIN, { replace: true });
     },
-    onError: (error) => {
-      // Phải đưa nguyên nhân thật ra UI ("Mật khẩu hiện tại không đúng"...) —
-      // toast chung chung khiến người dùng không biết sửa gì.
-      toast.error(getMutationErrorMessage(error));
-    },
+    // Không toast lỗi ở đây: màn đổi mật khẩu tự hiển thị lỗi field dưới đúng ô
+    // nhập (và banner chỉ cho lỗi không gắn được vào ô), toast sẽ lặp thông tin.
   });
 }

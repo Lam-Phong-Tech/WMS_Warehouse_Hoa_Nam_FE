@@ -2,35 +2,45 @@ import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Navigate } from "react-router-dom";
-import { isAxiosError } from "axios";
 import { useChangePassword } from "@/modules/auth/hooks/use-change-password";
 import {
   buildChangePasswordSchema,
+  NEW_PASSWORD_MAX_LENGTH,
   type ChangePasswordFormValues,
 } from "@/modules/auth/schemas/change-password.schema";
+import { PASSWORD_MAX_LENGTH } from "@/modules/auth/schemas/login.schema";
 import { Box, UiAlert, UiButton } from "@/shared/ui";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthField } from "@/modules/auth/components/AuthField";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
 import { useT } from "@/shared/i18n/useT";
+import { resolveFormErrors } from "@/shared/api/api-error";
+
+const PASSWORD_FORM_FIELDS = [
+  "currentPassword",
+  "newPassword",
+  "newPasswordConfirmation",
+] as const;
 
 export function ChangePasswordPage() {
   const t = useT();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const changePassword = useChangePassword();
-  const changePasswordSchema = useMemo(() => buildChangePasswordSchema(t), [t]);
-  const { control, handleSubmit, setError } = useForm<ChangePasswordFormValues>(
-    {
+  const changePasswordSchema = useMemo(
+    () => buildChangePasswordSchema(t, user ?? undefined),
+    [t, user],
+  );
+  const { control, handleSubmit, setError, clearErrors } =
+    useForm<ChangePasswordFormValues>({
       resolver: zodResolver(changePasswordSchema),
       defaultValues: {
         currentPassword: "",
         newPassword: "",
         newPasswordConfirmation: "",
       },
-    },
-  );
+    });
 
   const onSubmit = handleSubmit((values) =>
     changePassword.mutate({
@@ -40,21 +50,26 @@ export function ChangePasswordPage() {
     }),
   );
 
-  const errorMessage = changePassword.isError
-    ? isAxiosError(changePassword.error)
-      ? (changePassword.error.response?.data?.message ??
-        t("auth.changePassword.failed"))
-      : t("auth.changePassword.failed")
-    : null;
+  // Lỗi 422 của BE có kèm `errors.<field>` — đặt ngay dưới ô tương ứng. Banner
+  // chỉ giữ lại phần không gắn được vào ô nào để tránh lặp thông tin.
+  const serverError = useMemo(
+    () =>
+      changePassword.isError
+        ? resolveFormErrors(changePassword.error, PASSWORD_FORM_FIELDS)
+        : null,
+    [changePassword.error, changePassword.isError],
+  );
 
   useEffect(() => {
-    if (!errorMessage) return;
-    if (/mật khẩu hiện tại/i.test(errorMessage)) {
-      setError("currentPassword", { type: "server", message: errorMessage });
-    } else if (/mật khẩu mới không được trùng/i.test(errorMessage)) {
-      setError("newPassword", { type: "server", message: errorMessage });
+    if (!serverError) return;
+    clearErrors(PASSWORD_FORM_FIELDS);
+    for (const [field, message] of Object.entries(serverError.fieldErrors)) {
+      setError(field as keyof ChangePasswordFormValues, {
+        type: "server",
+        message,
+      });
     }
-  }, [errorMessage, setError]);
+  }, [clearErrors, serverError, setError]);
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} replace />;
@@ -75,16 +90,13 @@ export function ChangePasswordPage() {
         changePassword.isPending ? t("auth.changePassword.updating") : null
       }
     >
-      {errorMessage &&
-        !/mật khẩu hiện tại|mật khẩu mới không được trùng/i.test(
-          errorMessage,
-        ) && (
-          <Box sx={{ marginBottom: "14px" }}>
-            <UiAlert tone="error" title={t("auth.changePassword.errorTitle")}>
-              {errorMessage}
-            </UiAlert>
-          </Box>
-        )}
+      {serverError?.message && (
+        <Box sx={{ marginBottom: "14px" }}>
+          <UiAlert tone="error" title={t("auth.changePassword.errorTitle")}>
+            {serverError.message}
+          </UiAlert>
+        </Box>
+      )}
 
       <form onSubmit={onSubmit} noValidate>
         <Box
@@ -101,6 +113,7 @@ export function ChangePasswordPage() {
             placeholder={t("auth.changePassword.currentPasswordPlaceholder")}
             type="password"
             startIcon="lock"
+            maxLength={PASSWORD_MAX_LENGTH}
             autoFocus
             disabled={changePassword.isPending}
           />
@@ -112,6 +125,7 @@ export function ChangePasswordPage() {
             placeholder={t("auth.fields.newPasswordPlaceholder")}
             type="password"
             startIcon="lock"
+            maxLength={NEW_PASSWORD_MAX_LENGTH}
             disabled={changePassword.isPending}
           />
 
@@ -122,6 +136,7 @@ export function ChangePasswordPage() {
             placeholder={t("auth.fields.confirmNewPasswordPlaceholder")}
             type="password"
             startIcon="lock"
+            maxLength={NEW_PASSWORD_MAX_LENGTH}
             disabled={changePassword.isPending}
           />
 

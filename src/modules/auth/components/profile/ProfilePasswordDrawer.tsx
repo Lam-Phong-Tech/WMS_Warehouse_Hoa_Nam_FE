@@ -12,11 +12,13 @@ import { ROUTES } from "@/shared/constants/routes";
 import { captureAuthOwner } from "@/shared/store/auth-owner";
 import {
   buildChangePasswordSchema,
+  NEW_PASSWORD_MAX_LENGTH,
   type ChangePasswordFormValues,
 } from "../../schemas/change-password.schema";
 
 export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
   const t = useT();
+  const user = useAuthStore((s) => s.user);
   const [values, setValues] = useState<ChangePasswordFormValues>({
     currentPassword: "",
     newPassword: "",
@@ -54,7 +56,9 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
     event.preventDefault();
 
     setError("");
-    const result = buildChangePasswordSchema(t).safeParse(values);
+    const result = buildChangePasswordSchema(t, user ?? undefined).safeParse(
+      values,
+    );
     if (!result.success) {
       const next: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
@@ -77,7 +81,9 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
         "newPasswordConfirmation",
       ]);
       setErrors(resolved.fieldErrors);
-      setError(resolved.message || t("auth.personal.saveError"));
+      // Field-level server errors already appear under their inputs; only show
+      // the banner when the server returned a message that has no matching field.
+      setError(resolved.message ?? "");
     }
   };
   const fields = [
@@ -85,16 +91,19 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
       key: "currentPassword" as const,
       label: t("auth.personal.currentPassword"),
       autoComplete: "current-password",
+      maxLength: 255,
     },
     {
       key: "newPassword" as const,
       label: t("auth.personal.newPassword"),
       autoComplete: "new-password",
+      maxLength: NEW_PASSWORD_MAX_LENGTH,
     },
     {
       key: "newPasswordConfirmation" as const,
       label: t("auth.personal.confirmPassword"),
       autoComplete: "new-password",
+      maxLength: NEW_PASSWORD_MAX_LENGTH,
     },
   ];
   return (
@@ -142,7 +151,7 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
           onSubmit={submit}
           noValidate
         >
-          {fields.map(({ key, label, autoComplete }) => (
+          {fields.map(({ key, label, autoComplete, maxLength }) => (
             <UiTextField
               key={key}
               label={label}
@@ -162,7 +171,7 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
                 setErrors((current) => ({ ...current, [key]: "" }));
               }}
               slotProps={{
-                htmlInput: { maxLength: 128 },
+                htmlInput: { maxLength },
                 input: {
                   endAdornment: (
                     <ActionIconButton

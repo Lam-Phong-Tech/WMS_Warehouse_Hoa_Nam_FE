@@ -76,11 +76,12 @@ import {
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { DepartmentManagerModal } from "@/modules/iam/components/DepartmentManagerModal";
 import { validatePhone } from "@/shared/constants/validation.constants";
+import { isValidEmail } from "@/modules/auth/schemas/login.schema";
 import {
-  isValidEmail,
-  PASSWORD_MAX_LENGTH,
-} from "@/modules/auth/schemas/login.schema";
-import { STRONG_PASSWORD_REGEX } from "@/modules/auth/schemas/change-password.schema";
+  hasPasswordWhitespace,
+  NEW_PASSWORD_MAX_LENGTH,
+  STRONG_PASSWORD_REGEX,
+} from "@/modules/auth/schemas/change-password.schema";
 import {
   checkDate,
   checkDateRange,
@@ -158,8 +159,9 @@ const USER_FORM_FIELDS = [
 /**
  * Luật mật khẩu tạm/đặt lại của admin: dùng CÙNG rule mật khẩu mạnh với tự
  * đổi mật khẩu (change-password.schema) để tài khoản mới không yếu hơn tài
- * khoản tự đổi. BE StoreUserRequest chỉ `min:8` (không đòi chữ số) nên regex
- * không thêm điều kiện chữ số. Trả key i18n hoặc null khi hợp lệ.
+ * khoản tự đổi. BE StoreUserRequest/UpdateUserRequest áp cùng PasswordPolicy
+ * (8–64 ký tự, đủ 4 nhóm ký tự, không khoảng trắng). Trả key i18n hoặc null
+ * khi hợp lệ.
  */
 function passwordRuleError(
   password: string,
@@ -174,12 +176,11 @@ function passwordRuleError(
   if (password.length < 8) {
     return isReset ? "errPasswordResetShort" : "errPasswordShort";
   }
-  if (password.length > PASSWORD_MAX_LENGTH) return "errPasswordLong";
-  if (password !== password.trim()) return "errPasswordEdgeSpaces";
+  if (password.length > NEW_PASSWORD_MAX_LENGTH) return "errPasswordLong";
+  if (hasPasswordWhitespace(password)) return "errPasswordEdgeSpaces";
   if (!STRONG_PASSWORD_REGEX.test(password)) return "errPasswordStrength";
   return null;
 }
-
 
 function statusLabel(status: IamUserStatus) {
   return businessLabel(IAM_USER_STATUS_LABELS, status);
@@ -1577,7 +1578,7 @@ export function IamUserScreen({
                       fieldErrors.password ?? t("iam.user.passwordRuleHint")
                     }
                     slotProps={{
-                      htmlInput: { maxLength: PASSWORD_MAX_LENGTH },
+                      htmlInput: { maxLength: NEW_PASSWORD_MAX_LENGTH },
                     }}
                   />
                   <UiTextField
