@@ -534,7 +534,7 @@
   [data-date-value] {
   padding-right: 24px;
 }
-.hn-iam-role-history-date-clear {
+.hn-iam-role-history-date .hn-iam-role-history-date-clear {
   position: absolute;
   top: 50%;
   right: 32px;
@@ -546,7 +546,7 @@
   color: var(--ops-muted);
   font-size: 12px;
 }
-.hn-iam-role-history-date-clear:hover {
+.hn-iam-role-history-date .hn-iam-role-history-date-clear:hover {
   color: var(--ops-heading);
   background: var(--ops-pale);
 }

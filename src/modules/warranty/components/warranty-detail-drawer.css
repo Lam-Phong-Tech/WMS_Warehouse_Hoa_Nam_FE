@@ -88,7 +88,7 @@
   padding-right: 24px;
 }
 
-.hn-war-detail-date-clear {
+.hn-war-detail-date .hn-war-detail-date-clear {
   position: absolute;
   top: 50%;
   right: 32px;
@@ -101,7 +101,7 @@
   font-size: 12px;
 }
 
-.hn-war-detail-date-clear:hover {
+.hn-war-detail-date .hn-war-detail-date-clear:hover {
   color: var(--war-dialog-ink);
   background: var(--war-dialog-soft);
 }
