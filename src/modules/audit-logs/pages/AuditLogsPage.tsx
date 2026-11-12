@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { CloseCircleOutlined } from "@/shared/components/icons";
 import { useT } from "@/shared/i18n/useT";
 import { useEffect, useState } from "react";
 import type { Dayjs } from "dayjs";
@@ -47,9 +48,9 @@ import "./audit-logs.css";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-/** Chữ phụ trên toolbar (thay MUI Typography body2 color text.secondary). */
+/** Chữ phụ trên toolbar — cùng cỡ 14px với chữ trên nút để một hàng đồng đều. */
 const TOOLBAR_TEXT_SX = {
-  fontSize: 12,
+  fontSize: 14,
   color: "var(--settings-muted)",
   whiteSpace: "nowrap",
 } as const;
@@ -316,6 +317,17 @@ export function AuditLogsPage() {
             <ActionButton
               kind="clear"
               appearance="flat"
+              icon={
+                <CloseCircleOutlined
+                  style={{ color: "var(--wms-error-text)" }}
+                />
+              }
+              sx={{
+                color: "var(--wms-error-text)",
+                "&:hover:not(.Mui-disabled)": {
+                  color: "var(--wms-error-text)",
+                },
+              }}
               onClick={selection.clear}
             >
               {t("audit.clearSelection")}
