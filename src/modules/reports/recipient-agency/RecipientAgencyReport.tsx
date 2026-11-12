@@ -632,9 +632,6 @@ export default function RecipientAgencyReport() {
     partial ||
     documentTotals.total === 0;
 
-  const fromDisplay = dayjs(applied.from).format("DD");
-  const toDisplay = dayjs(applied.to).format("DD/MM/YYYY");
-
   return (
     <Box
       id="recipient-agency-rpt07"
@@ -1262,9 +1259,6 @@ export default function RecipientAgencyReport() {
                     ))}
                   </select>
                 </label>
-              </div>
-              <div className="rpt07-table-footer__meta">
-                {fromDisplay}–{toDisplay}
               </div>
               <Pagination
                 page={visiblePage}
