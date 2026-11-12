@@ -16,10 +16,7 @@ import { WMS_ACTION_PERMISSIONS } from "@/shared/constants/wms-permissions";
 type RawRecord = Record<string, unknown>;
 
 export type ComponentIssueStatus =
-  | "DRAFT"
-  | "SCANNING"
-  | "POSTED"
-  | "CANCELLED";
+  "DRAFT" | "SCANNING" | "POSTED" | "CANCELLED";
 
 export type ComponentIssueItem = {
   id: string;
@@ -27,6 +24,8 @@ export type ComponentIssueItem = {
   container_id?: string;
   quantity: number;
   status: "ACTIVE" | "REMOVED" | "POSTED";
+  /** Thời điểm quét thành công item/hộp này (BE trả created_at). */
+  created_at?: string;
 };
 
 export type ComponentIssueLine = {
@@ -64,6 +63,7 @@ export type ComponentIssueDocument = {
   status: ComponentIssueStatus;
   note?: string;
   cancel_reason?: string;
+  created_at?: string;
   posted_at?: string;
   version: number;
   lines: ComponentIssueLine[];
@@ -108,6 +108,7 @@ function normalizeItem(row: RawRecord): ComponentIssueItem {
       ["ACTIVE", "REMOVED", "POSTED"],
       "component_issue.item.status",
     ),
+    created_at: text(row.created_at) || undefined,
   };
 }
 
@@ -147,6 +148,7 @@ function normalizeDocument(row: RawRecord): ComponentIssueDocument {
     ),
     note: text(document.note) || undefined,
     cancel_reason: text(document.cancel_reason) || undefined,
+    created_at: text(document.created_at) || undefined,
     posted_at: text(document.posted_at) || undefined,
     version: requiredApiNumber(document.version, "component_issue.version"),
     lines: rawLines.map(normalizeLine),

@@ -81,7 +81,7 @@ import {
 import { makeWarrantyIdempotencyKey } from "@/modules/warranty/services/warrantyService";
 import { COMPONENT_ISSUE_STATUS_BADGE } from "@/modules/warranty/constants";
 import { EMPTY_TEXT } from "@/shared/constants/display";
-import { formatDate } from "@/shared/utils/format-date";
+import { formatDate, formatDateTime } from "@/shared/utils/format-date";
 import type {
   ComponentIssueDocument,
   ComponentIssueLine,
@@ -562,6 +562,28 @@ export function ComponentIssueModal({
         );
       },
     },
+    {
+      key: "scanned_at",
+      header: t("warranty.componentIssue.colScannedAt"),
+      width: 160,
+      render: (line) => {
+        // Mỗi item là một lần quét thành công; dòng có thể có nhiều item.
+        // Hiển thị lần quét gần nhất để người dùng đối chiếu mốc thời gian.
+        const latest = line.items
+          .filter(
+            (item): item is typeof item & { created_at: string } =>
+              item.status !== "REMOVED" && Boolean(item.created_at),
+          )
+          .map((item) => item.created_at)
+          .sort()
+          .at(-1);
+        return (
+          <UiText variant="secondary">
+            {latest ? formatDateTime(latest) : EMPTY_TEXT}
+          </UiText>
+        );
+      },
+    },
   ];
 
   return (
@@ -892,6 +914,32 @@ export function ComponentIssueModal({
                           : EMPTY_TEXT}
                       </UiText>
                     </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Box>
+                        <UiText variant="caption">
+                          {t("warranty.componentIssue.createdAt")}
+                        </UiText>
+                      </Box>
+                      <UiText variant="body">
+                        {detail.created_at
+                          ? formatDateTime(detail.created_at)
+                          : EMPTY_TEXT}
+                      </UiText>
+                    </Grid>
+                    {detail.status === "POSTED" ? (
+                      <Grid size={{ xs: 12, sm: 4 }}>
+                        <Box>
+                          <UiText variant="caption">
+                            {t("warranty.componentIssue.postedAt")}
+                          </UiText>
+                        </Box>
+                        <UiText variant="body">
+                          {detail.posted_at
+                            ? formatDateTime(detail.posted_at)
+                            : EMPTY_TEXT}
+                        </UiText>
+                      </Grid>
+                    ) : null}
                   </Grid>
                 </Box>
 

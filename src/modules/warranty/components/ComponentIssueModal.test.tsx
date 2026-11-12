@@ -43,6 +43,7 @@ import {
 } from "@/modules/warranty/services/componentIssueService";
 import { fetchAvailableQtyBySku } from "@/modules/outbound/services/alignedOutboundService";
 import { useAuthStore } from "@/shared/store/auth.store";
+import { formatDateTime } from "@/shared/utils/format-date";
 import { ComponentIssueModal } from "./ComponentIssueModal";
 
 function makeDetail(overrides: Record<string, unknown> = {}) {
@@ -52,6 +53,8 @@ function makeDetail(overrides: Record<string, unknown> = {}) {
     warehouse_id: "wh-1",
     warranty_case_id: "wc-1",
     document_date: "2026-08-13",
+    created_at: "2026-08-13T01:30:00Z",
+    posted_at: null,
     purpose: "WARRANTY" as const,
     status: "SCANNING" as const,
     version: 2,
@@ -64,7 +67,13 @@ function makeDetail(overrides: Record<string, unknown> = {}) {
         required_qty: 2,
         scanned_qty: 1,
         items: [
-          { id: "item-1", item_id: "it-1", quantity: 1, status: "ACTIVE" },
+          {
+            id: "item-1",
+            item_id: "it-1",
+            quantity: 1,
+            status: "ACTIVE",
+            created_at: "2026-08-13T02:00:00Z",
+          },
         ],
       },
     ],
@@ -122,6 +131,57 @@ describe("ComponentIssueModal (COMP-01)", () => {
 
     expect(await screen.findByText("Kho tổng")).toBeInTheDocument();
     expect(screen.queryByText("wh-1")).not.toBeInTheDocument();
+  });
+
+  it("hiển thị mốc tạo phiếu, ghi nhận và quét gần nhất", async () => {
+    vi.mocked(fetchComponentIssueDocument).mockResolvedValue(
+      makeDetail({
+        status: "POSTED",
+        created_at: "2026-08-13T01:30:00Z",
+        posted_at: "2026-08-13T03:45:00Z",
+        lines: [
+          {
+            id: "line-1",
+            sku_id: "sku-1",
+            sku_code: "LK-PIN-20V",
+            sku_name: "Pin 20V",
+            required_qty: 1,
+            scanned_qty: 1,
+            items: [
+              {
+                id: "item-1",
+                item_id: "it-1",
+                quantity: 1,
+                status: "ACTIVE",
+                created_at: "2026-08-13T02:00:00Z",
+              },
+            ],
+          },
+        ],
+      }) as never,
+    );
+
+    renderWithProviders(
+      <ComponentIssueModal
+        caseId="wc-1"
+        caseActive
+        documentId="ci-1"
+        onClose={() => {}}
+      />,
+    );
+
+    expect(await screen.findByText("Ngày tạo phiếu")).toBeInTheDocument();
+    expect(screen.getByText("Thời gian ghi nhận")).toBeInTheDocument();
+    expect(screen.getByText("Thời gian quét")).toBeInTheDocument();
+    expect(
+      screen.getByText(formatDateTime("2026-08-13T01:30:00Z")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(formatDateTime("2026-08-13T03:45:00Z")),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(formatDateTime("2026-08-13T02:00:00Z")),
+    ).toBeInTheDocument();
   });
 
   it("SCANNING: quét serial gửi đúng line đang thiếu + If-Match version", async () => {
