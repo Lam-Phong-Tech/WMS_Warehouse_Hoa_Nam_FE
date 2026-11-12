@@ -90,6 +90,28 @@ describe("api-error", () => {
     );
   });
 
+  it("không nối tên field thô từ details máy vào toast", () => {
+    const error = createMockAxiosError({
+      status: 422,
+      data: {
+        message:
+          "Chưa đủ thông tin bàn giao: người nhận, ngày bàn giao, xác nhận kiểm tra, ghi chú.",
+        errors: {
+          required_fields: [
+            "receiver",
+            "handover_date",
+            "handover_checked",
+            "note",
+          ],
+          missing_or_invalid_fields: ["receiver", "handover_date"],
+        },
+      },
+    });
+    expect(getApiErrorMessage(error)).toBe(
+      "Chưa đủ thông tin bàn giao: người nhận, ngày bàn giao, xác nhận kiểm tra, ghi chú.",
+    );
+  });
+
   it("should handle unknown error", () => {
     const error = createMockAxiosError({
       status: 500,

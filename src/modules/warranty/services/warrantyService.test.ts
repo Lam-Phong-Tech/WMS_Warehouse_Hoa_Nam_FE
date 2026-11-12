@@ -192,6 +192,26 @@ describe("warrantyService", () => {
       expect(vi.mocked(http.post).mock.calls[0][1]).toMatchObject({ defect_id: "def-1", customer_name: "Nguyễn Văn A",
         customer_phone: "0901234567", customer_address: "1 Nguyễn Trãi", purchase_date: "2026-01-15" });
     });
+    it("gửi đủ thông tin bàn giao P09 khi trả khách", async () => {
+      vi.mocked(http.post).mockResolvedValue(
+        caseResponse({ id: "wc-10", status: "RETURNED", version: 5 }),
+      );
+      await updateWarrantyCase("wc-10", {
+        status: "RETURNED",
+        receiver: "Nguyễn Văn A",
+        handover_date: "2026-10-15",
+        handover_checked: true,
+        reason: "Khách đã ký nhận.",
+        ifMatch: 4,
+      });
+      expect(vi.mocked(http.post).mock.calls[0][1]).toMatchObject({
+        status: "RETURNED",
+        receiver: "Nguyễn Văn A",
+        handover_date: "2026-10-15",
+        handover_checked: true,
+        note: "Khách đã ký nhận.",
+      });
+    });
     it("tự đọc version hiện tại khi caller không truyền ifMatch", async () => {
       vi.mocked(http.get).mockResolvedValue(caseResponse({ id: "wc-5", version: 7 }));
       vi.mocked(http.post).mockResolvedValue(caseResponse({ id: "wc-5", status: "CHECKING", version: 8 }));

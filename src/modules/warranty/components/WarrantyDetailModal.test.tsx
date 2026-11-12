@@ -371,10 +371,15 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     expect(updateWarrantyCase).not.toHaveBeenCalled();
   });
 
-  it("RETURNED thiếu tên người nhận chỉ hiện lỗi một lần", async () => {
+  it("RETURNED bắt buộc đủ thông tin bàn giao và gửi kèm khi cập nhật", async () => {
     vi.mocked(fetchWarrantyCase).mockResolvedValue({
       ...DETAIL,
       status: "COMPLETED",
+    } as never);
+    vi.mocked(updateWarrantyCase).mockResolvedValue({
+      ...DETAIL,
+      status: "RETURNED",
+      version: 3,
     } as never);
     renderWithProviders(
       <WarrantyDetailModal
@@ -400,11 +405,87 @@ describe("WarrantyDetailModal (WAR-03)", () => {
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
 
-    const messages = await within(dialog).findAllByText(
-      "Vui lòng nhập tên người nhận.",
-    );
-    expect(messages).toHaveLength(1);
+    expect(
+      within(dialog).getAllByText("Vui lòng nhập tên người nhận."),
+    ).toHaveLength(1);
+    expect(
+      within(dialog).getByText("Vui lòng chọn ngày bàn giao."),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Xác nhận đã kiểm tra và ký nhận bàn giao."),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Vui lòng nhập ghi chú bàn giao."),
+    ).toBeInTheDocument();
     expect(updateWarrantyCase).not.toHaveBeenCalled();
+
+    fireEvent.change(within(dialog).getByLabelText(/Người nhận bàn giao/), {
+      target: { value: "Nguyễn Văn A" },
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: /Ngày bàn giao/ }),
+    );
+    const calendar = await screen.findByRole("dialog", {
+      name: /Ngày bàn giao/,
+    });
+    fireEvent.click(
+      within(calendar).getByRole("button", {
+        name: dayjs().format("DD/MM/YYYY"),
+      }),
+    );
+    fireEvent.click(
+      within(dialog).getByRole("checkbox", {
+        name: /Đã kiểm tra và ký nhận bàn giao/,
+      }),
+    );
+    fireEvent.change(within(dialog).getByLabelText(/Ghi chú bàn giao/), {
+      target: { value: "Khách đã ký nhận." },
+    });
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+    await waitFor(() => expect(updateWarrantyCase).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(updateWarrantyCase).mock.calls[0][1]).toMatchObject({
+      status: "RETURNED",
+      receiver: "Nguyễn Văn A",
+      handover_date: dayjs().format("YYYY-MM-DD"),
+      handover_checked: true,
+      reason: "Khách đã ký nhận.",
+    });
+  });
+
+  it("toast lỗi cập nhật không lặp tên field kỹ thuật", async () => {
+    const errorToast = vi.spyOn(toast, "error");
+    vi.mocked(updateWarrantyCase).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 422,
+        data: {
+          success: false,
+          message: "Chưa đủ thông tin bàn giao.",
+          error_code: "WARRANTY_HANDOVER_REQUIRED",
+          errors: {
+            required_fields: ["receiver"],
+            missing_or_invalid_fields: ["receiver"],
+          },
+        },
+      },
+    });
+
+    renderWithProviders(
+      <WarrantyDetailModal
+        caseId="wc-1"
+        onClose={() => {}}
+        onOpenComponentIssue={() => {}}
+      />,
+    );
+    await screen.findByText("BH-0001");
+
+    const dialog = await openRepairingStatusDialog();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cập nhật" }));
+
+    await waitFor(() => expect(errorToast).toHaveBeenCalled());
+    const shown = errorToast.mock.calls.map((call) => String(call[0]));
+    expect(shown.join(" | ")).toBe("Chưa đủ thông tin bàn giao.");
   });
 
   /**

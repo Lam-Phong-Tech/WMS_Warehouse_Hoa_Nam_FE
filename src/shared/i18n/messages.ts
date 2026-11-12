@@ -1159,7 +1159,7 @@ export const MESSAGES_VI = {
   warranty: {
     noteRequired: {
       completed: "Kết quả xử lý (bắt buộc)",
-      returned: "Tên người nhận (bắt buộc)",
+      returned: "Ghi chú bàn giao (bắt buộc)",
     },
     error: {
       createCase: "Không tạo được hồ sơ bảo hành.",
@@ -1412,6 +1412,14 @@ export const MESSAGES_VI = {
       errDefectRequired: "Chọn ít nhất một bệnh/lỗi trong danh mục.",
       errReturnReceiver: "Vui lòng nhập tên người nhận.",
       errTreatmentResult: "Vui lòng nhập kết quả xử lý.",
+      errHandoverDate: "Vui lòng chọn ngày bàn giao.",
+      errHandoverDateFuture: "Ngày bàn giao không được sau hôm nay.",
+      errHandoverChecked: "Xác nhận đã kiểm tra và ký nhận bàn giao.",
+      errHandoverNote: "Vui lòng nhập ghi chú bàn giao.",
+      handoverReceiver: "Người nhận bàn giao",
+      handoverDate: "Ngày bàn giao",
+      handoverConfirm: "Xác nhận bàn giao",
+      handoverChecked: "Đã kiểm tra và ký nhận bàn giao",
       errEstimatedDate:
         "Nhập ngày dự kiến sửa xong để báo khách trước khi chuyển sang Đang sửa chữa.",
       statusUpdated: "Đã cập nhật hồ sơ {code} → {status}",

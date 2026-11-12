@@ -150,6 +150,9 @@ export interface UpdateWarrantyCaseRequest {
   customer_phone?: string;
   customer_address?: string;
   purchase_date?: string;
+  receiver?: string;
+  handover_date?: string;
+  handover_checked?: boolean;
   idempotency_key?: string;
   ifMatch?: number;
 }

@@ -272,6 +272,9 @@ export async function updateWarrantyCase(caseId: string | number, request: Updat
     customer_phone: request.customer_phone,
     customer_address: request.customer_address,
     purchase_date: request.purchase_date,
+    receiver: request.receiver,
+    handover_date: request.handover_date,
+    handover_checked: request.handover_checked,
   }), {
     headers: {
       "If-Match": String(ifMatch),

@@ -6,7 +6,9 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import {
   Box,
+  Checkbox,
   Drawer,
+  FormControlLabel,
   Grid,
   MenuItem,
   SEMANTIC_LIGHT,
@@ -607,6 +609,10 @@ interface StatusFormValues {
   confirmed_defect: string;
   cancel_reason: string;
   estimated_completion_date: string;
+  /** P09 structured handover — bắt buộc khi COMPLETED → RETURNED. */
+  receiver: string;
+  handover_date: string;
+  handover_checked: boolean;
   /**
    * Chẩn đoán lúc tiếp nhận có thể sai — cho chọn lại bệnh/lỗi (danh mục) khi
    * chuyển sang Đang sửa chữa/Đã hoàn tất. Rỗng = không đổi, giữ nguyên bệnh
@@ -697,6 +703,9 @@ export function WarrantyDetailModal({
     confirmed_defect: "",
     cancel_reason: "",
     estimated_completion_date: "",
+    receiver: "",
+    handover_date: "",
+    handover_checked: false,
     defect_ids: [],
   });
   const [correctOpen, setCorrectOpen] = useState(false);
@@ -781,6 +790,7 @@ export function WarrantyDetailModal({
   // ngày mua ≤ hôm nay (BE before_or_equal:today), ngày dự kiến ≥ hôm nay
   // (BE after_or_equal:today), cả hai nằm trong cửa sổ chung của dự án.
   const purchaseBounds = pastDateBounds();
+  const handoverBounds = pastDateBounds();
   const estimatedBounds = futureDateBounds();
   const correctPhoneLiveCheck =
     canViewPii && correctForm.customer_phone
@@ -928,20 +938,42 @@ export function WarrantyDetailModal({
         }
       }
     }
+    if (statusValue === "RETURNED") {
+      if (!statusForm.receiver.trim()) {
+        errors.receiver = t("warranty.detail.errReturnReceiver");
+      }
+      if (!statusForm.handover_date) {
+        errors.handover_date = t("warranty.detail.errHandoverDate");
+      } else {
+        const handoverCheck = checkDate(
+          statusForm.handover_date,
+          handoverBounds,
+        );
+        if (!handoverCheck.ok) {
+          errors.handover_date = dayjs(statusForm.handover_date).isAfter(
+            handoverBounds.maxDate,
+            "day",
+          )
+            ? t("warranty.detail.errHandoverDateFuture")
+            : handoverCheck.message;
+        }
+      }
+      if (!statusForm.handover_checked) {
+        errors.handover_checked = t("warranty.detail.errHandoverChecked");
+      }
+    }
     if (noteRequiredLabel && !statusForm.reason.trim()) {
       // Lỗi phải là câu hướng dẫn riêng, KHÔNG dùng lại đúng nhãn trường:
       // trước đây cùng một chuỗi "Tên người nhận (bắt buộc)" xuất hiện ở
       // label, helperText và footer nên người dùng thấy lỗi lặp 3 lần.
       errors.reason =
         statusValue === "RETURNED"
-          ? t("warranty.detail.errReturnReceiver")
+          ? t("warranty.detail.errHandoverNote")
           : t("warranty.detail.errTreatmentResult");
     }
     setStatusFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
-
-  /** Lỗi đầu tiên đang chặn submit — hiển thị cạnh nút Cập nhật (TC_FUNC_01). */
 
   const submitStatus = async () => {
     if (!detail) return;
@@ -968,6 +1000,18 @@ export function WarrantyDetailModal({
             statusValue === "REPAIRING"
               ? statusForm.estimated_completion_date || undefined
               : undefined,
+          receiver:
+            statusValue === "RETURNED"
+              ? statusForm.receiver.trim() || undefined
+              : undefined,
+          handover_date:
+            statusValue === "RETURNED"
+              ? statusForm.handover_date || undefined
+              : undefined,
+          handover_checked:
+            statusValue === "RETURNED"
+              ? statusForm.handover_checked
+              : undefined,
           defect_ids: defectIds,
           ifMatch: detail.version,
         },
@@ -984,6 +1028,9 @@ export function WarrantyDetailModal({
         confirmed_defect: "",
         cancel_reason: "",
         estimated_completion_date: "",
+        receiver: "",
+        handover_date: "",
+        handover_checked: false,
         defect_ids: [],
       });
       statusDefectForm.reset({ defect_ids: [] });
@@ -997,11 +1044,10 @@ export function WarrantyDetailModal({
       }
       const apiFieldErrors = extractFieldErrorsRaw(error);
       const message = errorText(error, t("warranty.detail.statusUpdateError"));
-      toast.error(
-        apiFieldErrors
-          ? `${message} (${Object.values(apiFieldErrors).flat().join("; ")})`
-          : message,
-      );
+      // Không nối tên field kỹ thuật vào toast: getApiErrorMessage đã gộp các
+      // lỗi field đọc được, còn tên field thô ("receiver", "handover_date")
+      // chỉ là metadata máy, người dùng không hiểu.
+      toast.error(message);
       if (apiFieldErrors) {
         setStatusFieldErrors((current) => ({ ...current, ...apiFieldErrors }));
       }
@@ -1086,11 +1132,8 @@ export function WarrantyDetailModal({
       }
       const apiFieldErrors = extractFieldErrorsRaw(error);
       const message = errorText(error, t("warranty.detail.infoUpdateError"));
-      toast.error(
-        apiFieldErrors
-          ? `${message} (${Object.values(apiFieldErrors).flat().join("; ")})`
-          : message,
-      );
+      // Cùng lý do với submitStatus: không nối tên field kỹ thuật vào toast.
+      toast.error(message);
       if (apiFieldErrors) {
         setCorrectFieldErrors((current) => ({ ...current, ...apiFieldErrors }));
       }
@@ -1403,6 +1446,9 @@ export function WarrantyDetailModal({
                   cancel_reason: "",
                   estimated_completion_date:
                     detail.estimated_completion_date ?? "",
+                  receiver: "",
+                  handover_date: "",
+                  handover_checked: false,
                   defect_ids: [],
                 });
                 statusDefectForm.reset({ defect_ids: [] });
@@ -2601,6 +2647,116 @@ export function WarrantyDetailModal({
                 </MenuItem>
               ))}
             </UiTextField>
+            {statusValue === "RETURNED" ? (
+              <>
+                <UiTextField
+                  fullWidth
+                  required
+                  label={t("warranty.detail.handoverReceiver")}
+                  value={statusForm.receiver}
+                  onChange={(event) => {
+                    setStatusForm((current) => ({
+                      ...current,
+                      receiver: event.target.value,
+                    }));
+                    if (statusFieldErrors.receiver) {
+                      setStatusFieldErrors((current) => ({
+                        ...current,
+                        receiver: "",
+                      }));
+                    }
+                  }}
+                  error={Boolean(statusFieldErrors.receiver)}
+                  helperText={statusFieldErrors.receiver}
+                  slotProps={{ htmlInput: { maxLength: 200 } }}
+                />
+                <UiFormField
+                  label={t("warranty.detail.handoverDate")}
+                  required
+                  htmlFor="warranty-status-handover-date"
+                  error={Boolean(statusFieldErrors.handover_date)}
+                  helperText={statusFieldErrors.handover_date}
+                >
+                  <Box
+                    className="hn-war-detail-date"
+                    role="group"
+                    aria-label={t("warranty.detail.handoverDate")}
+                    aria-invalid={Boolean(statusFieldErrors.handover_date)}
+                  >
+                    <UiVuexyDateField
+                      id="warranty-status-handover-date"
+                      field="warranty-status-handover-date"
+                      aria-label={t("warranty.detail.handoverDate")}
+                      value={
+                        statusForm.handover_date
+                          ? dayjs(statusForm.handover_date)
+                          : null
+                      }
+                      onChange={(next) => {
+                        setStatusForm((current) => ({
+                          ...current,
+                          handover_date: next?.format("YYYY-MM-DD") ?? "",
+                        }));
+                        if (statusFieldErrors.handover_date) {
+                          setStatusFieldErrors((current) => ({
+                            ...current,
+                            handover_date: "",
+                          }));
+                        }
+                      }}
+                      minDate={handoverBounds.minDate}
+                      maxDate={handoverBounds.maxDate}
+                    />
+                    {statusForm.handover_date ? (
+                      <ActionIconButton
+                        kind="close"
+                        className="hn-war-detail-date-clear"
+                        label={`${t("shared.form.autocompleteClear")}: ${t("warranty.detail.handoverDate")}`}
+                        onClick={() => {
+                          setStatusForm((current) => ({
+                            ...current,
+                            handover_date: "",
+                          }));
+                          if (statusFieldErrors.handover_date) {
+                            setStatusFieldErrors((current) => ({
+                              ...current,
+                              handover_date: "",
+                            }));
+                          }
+                        }}
+                      />
+                    ) : null}
+                  </Box>
+                </UiFormField>
+                <UiFormField
+                  label={t("warranty.detail.handoverConfirm")}
+                  required
+                  error={Boolean(statusFieldErrors.handover_checked)}
+                  helperText={statusFieldErrors.handover_checked}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={statusForm.handover_checked}
+                        onChange={(event) => {
+                          setStatusForm((current) => ({
+                            ...current,
+                            handover_checked: event.target.checked,
+                          }));
+                          if (statusFieldErrors.handover_checked) {
+                            setStatusFieldErrors((current) => ({
+                              ...current,
+                              handover_checked: "",
+                            }));
+                          }
+                        }}
+                      />
+                    }
+                    label={t("warranty.detail.handoverChecked")}
+                  />
+                </UiFormField>
+              </>
+            ) : null}
             {statusValue === "REPAIRING" ? (
               <UiFormField
                 label={t("warranty.detail.statusEstimatedDate")}

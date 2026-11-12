@@ -54,6 +54,11 @@ const PURE_NUMBER_PATTERN = /^-?\d+(\.\d+)?$/;
 // rẽ nhánh (xem UserFacingMessageLocalizer::isMachineValue). Chúng không phải câu
 // cho người đọc nên không được nối vào toast.
 const MACHINE_TOKEN_PATTERN = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/;
+// Tên field/khoá kỹ thuật dạng chữ thường ("receiver", "handover_date",
+// "note"): một số endpoint nghiệp vụ tái dùng `errors` để đính kèm danh sách
+// field máy cho client retry. Đây không phải câu cho người đọc nên không được
+// nối vào toast — câu `message` của BE đã là tiếng Việt đầy đủ.
+const FIELD_NAME_PATTERN = /^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/;
 
 /**
  * `errors`/`error.details` được thiết kế cho lỗi VALIDATE (giá trị luôn là một
@@ -76,6 +81,7 @@ function looksLikeDisplayMessage(value: string): boolean {
   if (UUID_PATTERN.test(trimmed)) return false;
   if (PURE_NUMBER_PATTERN.test(trimmed)) return false;
   if (MACHINE_TOKEN_PATTERN.test(trimmed)) return false;
+  if (FIELD_NAME_PATTERN.test(trimmed)) return false;
   return true;
 }
 
