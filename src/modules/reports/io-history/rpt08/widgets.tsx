@@ -21,6 +21,7 @@ import {
   percent,
 } from "./model";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { UiSelect, FILTER_WIDTH } from "@/shared/ui";
 
 export function OverviewCard({
   total,
@@ -566,12 +567,6 @@ export function HistoryTable({
                     </td>
                     <td className="rpt08-code-cell">
                       <span className="rpt08-document">
-                        <span
-                          className="rpt08-document__icon"
-                          aria-hidden="true"
-                        >
-                          <StockOutlined />
-                        </span>
                         <strong title={row.documentNo}>{row.documentNo}</strong>
                       </span>
                     </td>
@@ -608,20 +603,20 @@ export function HistoryTable({
               {" " + tUi("updatedUi.text_74e542e35044")}
             </span>
             {onPageSizeChange ? (
-              <select
-                className="rpt08-page-size"
-                aria-label={tUi("shared.table.rowsPerPageAria")}
+              <UiSelect
                 value={pageSize}
-                onChange={(event) =>
-                  onPageSizeChange(Number(event.target.value))
-                }
-              >
-                {[PAGE_SIZE, ...TABLE_PAGE_SIZE_OPTIONS].map((size) => (
-                  <option key={size} value={size}>
-                    {tUi("shared.table.perPage", { size: String(size) })}
-                  </option>
-                ))}
-              </select>
+                aria-label={tUi("shared.table.rowsPerPageAria")}
+                minWidth={FILTER_WIDTH.pageSize}
+                options={[PAGE_SIZE, ...TABLE_PAGE_SIZE_OPTIONS].map(
+                  (size) => ({
+                    value: size,
+                    label: tUi("shared.table.perPage", {
+                      size: String(size),
+                    }),
+                  }),
+                )}
+                onChange={(value) => onPageSizeChange(Number(value))}
+              />
             ) : null}
             <span className="rpt08-range-note">
               {tUi("updatedUi.text_098cc1b3c5b9")} ·{" "}
