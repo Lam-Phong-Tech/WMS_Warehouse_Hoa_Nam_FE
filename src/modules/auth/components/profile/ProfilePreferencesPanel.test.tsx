@@ -28,6 +28,15 @@ describe("ProfilePreferencesPanel protected drafts", () => {
     expect(preview.style.getPropertyValue("--wms-text-high")).toBe(
       OPERATIONS_PALETTE.light.textHigh,
     );
+    expect(preview.style.getPropertyValue("--settings-text")).toBe(
+      OPERATIONS_COLORS.light.text,
+    );
+    expect(preview.style.getPropertyValue("--settings-surface")).toBe(
+      OPERATIONS_COLORS.light.surface,
+    );
+    expect(preview.style.getPropertyValue("--settings-pale")).toBe(
+      OPERATIONS_COLORS.light.pale,
+    );
     expect(
       screen
         .getByRole("button", { name: "Sáng" })
@@ -48,6 +57,15 @@ describe("ProfilePreferencesPanel protected drafts", () => {
     );
     expect(preview.style.getPropertyValue("--wms-text-high")).toBe(
       OPERATIONS_PALETTE.dark.textHigh,
+    );
+    expect(preview.style.getPropertyValue("--settings-text")).toBe(
+      OPERATIONS_COLORS.dark.text,
+    );
+    expect(preview.style.getPropertyValue("--settings-surface")).toBe(
+      OPERATIONS_COLORS.dark.surface,
+    );
+    expect(preview.style.getPropertyValue("--settings-pale")).toBe(
+      OPERATIONS_COLORS.dark.pale,
     );
     expect(preview.style.colorScheme).toBe("dark");
   });

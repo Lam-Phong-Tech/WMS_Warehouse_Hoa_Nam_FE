@@ -531,10 +531,24 @@ function PreferencePreview({
     "--ops-shadow-floating": palette.shadowFloating,
     "--ops-shadow-dialog": palette.shadowDialog,
     "--ops-ink-rgb": palette.inkRgb,
-    "--personal-preview-accent": personalAccent(
-      mode,
-      preferences.accent,
-    ).primary,
+    // The settings shell aliases --settings-* from --ops-* at .hn-settings-screen,
+    // so the aliases inherit the page theme. Re-resolve them inside the preview;
+    // otherwise its table hover background stays light while the preview is dark.
+    "--settings-ink": palette.heading,
+    "--settings-text": palette.text,
+    "--settings-muted": palette.muted,
+    "--settings-line": palette.line,
+    "--settings-surface": palette.surface,
+    "--settings-pale": palette.pale,
+    "--settings-canvas": palette.canvas,
+    "--settings-cta": palette.primary,
+    "--settings-cta-hover": palette.primaryHover,
+    "--settings-link": palette.link,
+    "--settings-success": palette.success,
+    "--settings-success-soft": palette.successSoft,
+    "--settings-inactive": palette.inactive,
+    "--personal-preview-accent": personalAccent(mode, preferences.accent)
+      .primary,
     ...Object.fromEntries(
       PALETTE_KEYS.map((key) => [cssVarNameOf(key), semantic[key]]),
     ),
