@@ -276,23 +276,26 @@ function KpiGlyph({ name }: { name: KpiGlyphName }) {
   if (name === "wrench") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M14.7 6.3a4 4 0 0 0-5-5L7.8 3.2l3 3 1.9-1.9a4 4 0 0 0 2 5L6 18l-3 3 3-3 8.7-8.7Z" />
-        <circle cx="5" cy="19" r="1" />
+        <path d="M4 8h16v11H4z" />
+        <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+        <path d="M4 12h16M10 12v3h4v-3" />
       </svg>
     );
   }
   if (name === "undo") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M9 14 4 9l5-5" />
-        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+        <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" />
+        <path d="M3 4v5h5" />
       </svg>
     );
   }
   if (name === "boxes") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m12 2 4 2.3v4.5L12 11 8 8.8V4.3L12 2ZM6 10l4 2.3v4.5L6 19l-4-2.2v-4.5L6 10Zm12 0 4 2.3v4.5L18 19l-4-2.2v-4.5L18 10ZM6 19v3m12-3v3m-6-11v11M2 16.8 6 19l4-2.2m4 0 4 2.2 4-2.2" />
+        <path d="m12 3 8 4-8 4-8-4 8-4Z" />
+        <path d="m4 8 8 4 8-4" />
+        <path d="m4 13 8 4 8-4" />
       </svg>
     );
   }
