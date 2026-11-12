@@ -1058,6 +1058,7 @@ export const MESSAGES_EN: MessageTree = {
       fieldStatus: "Status",
       fieldRecipient: "Deliver to",
       fieldScanned: "Scanned",
+      fieldPostedAt: "Outbound completed at",
       additionalInfo: "Additional information",
       step1: "Scan and reconcile goods",
       autoSku: "Detect SKU from the scanned code",

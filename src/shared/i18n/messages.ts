@@ -1086,6 +1086,7 @@ export const MESSAGES_VI = {
       fieldStatus: "Trạng thái",
       fieldRecipient: "Nơi nhận",
       fieldScanned: "Đã quét",
+      fieldPostedAt: "Ngày giờ xuất kho thành công",
       additionalInfo: "Thông tin bổ sung",
       step1: "Quét và đối chiếu hàng",
       autoSku: "Tự nhận SKU từ mã quét",

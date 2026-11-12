@@ -1604,6 +1604,7 @@ const BASE_ZH: MessageTree = {
       "fieldStatus": "状态",
       "fieldRecipient": "发送至",
       "fieldScanned": "已扫描",
+      "fieldPostedAt": "出库完成时间",
       "additionalInfo": "补充信息",
       "step1": "扫描并核对货物",
       "autoSku": "从扫描的代码中检测 SKU",
