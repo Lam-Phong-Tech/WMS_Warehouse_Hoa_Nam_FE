@@ -481,7 +481,7 @@
 .hn-personal-notification-head,
 .hn-personal-notification-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px 80px;
+  grid-template-columns: minmax(0, 1fr) 96px;
   gap: 8px;
   align-items: center;
   padding: 12px 0;
@@ -1108,7 +1108,7 @@
   }
   .hn-personal-notification-head,
   .hn-personal-notification-row {
-    grid-template-columns: minmax(0, 1fr) 64px 56px;
+    grid-template-columns: minmax(0, 1fr) 64px;
     gap: 4px;
   }
   .hn-personal-notification-row > span {

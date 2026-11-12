@@ -37,6 +37,18 @@ const KPI_TONES: Record<string, { icon: DashboardIconName; tone: string }> = {
 
 const dateLabel = (value: string) => dayjs(value).format("DD/MM");
 
+/**
+ * Biểu tượng theo đúng loại việc, không theo thứ tự dòng. "Sự cố đối soát tồn"
+ * luôn dùng tam giác cảnh báo có dấu chấm than, kể cả khi các việc khác đổi thứ tự.
+ */
+function priorityIcon(task: IssueRow): DashboardIconName {
+  if (task.id === "DASH-KPI-14") return "triangle-alert";
+  if (task.id === "DASH-KPI-15") return "briefcase-medical";
+  if (task.id === "DASH-KPI-16") return "package-search";
+  if (task.id === "DASH-KPI-17") return "settings-2";
+  return "triangle-alert";
+}
+
 function periodText(period: OverviewPeriod, range: DateRange, t: TranslateFn) {
   if (period === "last7") return t("dashboard.snapshot.periodLast7");
   if (period === "today") return t("dashboard.snapshot.periodToday");
@@ -694,7 +706,7 @@ export function DashboardSnapshot({
                     <div className="snapshot-list-loading" />
                   ) : tasks.length ? (
                     <div>
-                      {tasks.map((task, index) => (
+                      {tasks.map((task) => (
                         <button
                           key={task.id}
                           type="button"
@@ -706,16 +718,9 @@ export function DashboardSnapshot({
                         >
                           <span
                             className={`snapshot-priority-icon is-${task.severity.toLowerCase()}`}
+                            aria-hidden="true"
                           >
-                            <DashIcon
-                              name={
-                                index === 1
-                                  ? "settings-2"
-                                  : index === 2
-                                    ? "briefcase-medical"
-                                    : "triangle-alert"
-                              }
-                            />
+                            <DashIcon name={priorityIcon(task)} />
                           </span>
                           <span>
                             <strong>{task.title}</strong>

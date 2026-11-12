@@ -195,7 +195,7 @@ export const MESSAGES_VI = {
       viewDetail: "Xem chi tiết",
       totalStock: "Tổng tồn",
       warehouseInfoTitle: "Thông tin kho",
-      warehouseInfoCopy: "Phạm vi kho đang được cấp quyền",
+      warehouseInfoCopy: "Xem danh mục kho và phạm vi kho được phân quyền",
       todayProgressTitle: "Tiến độ xử lý hôm nay",
       todayProgressCopy: "Dữ liệu nhập – xuất theo ngày",
       dailyScheduleTitle: "Lịch nhập/xuất trong ngày",
@@ -2461,8 +2461,7 @@ export const MESSAGES_VI = {
       departmentAll: "Tất cả phòng ban",
       departmentAria: "Phòng ban",
       searchPlaceholder: "Mã phiếu / SKU / người nhận",
-      outboundSearchPlaceholder:
-        "Mã phiếu, mã tờ yêu cầu, người nhận...",
+      outboundSearchPlaceholder: "Mã phiếu, mã tờ yêu cầu, người nhận...",
       searchAria: "Tìm mã phiếu, SKU hoặc người nhận",
       reversalReadError:
         "Không đọc được danh sách phiếu đảo ( {error} ) — bảng dưới đang chỉ hiển thị phiếu Nhập/Xuất.",

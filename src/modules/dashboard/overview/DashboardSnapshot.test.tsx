@@ -134,6 +134,27 @@ describe("DashboardSnapshot MAP-01 parity", () => {
     },
   );
 
+  it("uses the warning triangle with an exclamation mark for stock reconciliation incidents", () => {
+    const { container } = renderSnapshot({
+      issues: [
+        {
+          id: "DASH-KPI-14",
+          severity: "P0",
+          title: "Sự cố đối soát tồn",
+          detail: "Sự cố chưa được đối soát · Chênh lệch chưa đóng",
+          count: 3,
+          technical: "Distinct incident",
+          route: "/inventory",
+        },
+      ],
+    });
+    expect(
+      container.querySelector(
+        '.snapshot-priority-icon path[d="M12 9v4M12 17h.01"]',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("updates priority row actions in both languages without changing the selected route", async () => {
     renderSnapshot({
       issues: [

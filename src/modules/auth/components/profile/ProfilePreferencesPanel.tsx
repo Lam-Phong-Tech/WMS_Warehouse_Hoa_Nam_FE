@@ -246,31 +246,26 @@ export function ProfilePreferencesPanel({
               <div className="hn-personal-notification-head">
                 <span>{t("auth.personal.category")}</span>
                 <span>{t("auth.personal.inApp")}</span>
-                <span>{t("auth.personal.emailChannel")}</span>
               </div>
-              {categories.map(({ key, label, icon }) => (
-                <div className="hn-personal-notification-row" key={key}>
-                  <span>
-                    <UiIcon name={icon} size="sm" />
-                    {label}
-                  </span>
-                  {(["in_app", "email"] as const).map((channel) => (
-                    <label
-                      key={channel}
-                      className="hn-personal-notification-toggle"
-                    >
+              {categories.map(({ key, label, icon }) => {
+                const mandatory = key === "account";
+                return (
+                  <div className="hn-personal-notification-row" key={key}>
+                    <span>
+                      <UiIcon name={icon} size="sm" />
+                      {label}
+                    </span>
+                    <label className="hn-personal-notification-toggle">
                       <Switch
                         checked={
-                          key === "account" && channel === "in_app"
+                          mandatory
                             ? true
-                            : Boolean(draft.notifications[key]?.[channel])
+                            : Boolean(draft.notifications[key]?.in_app)
                         }
-                        disabled={
-                          pending || (key === "account" && channel === "in_app")
-                        }
+                        disabled={pending || mandatory}
                         slotProps={{
                           input: {
-                            "aria-label": `${label} · ${t(channel === "in_app" ? "auth.personal.inApp" : "auth.personal.emailChannel")}`,
+                            "aria-label": `${label} · ${t("auth.personal.inApp")}`,
                           },
                         }}
                         onChange={(_, checked) =>
@@ -278,18 +273,18 @@ export function ProfilePreferencesPanel({
                             ...draft.notifications,
                             [key]: {
                               ...draft.notifications[key],
-                              [channel]: checked,
+                              in_app: checked,
                             },
                           })
                         }
                       />
-                      {key === "account" && channel === "in_app" ? (
+                      {mandatory ? (
                         <small>{t("auth.personal.mandatory")}</small>
                       ) : null}
                     </label>
-                  ))}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
             <p className="hn-personal-note">
               <UiIcon name="lock" size="sm" />

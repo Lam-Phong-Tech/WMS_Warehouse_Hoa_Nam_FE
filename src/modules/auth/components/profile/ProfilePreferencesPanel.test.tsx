@@ -139,7 +139,7 @@ describe("ProfilePreferencesPanel protected drafts", () => {
       expect(save).toHaveBeenCalledWith({ theme: "dark", accent: "ocean" }, 1),
     );
   });
-  it("protects mandatory account notifications while allowing real email category changes", async () => {
+  it("shows only in-app notification controls and protects the mandatory account channel", async () => {
     const save = vi
       .fn()
       .mockResolvedValue({ ...preferenceFixture, version: 2 });
@@ -151,13 +151,19 @@ describe("ProfilePreferencesPanel protected drafts", () => {
         onSave={save}
       />,
     );
+    expect(screen.queryByText("Email")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("switch", { name: /· Email/ }),
+    ).not.toBeInTheDocument();
     const required = screen.getByRole("switch", {
       name: "Hoạt động tài khoản · Trong ứng dụng",
     });
     expect(required).toBeChecked();
     expect(required).toBeDisabled();
     fireEvent.click(
-      screen.getByRole("switch", { name: "Bảo hành & linh kiện · Email" }),
+      screen.getByRole("switch", {
+        name: "Bảo hành & linh kiện · Trong ứng dụng",
+      }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
     await waitFor(() =>
@@ -165,7 +171,7 @@ describe("ProfilePreferencesPanel protected drafts", () => {
         expect.objectContaining({
           notifications: expect.objectContaining({
             account: { in_app: true, email: false },
-            warranty: { in_app: true, email: true },
+            warranty: { in_app: false, email: false },
           }),
         }),
         1,
