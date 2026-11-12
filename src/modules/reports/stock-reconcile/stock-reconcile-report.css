@@ -784,6 +784,8 @@
 
 .rpt02-chart-card {
   grid-area: chart;
+  display: flex;
+  flex-direction: column;
 }
 
 .rpt02-reconcile {
@@ -877,6 +879,8 @@
 }
 
 .chart-wrap {
+  display: flex;
+  flex: 1 1 auto;
   min-height: calc(var(--hn-chart-plot-min) + 30px);
 }
 
@@ -893,6 +897,7 @@
 }
 
 .rpt02-chart-plot {
+  flex: 1 1 auto;
   width: 100%;
   overflow: hidden;
 }

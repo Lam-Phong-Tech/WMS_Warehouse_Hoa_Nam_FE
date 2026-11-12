@@ -430,14 +430,18 @@ function EmptyState({
 function MovementChart({ points }: { points: FlowDailyPoint[] }) {
   const chartRef = useRef<HTMLDivElement>(null);
   const [measuredWidth, setMeasuredWidth] = useState(760);
+  const [measuredHeight, setMeasuredHeight] = useState(224);
 
   useLayoutEffect(() => {
     const node = chartRef.current;
     if (node === null || typeof ResizeObserver === "undefined") return;
 
     const observer = new ResizeObserver((entries) => {
-      const nextWidth = entries[0]?.contentRect.width ?? 0;
+      const rect = entries[0]?.contentRect;
+      const nextWidth = rect?.width ?? 0;
+      const nextHeight = rect?.height ?? 0;
       if (nextWidth > 0) setMeasuredWidth(nextWidth);
+      if (nextHeight > 0) setMeasuredHeight(nextHeight);
     });
     observer.observe(node);
     return () => observer.disconnect();
@@ -456,7 +460,8 @@ function MovementChart({ points }: { points: FlowDailyPoint[] }) {
 
   const chartWidth = Math.max(260, Math.round(measuredWidth));
   const compact = chartWidth < 560;
-  const chartHeight = compact ? 250 : 224;
+  /** SVG cao theo đúng ô chart (.chart-wrap flex lấp panel) để chiếm hết khoảng trắng dọc. */
+  const chartHeight = Math.max(224, Math.round(measuredHeight));
   const left = compact ? 38 : 48;
   const right = compact ? 10 : 20;
   const top = 24;
