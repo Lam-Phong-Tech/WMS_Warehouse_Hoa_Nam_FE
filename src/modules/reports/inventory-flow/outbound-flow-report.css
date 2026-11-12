@@ -361,7 +361,7 @@
   position: absolute;
   right: -4px;
   color: var(--ops-text);
-  content: "–";
+  content: "â€“";
   font-size: 18px;
   z-index: 2;
 }
@@ -2096,9 +2096,9 @@
 }
 
 /*
- * Màn hình desktop hẹp (1366–1599px) vẫn có sidebar 276px, vì vậy vùng nội
- * dung thực tế không đủ cho bốn cột lọc có min-width của bản desktop rộng.
- * Chuyển riêng bộ lọc thành hai cột để không tạo cuộn ngang hoặc ép chữ.
+ * MÃ n hÃ¬nh desktop háº¹p (1366â€“1599px) váº«n cÃ³ sidebar 276px, vÃ¬ váº­y vÃ¹ng ná»™i
+ * dung thá»±c táº¿ khÃ´ng Ä‘á»§ cho bá»‘n cá»™t lá»c cÃ³ min-width cá»§a báº£n desktop rá»™ng.
+ * Chuyá»ƒn riÃªng bá»™ lá»c thÃ nh hai cá»™t Ä‘á»ƒ khÃ´ng táº¡o cuá»™n ngang hoáº·c Ã©p chá»¯.
  */
 @media (max-width: 1599px) and (min-width: 1366px) {
   .outbound-filter-grid {
@@ -2209,6 +2209,125 @@
   }
 }
 
+  .outbound-table-heading {
+    gap: 12px;
+    padding: 14px;
+  }
+  .outbound-table-wrap {
+    padding: 10px;
+    overflow: visible;
+    background: var(--ops-canvas);
+  }
+  .outbound-table-wrap table,
+  .outbound-table-wrap tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .outbound-table-wrap thead {
+    display: none;
+  }
+  .outbound-table-wrap tbody {
+    display: grid;
+    gap: 10px;
+  }
+  .outbound-table-wrap tbody tr {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 46px 13px 8px;
+    overflow: hidden;
+    border: 1px solid var(--ops-line);
+    border-radius: 8px;
+    background: var(--ops-surface);
+    box-shadow: 0 2px 6px rgb(39 68 95 / 5%);
+  }
+  .outbound-table-wrap td,
+  .outbound-table-wrap td.is-number,
+  .outbound-table-wrap td.outbound-created-by,
+  .outbound-table-wrap td.outbound-desktop-date {
+    display: grid;
+    width: 100%;
+    height: auto;
+    min-height: 35px;
+    grid-template-columns: minmax(94px, 38%) minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--ops-pale);
+    text-align: left;
+  }
+  .outbound-table-wrap td::before {
+    color: var(--ops-muted);
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .outbound-table-wrap td:first-child {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    display: flex;
+    width: auto;
+    min-height: 43px;
+    align-items: center;
+    padding: 9px 50px 9px 13px;
+    border-bottom: 1px solid var(--ops-line);
+    background: var(--ops-canvas);
+  }
+  .outbound-table-wrap td:first-child::before,
+  .outbound-table-wrap td:last-child::before {
+    display: none;
+  }
+  .outbound-table-wrap td:first-child strong {
+    font-size: 14px;
+  }
+  .outbound-table-wrap td:last-child {
+    position: absolute;
+    top: 7px;
+    right: 9px;
+    display: block;
+    width: auto;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+  }
+  .outbound-table-wrap .outbound-supplier-name {
+    white-space: normal;
+  }
+  .outbound-table-wrap .outbound-status {
+    min-width: 0;
+    width: fit-content;
+  }
+  .outbound-tablet-only {
+    display: none;
+  }
+  .outbound-table-skeleton {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+    background: var(--ops-canvas);
+  }
+  .outbound-table-skeleton > div {
+    height: auto;
+    min-height: 112px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 15px;
+    border: 1px solid var(--ops-line);
+    border-radius: 8px;
+    background: var(--ops-surface);
+  }
+  .outbound-table-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .outbound-pagination {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
 @media (max-width: 639px) {
   .hn-outbound-report {
     gap: var(--ops-gap);
@@ -2341,125 +2460,6 @@
     grid-column: 2;
     justify-self: start;
   }
-  .outbound-table-heading {
-    gap: 12px;
-    padding: 14px;
-  }
-  .outbound-table-wrap {
-    padding: 10px;
-    overflow: visible;
-    background: var(--ops-canvas);
-  }
-  .outbound-table-wrap table,
-  .outbound-table-wrap tbody {
-    display: block;
-    width: 100%;
-    min-width: 0;
-  }
-  .outbound-table-wrap thead {
-    display: none;
-  }
-  .outbound-table-wrap tbody {
-    display: grid;
-    gap: 10px;
-  }
-  .outbound-table-wrap tbody tr {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    padding: 46px 13px 8px;
-    overflow: hidden;
-    border: 1px solid var(--ops-line);
-    border-radius: 8px;
-    background: var(--ops-surface);
-    box-shadow: 0 2px 6px rgb(39 68 95 / 5%);
-  }
-  .outbound-table-wrap td,
-  .outbound-table-wrap td.is-number,
-  .outbound-table-wrap td.outbound-created-by,
-  .outbound-table-wrap td.outbound-desktop-date {
-    display: grid;
-    width: 100%;
-    height: auto;
-    min-height: 35px;
-    grid-template-columns: minmax(94px, 38%) minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-    padding: 7px 0;
-    border-bottom: 1px solid var(--ops-pale);
-    text-align: left;
-  }
-  .outbound-table-wrap td::before {
-    color: var(--ops-muted);
-    content: attr(data-label);
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-  .outbound-table-wrap td:first-child {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    display: flex;
-    width: auto;
-    min-height: 43px;
-    align-items: center;
-    padding: 9px 50px 9px 13px;
-    border-bottom: 1px solid var(--ops-line);
-    background: var(--ops-canvas);
-  }
-  .outbound-table-wrap td:first-child::before,
-  .outbound-table-wrap td:last-child::before {
-    display: none;
-  }
-  .outbound-table-wrap td:first-child strong {
-    font-size: 14px;
-  }
-  .outbound-table-wrap td:last-child {
-    position: absolute;
-    top: 7px;
-    right: 9px;
-    display: block;
-    width: auto;
-    min-height: 0;
-    padding: 0;
-    border: 0;
-  }
-  .outbound-table-wrap .outbound-supplier-name {
-    white-space: normal;
-  }
-  .outbound-table-wrap .outbound-status {
-    min-width: 0;
-    width: fit-content;
-  }
-  .outbound-tablet-only {
-    display: none;
-  }
-  .outbound-table-skeleton {
-    display: grid;
-    gap: 10px;
-    padding: 10px;
-    background: var(--ops-canvas);
-  }
-  .outbound-table-skeleton > div {
-    height: auto;
-    min-height: 112px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    padding: 15px;
-    border: 1px solid var(--ops-line);
-    border-radius: 8px;
-    background: var(--ops-surface);
-  }
-  .outbound-table-footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .outbound-pagination {
-    max-width: 100%;
-    flex-wrap: wrap;
-  }
   .outbound-readonly-banner,
   .outbound-invalid-banner {
     align-items: flex-start;
@@ -2553,10 +2553,10 @@
   }
 }
 
-/* RPT-01B · Phiếu xuất kho — port theo HN XuatKho PhieuXuatKho P01.
- * Tỷ lệ tổng thể dùng cùng hệ kích thước với RPT-01 để hai báo cáo không bị
- * đổi cỡ khi người dùng chuyển màn; phần trạng thái, bộ lọc và bảng vẫn giữ
- * đúng cấu trúc riêng của Phiếu xuất kho. */
+/* RPT-01B Â· Phiáº¿u xuáº¥t kho â€” port theo HN XuatKho PhieuXuatKho P01.
+ * Tá»· lá»‡ tá»•ng thá»ƒ dÃ¹ng cÃ¹ng há»‡ kÃ­ch thÆ°á»›c vá»›i RPT-01 Ä‘á»ƒ hai bÃ¡o cÃ¡o khÃ´ng bá»‹
+ * Ä‘á»•i cá»¡ khi ngÆ°á»i dÃ¹ng chuyá»ƒn mÃ n; pháº§n tráº¡ng thÃ¡i, bá»™ lá»c vÃ  báº£ng váº«n giá»¯
+ * Ä‘Ãºng cáº¥u trÃºc riÃªng cá»§a Phiáº¿u xuáº¥t kho. */
 .hn-outbound-report {
   gap: var(--ops-gap);
   padding-bottom: 10px;
@@ -2688,7 +2688,7 @@
 
 .outbound-intake-button {
   min-width: 218px;
-  /* Bằng chiều cao nút "Xuất báo cáo" (44px) trên cùng header. */
+  /* Báº±ng chiá»u cao nÃºt "Xuáº¥t bÃ¡o cÃ¡o" (44px) trÃªn cÃ¹ng header. */
   min-height: 44px;
   padding: 0 20px;
   border-radius: var(--ops-radius-control);
@@ -2954,8 +2954,12 @@
   box-shadow: none;
 }
 
-.outbound-table-wrap table {
-  min-width: 1050px;
+@media (min-width: 980px) {
+  /* Desktop giữ min-width để cuộn ngang khi cửa sổ hẹp; tablet (≤979px)
+     dùng card xếp dọc nên không áp dụng. */
+  .outbound-table-wrap table {
+    min-width: 1050px;
+  }
 }
 
 .outbound-table-wrap th,
@@ -3348,55 +3352,6 @@
   .outbound-reference-filters .outbound-reset-button {
     justify-self: stretch;
   }
-
-  .outbound-table-wrap table {
-    min-width: 700px;
-  }
-
-  .outbound-table-wrap th:nth-child(2),
-  .outbound-table-wrap td:nth-child(2),
-  .outbound-table-wrap th:nth-child(4),
-  .outbound-table-wrap td:nth-child(4),
-  .outbound-table-wrap th:nth-child(5),
-  .outbound-table-wrap td:nth-child(5) {
-    display: none;
-  }
-
-  .outbound-table-wrap th:first-child {
-    width: 18%;
-  }
-
-  .outbound-table-wrap th:nth-child(3) {
-    width: 27%;
-  }
-
-  .outbound-table-wrap th:nth-child(6),
-  .outbound-table-wrap td:nth-child(6) {
-    display: table-cell;
-  }
-
-  .outbound-table-wrap th:nth-child(6) {
-    width: 24%;
-  }
-
-  .outbound-table-wrap th:nth-child(7) {
-    width: 20%;
-  }
-
-  .outbound-table-wrap th:last-child {
-    width: 80px;
-  }
-
-  .outbound-table-wrap th .outbound-tablet-only {
-    display: inline;
-  }
-
-  .outbound-table-wrap td .outbound-tablet-only {
-    display: block;
-    margin-top: 2px;
-    color: var(--ops-link);
-    font-size: 11px;
-  }
 }
 
 @media (max-width: 639px) {
@@ -3483,7 +3438,7 @@
   }
 }
 
-/* ── Mật độ giao diện dùng chung với MAP-01 · Tổng quan vận hành ──────── */
+/* â”€â”€ Máº­t Ä‘á»™ giao diá»‡n dÃ¹ng chung vá»›i MAP-01 Â· Tá»•ng quan váº­n hÃ nh â”€â”€â”€â”€â”€â”€â”€â”€ */
 .hn-outbound-report {
   gap: var(--ops-gap);
   font-size: 14px;
@@ -3537,7 +3492,7 @@
 
 .outbound-intake-button {
   min-width: 230px;
-  /* Bằng chiều cao nút "Xuất báo cáo" (44px) trên cùng header. */
+  /* Báº±ng chiá»u cao nÃºt "Xuáº¥t bÃ¡o cÃ¡o" (44px) trÃªn cÃ¹ng header. */
   min-height: 44px;
   font-size: 14px;
 }
@@ -3915,16 +3870,16 @@
   display: grid;
   align-items: center;
   gap: 12px;
-  /* Thụt hai mép bằng đệm ngang của ô bảng (18px); trước đây 0 nên ô tìm
-     kiếm dính sát viền trái của khung. */
+  /* Thá»¥t hai mÃ©p báº±ng Ä‘á»‡m ngang cá»§a Ã´ báº£ng (18px); trÆ°á»›c Ä‘Ã¢y 0 nÃªn Ã´ tÃ¬m
+     kiáº¿m dÃ­nh sÃ¡t viá»n trÃ¡i cá»§a khung. */
   padding: 16px 18px;
-  /* Tách bộ lọc khỏi border-top của khung bảng; trước đây hai đường dính liền. */
+  /* TÃ¡ch bá»™ lá»c khá»i border-top cá»§a khung báº£ng; trÆ°á»›c Ä‘Ã¢y hai Ä‘Æ°á»ng dÃ­nh liá»n. */
   margin: 0 0 10px;
   border: 0;
   background: transparent;
 }
 
-/* Desktop ≥980px only — tablet dùng 2 cột (979px) / 1 cột (767px) bên trên. */
+/* Desktop â‰¥980px only â€” tablet dÃ¹ng 2 cá»™t (979px) / 1 cá»™t (767px) bÃªn trÃªn. */
 @media (min-width: 980px) {
   .hn-outbound-report .outbound-reference-filters.outbound-table-filters {
     grid-template-columns:
@@ -3971,9 +3926,9 @@
 }
 
 /*
- * Desktop table layout only. Trước đây khối này nằm ngoài media query nên
- * `min-width: 1000px` + `display: table` đè cả rule tablet 700px và card mobile
- * 639px, làm bảng bị cắt ở 768px. Dưới 980px dùng rule 979/639 phía trên.
+ * Desktop table layout only. TrÆ°á»›c Ä‘Ã¢y khá»‘i nÃ y náº±m ngoÃ i media query nÃªn
+ * `min-width: 1000px` + `display: table` Ä‘Ã¨ cáº£ rule tablet 700px vÃ  card mobile
+ * 639px, lÃ m báº£ng bá»‹ cáº¯t á»Ÿ 768px. DÆ°á»›i 980px dÃ¹ng rule 979/639 phÃ­a trÃªn.
  */
 @media (min-width: 980px) {
 .hn-outbound-report .outbound-report-table {
