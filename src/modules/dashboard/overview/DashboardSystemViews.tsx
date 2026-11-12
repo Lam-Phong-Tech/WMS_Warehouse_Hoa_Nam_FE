@@ -1,16 +1,15 @@
 import { useState, type ReactNode } from "react";
 import dayjs from "dayjs";
 import { DashIcon } from "../components/DashIcon";
-import { dashboardNow, fmt } from "./overview-data";
+import { fmt } from "./overview-data";
 import { useStockReconcileSnapshot } from "@/modules/reports/stock-reconcile/stock-reconcile-api";
-import { useInventoryFlowSnapshot } from "@/modules/reports/inventory-flow/inventory-flow-api";
 import type { DashboardOverview } from "../types";
 import { buildDashboardThresholds } from "./dashboard-threshold-model";
 import { ThresholdSkuList } from "./ThresholdSkuList";
 import { WARRANTY_OVERDUE_ROUTE } from "@/shared/constants/routes";
 import "./dashboard-system-views.css";
 
-export type DashboardSystemView = "work" | "stock" | "thresholds";
+export type DashboardSystemView = "work" | "thresholds";
 
 type Props = {
   view: DashboardSystemView;
@@ -312,150 +311,6 @@ function WorkView({
   );
 }
 
-function StockView({ onNavigate }: Omit<Props, "view">) {
-  const today = dashboardNow().format("YYYY-MM-DD");
-  const balance = useStockReconcileSnapshot({ asOf: "" });
-  const flow = useInventoryFlowSnapshot({ from: today, to: today });
-  const hasBalance = Boolean(balance.snapshot.as_of);
-  const hasFlow = Boolean(flow.snapshot.as_of);
-  const byType = (["PRODUCT", "COMPONENT"] as const).map((type) => {
-    const rows = balance.snapshot.rows.filter((row) => row.item_kind === type);
-    const onHand = rows.reduce((sum, row) => sum + row.balance_qty, 0);
-    const available = rows.reduce((sum, row) => sum + row.available_qty, 0);
-    return { type, onHand, available, unavailable: onHand - available };
-  });
-  const summary = flow.snapshot.summary;
-  return (
-    <Frame
-      title="Tồn kho & biến động"
-      description="Giải thích tồn hiện có và biến động ghi sổ trong ngày."
-      onNavigate={onNavigate}
-    >
-      <div className="system-view-split">
-        <section className="system-view-card">
-          <header>
-            <h2>Tồn kho hiện tại</h2>
-            <button
-              type="button"
-              onClick={() => onNavigate("/reports/stock-reconcile")}
-            >
-              Xem đối soát <DashIcon name="arrow-right" />
-            </button>
-          </header>
-          {balance.error && hasBalance ? (
-            <PartialNotice onRetry={() => void balance.refetch()} />
-          ) : null}
-          {balance.loading || (balance.error && !hasBalance) ? (
-            <DataState
-              loading={balance.loading}
-              error={hasBalance ? null : balance.error}
-              onRetry={() => void balance.refetch()}
-              empty=""
-            />
-          ) : (
-            <>
-              <div className="system-view-table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Loại hàng</th>
-                      <th>Tồn hiện có</th>
-                      <th>Khả dụng</th>
-                      <th>Không khả dụng</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {byType.map((row) => (
-                      <tr key={row.type}>
-                        <th>
-                          {row.type === "PRODUCT" ? "Sản phẩm" : "Linh kiện"}
-                        </th>
-                        <td>{fmt(row.onHand)}</td>
-                        <td>{fmt(row.available)}</td>
-                        <td>{fmt(row.unavailable)}</td>
-                      </tr>
-                    ))}
-                    <tr className="is-total">
-                      <th>Tổng</th>
-                      <td>{fmt(byType.reduce((n, r) => n + r.onHand, 0))}</td>
-                      <td>
-                        {fmt(byType.reduce((n, r) => n + r.available, 0))}
-                      </td>
-                      <td>
-                        {fmt(byType.reduce((n, r) => n + r.unavailable, 0))}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p className="system-view-note">
-                Tồn hiện có = khả dụng + không khả dụng. Ảnh chụp đối soát lúc{" "}
-                {dateTime(balance.snapshot.as_of)}.
-              </p>
-            </>
-          )}
-        </section>
-        <section className="system-view-card">
-          <header>
-            <h2>Biến động ngày {dayjs(today).format("DD/MM/YYYY")}</h2>
-            <button
-              type="button"
-              onClick={() => onNavigate("/reports/inventory-flow")}
-            >
-              Xem báo cáo <DashIcon name="arrow-right" />
-            </button>
-          </header>
-          {flow.error && hasFlow ? (
-            <PartialNotice onRetry={() => void flow.refetch()} />
-          ) : null}
-          {flow.loading || (flow.error && !hasFlow) ? (
-            <DataState
-              loading={flow.loading}
-              error={hasFlow ? null : flow.error}
-              onRetry={() => void flow.refetch()}
-              empty=""
-            />
-          ) : (
-            <>
-              <div className="system-view-equation">
-                <div>
-                  <span>Đầu ngày</span>
-                  <strong>{fmt(summary.opening)}</strong>
-                </div>
-                <div>
-                  <span>+ Nhập</span>
-                  <strong>{fmt(summary.receiptNet)}</strong>
-                </div>
-                <div>
-                  <span>− Xuất sản phẩm</span>
-                  <strong>{fmt(summary.issueNet)}</strong>
-                </div>
-                <div>
-                  <span>− Xuất linh kiện BH</span>
-                  <strong>{fmt(summary.componentNet)}</strong>
-                </div>
-                <div>
-                  <span>+ Hoàn tác</span>
-                  <strong>{fmt(summary.reversalUnlinked)}</strong>
-                </div>
-                <div className="is-total">
-                  <span>Cuối ngày (tồn hiện có)</span>
-                  <strong>{fmt(summary.closing)}</strong>
-                </div>
-              </div>
-              <p className="system-view-note">
-                Phương trình dùng tồn hiện có. Quét, xếp khay và in nhãn không
-                tự làm thay đổi số tồn. Đã ghi sổ đến{" "}
-                {dateTime(flow.snapshot.source_watermark)}.
-              </p>
-            </>
-          )}
-        </section>
-      </div>
-    </Frame>
-  );
-}
-
 function ThresholdView({ onNavigate }: Omit<Props, "view">) {
   const source = useStockReconcileSnapshot({ asOf: "" });
   const hasSnapshot =
@@ -511,7 +366,6 @@ function ThresholdView({ onNavigate }: Omit<Props, "view">) {
 
 export function DashboardSystemViews(props: Props) {
   if (props.view === "work") return <WorkView {...props} />;
-  if (props.view === "stock") return <StockView {...props} />;
   if (props.view === "thresholds") return <ThresholdView {...props} />;
   return null;
 }

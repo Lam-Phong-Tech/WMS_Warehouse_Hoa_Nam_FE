@@ -159,9 +159,7 @@ export default function DashboardPage() {
   const isMapReferenceScreen = mapSearchParams.get("screen") === "MAP-01";
   const requestedView = mapSearchParams.get("view");
   const referenceView: DashboardSystemView | null =
-    requestedView === "work" ||
-    requestedView === "stock" ||
-    requestedView === "thresholds"
+    requestedView === "work" || requestedView === "thresholds"
       ? requestedView
       : null;
 

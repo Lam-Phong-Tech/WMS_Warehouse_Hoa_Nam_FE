@@ -23,10 +23,12 @@ import { SnapshotRecentTransactions } from "./SnapshotRecentTransactions";
 import { SnapshotThresholdSummary } from "./SnapshotThresholdSummary";
 import { greetingKeyForHour } from "./greeting";
 import { UiVuexyDateField } from "@/shared/ui";
+import { ROUTES } from "@/shared/constants/routes";
 
 export type ChartState = "ready" | "loading" | "empty" | "failed" | "forbidden";
 
 const ISO = "YYYY-MM-DD";
+const stockReportRoute = `${ROUTES.REPORTS_STOCK_RECONCILE}?screen=RPT-02`;
 const KPI_TONES: Record<string, { icon: DashboardIconName; tone: string }> = {
   "DASH-KPI-01": { icon: "package-search", tone: "stock" },
   "DASH-KPI-02": { icon: "settings-2", tone: "value" },
@@ -756,7 +758,7 @@ export function DashboardSnapshot({
                   <button
                     type="button"
                     onClick={() =>
-                      onNavigate("/dashboard?screen=MAP-01&view=stock")
+                      onNavigate(stockReportRoute)
                     }
                   >
                     <span className="is-green">
@@ -811,7 +813,7 @@ export function DashboardSnapshot({
                       <button
                         type="button"
                         onClick={() =>
-                          onNavigate("/dashboard?screen=MAP-01&view=stock")
+                          onNavigate(stockReportRoute)
                         }
                       >
                         {t("dashboard.snapshot.viewDetail")}{" "}

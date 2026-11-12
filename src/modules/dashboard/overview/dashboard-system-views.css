@@ -277,26 +277,6 @@
   text-decoration: underline;
   cursor: pointer;
 }
-.system-view-equation {
-  display: grid;
-  gap: 1px;
-  background: #e2edf2;
-  border: 1px solid #e2edf2;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.system-view-equation > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 15px;
-  padding: 10px 13px;
-  background: white;
-}
-.system-view-equation > .is-total {
-  background: #e8f5fb;
-  color: #004d70;
-  font-weight: 700;
-}
 .system-view-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
