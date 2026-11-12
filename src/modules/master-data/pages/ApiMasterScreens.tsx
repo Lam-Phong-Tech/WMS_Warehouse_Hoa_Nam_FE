@@ -106,6 +106,7 @@ import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import {
   Box,
+  FILTER_WIDTH,
   Checkbox,
   FormControlLabel,
   Grid,
@@ -3652,6 +3653,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   setPage(1);
                 }}
                 menuClassName="hn-defect-menu"
+                minWidth={FILTER_WIDTH.pageSize}
                 options={perPageOptions.map((size) => ({
                   value: size,
                   label: t("shared.table.perPage", { size }),

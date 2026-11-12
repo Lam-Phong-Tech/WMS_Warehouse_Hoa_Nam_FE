@@ -4,7 +4,7 @@ import { BarChartOutlined } from "@/shared/components/icons";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UiIcon, UiPagination, UiSelect } from "@/shared/ui";
+import { FILTER_WIDTH, UiIcon, UiPagination, UiSelect } from "@/shared/ui";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { CopyableId } from "@/shared/components/data-display/CopyableId";
 import { SortableTh } from "@/shared/components/data-display/SortableTh";
@@ -645,6 +645,7 @@ export default function WarrantyComponentIssueListPage() {
               value={perPage}
               aria-label={t("warranty.componentList.pageSizeAria")}
               menuClassName="hn-war04-menu"
+              minWidth={FILTER_WIDTH.pageSize}
               options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
                 value: size,
                 label: `${size} / trang`,

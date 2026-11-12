@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ActionButton } from "@/shared/components/actions";
-import { UiPagination, UiSelect, UiStatusBadge } from "@/shared/ui";
+import {
+  FILTER_WIDTH,
+  UiPagination,
+  UiSelect,
+  UiStatusBadge,
+} from "@/shared/ui";
 import { resolveApiPagination } from "@/shared/components/mvp/mvp-pagination";
 import { useT } from "@/shared/i18n/useT";
 import { formatDateTime } from "@/shared/utils/format-date";
@@ -134,6 +139,7 @@ export function ProfileLoginHistory({ userId }: { userId: string }) {
             aria-label={t("shared.table.perPageAria")}
             value={pagination.pageSize}
             disabled={query.isFetching}
+            minWidth={FILTER_WIDTH.pageSize}
             options={[6, 12, 24].map((size) => ({
               value: size,
               label: t("shared.table.perPage", { size }),
