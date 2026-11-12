@@ -148,6 +148,10 @@ export function UiDrawer({
           <Box
             data-ui-drawer-actions
             sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              flexWrap: "wrap",
+              gap: 1,
               flex: "none",
               px: { xs: 2, sm: 3 },
               py: 2,
