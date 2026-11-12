@@ -167,6 +167,23 @@ describe("WarrantyIntakeModal warehouse selection", { timeout: 60_000 }, () => {
     ).toBeInTheDocument();
   });
 
+  it("báo lỗi chọn kho khi quét mã trước khi chọn kho", async () => {
+    await renderIntake();
+    const input = screen.getByPlaceholderText(/Quét QR tổng hợp/);
+    fireEvent.change(input, { target: { value: "SER-900" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(
+      (
+        await screen.findAllByText(
+          "Vui lòng chọn kho tiếp nhận bảo hành trước khi quét mã.",
+        )
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(mocks.classify).not.toHaveBeenCalled();
+    expect(input).toHaveValue("SER-900");
+  });
+
   it("đổi kho áp dụng kho mới khi lưu", async () => {
     await renderIntake();
     fillCommonFields();

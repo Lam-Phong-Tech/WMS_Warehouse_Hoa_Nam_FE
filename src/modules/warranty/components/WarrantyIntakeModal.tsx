@@ -412,7 +412,12 @@ export function WarrantyIntakeModal({
     setResolvedItem(null);
     setResolveError(null);
     clearFieldError("itemCode");
-    if (!warehouse?.id) return;
+    if (!warehouse?.id) {
+      const message = t("warranty.intake.errWarehouseScan");
+      setFieldErrors((current) => ({ ...current, warehouse: message }));
+      setFormError(message);
+      return;
+    }
     try {
       const classified = await classifyScanCodes({
         raw_code: code,

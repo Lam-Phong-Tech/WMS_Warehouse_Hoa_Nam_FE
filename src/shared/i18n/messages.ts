@@ -1242,6 +1242,8 @@ export const MESSAGES_VI = {
       confirmWarehouse: "Xác nhận kho",
       warehouseConfirmed: "Đã xác nhận kho tiếp nhận: {warehouse}.",
       errWarehouse: "Vui lòng chọn kho tiếp nhận bảo hành trước khi lưu.",
+      errWarehouseScan:
+        "Vui lòng chọn kho tiếp nhận bảo hành trước khi quét mã.",
       errWarehouseMismatch:
         "Kho tiếp nhận không khớp kho đang làm việc. Vui lòng chọn lại kho tiếp nhận hoặc chuyển kho làm việc trước khi lưu.",
       errItemNotFound:
