@@ -12,7 +12,11 @@ function renderLoginRoute() {
         <Route element={<LoginRoute />}>
           <Route path={ROUTES.LOGIN} element={<div>Login form</div>} />
         </Route>
-        <Route path={DASHBOARD_CANONICAL.split("?")[0]} element={<div>Dashboard</div>} />
+        <Route path={ROUTES.HOME} element={<div>Account landing</div>} />
+        <Route
+          path={DASHBOARD_CANONICAL.split("?")[0]}
+          element={<div>Dashboard</div>}
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -35,19 +39,21 @@ describe("LoginRoute", () => {
     expect(screen.getByText("Login form")).toBeInTheDocument();
   });
 
-  it("redirects an authenticated visitor away from login", () => {
+  it("redirects an authenticated visitor to the account landing resolver", () => {
     useAuthStore.setState({ isBootstrapped: true, isAuthenticated: true });
     renderLoginRoute();
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Account landing")).toBeInTheDocument();
+    expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
     expect(screen.queryByText("Login form")).not.toBeInTheDocument();
   });
 
-  it("redirects after an existing session is restored", () => {
+  it("redirects through the landing resolver after an existing session is restored", () => {
     renderLoginRoute();
     act(() => {
       useAuthStore.setState({ isAuthenticated: true, isBootstrapped: true });
     });
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Account landing")).toBeInTheDocument();
+    expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
     expect(screen.queryByText("Login form")).not.toBeInTheDocument();
   });
 });
