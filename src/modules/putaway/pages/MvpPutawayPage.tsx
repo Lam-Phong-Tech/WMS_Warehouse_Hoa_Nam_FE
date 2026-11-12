@@ -939,6 +939,7 @@ export default function MvpPutawayPage() {
               columns={historyColumns}
               rows={pagedHistory}
               rowKey={(row) => row.id}
+              onRowClick={(row) => setHistoryDetail(row)}
               loading={historyQuery.isLoading}
               sortState={historySort.sortState}
               onSortChange={historySort.requestSort}

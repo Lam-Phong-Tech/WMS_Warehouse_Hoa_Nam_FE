@@ -644,6 +644,19 @@ describe("PTW-00 page workflows", () => {
     );
   });
 
+  it("mở chi tiết xếp khay khi bấm vào bất kỳ ô nào trong dòng", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchPutawayHistory).mockResolvedValue([historyRow]);
+    renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
+
+    await user.click(screen.getByRole("button", { name: "Lịch sử" }));
+    await user.click(await screen.findByText("BOX-HIST-001"));
+
+    const drawer = await screen.findByRole("dialog");
+    expect(within(drawer).getByText("BOX-HIST-001")).toBeInTheDocument();
+    expect(within(drawer).getByText("TRAY-HIST-01")).toBeInTheDocument();
+  });
+
   it("lọc lịch sử xếp khay theo mã SKU và tên linh kiện trong hộp", async () => {
     const user = userEvent.setup();
     vi.mocked(fetchPutawayHistory).mockResolvedValue([
