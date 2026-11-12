@@ -39,18 +39,59 @@
   font-size: 12px;
 }
 .hn-audit-settings .hn-audit-export .MuiButton-root,
-.hn-audit-settings .hn-audit-secondary-filters > .MuiButton-root {
+.hn-audit-settings .hn-audit-filters > .MuiButton-root {
   border: 1px solid var(--settings-line);
   background: var(--settings-surface);
 }
 .hn-audit-settings .hn-audit-filters {
   display: grid;
-  grid-template-columns: minmax(250px, 1.5fr) minmax(300px, 1.3fr) minmax(
-      160px,
-      0.85fr
-    );
+  grid-template-columns:
+    minmax(240px, 1.5fr) minmax(280px, 1.3fr) minmax(160px, 0.85fr) auto auto;
   gap: 12px;
   align-items: center;
+}
+.hn-audit-more-filters {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--settings-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--settings-surface);
+  color: var(--settings-ink);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hn-audit-more-filters:hover,
+.hn-audit-more-filters[aria-expanded="true"] {
+  border-color: var(--settings-link);
+  background: var(--settings-pale);
+}
+.hn-audit-more-filters > i {
+  font-size: 18px;
+  line-height: 1;
+}
+.hn-audit-extra-filters {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--settings-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--settings-surface);
+}
+.hn-audit-extra-filters[hidden] {
+  display: none;
+}
+.hn-audit-extra-filters > .hn-audit-filter {
+  width: min(320px, 100%);
 }
 .hn-audit-filter {
   min-width: 0;
@@ -77,13 +118,7 @@
 .hn-audit-settings .hn-vuexy-date-field > span {
   color: var(--settings-muted);
 }
-.hn-audit-secondary-filters {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(230px, 1.3fr) auto;
-  grid-column: 1 / -1;
-  gap: 12px;
-  align-items: center;
-}
+
 .hn-audit-list-card {
   min-width: 0;
 }
@@ -324,8 +359,12 @@
   .hn-audit-filter-search {
     grid-column: 1 / -1;
   }
-  .hn-audit-secondary-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  .hn-audit-more-filters,
+  .hn-audit-filters > .MuiButton-root {
+    justify-self: start;
+  }
+  .hn-audit-extra-filters > .hn-audit-filter {
+    width: min(320px, 100%);
   }
   .hn-audit-page-header {
     flex-wrap: wrap;
@@ -339,9 +378,16 @@
     font-size: 24px;
     line-height: 32px;
   }
-  .hn-audit-settings .hn-audit-filters,
-  .hn-audit-secondary-filters {
+  .hn-audit-settings .hn-audit-filters {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .hn-audit-more-filters,
+  .hn-audit-filters > .MuiButton-root {
+    width: 100%;
+    justify-content: center;
+  }
+  .hn-audit-extra-filters > .hn-audit-filter {
+    width: 100%;
   }
   .hn-audit-pagination {
     align-items: flex-start;

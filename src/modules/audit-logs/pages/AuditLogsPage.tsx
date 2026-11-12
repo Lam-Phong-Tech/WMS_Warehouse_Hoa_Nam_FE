@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { CloseCircleOutlined } from "@/shared/components/icons";
+import { CloseCircleOutlined, FilterOutlined } from "@/shared/components/icons";
 import { useT } from "@/shared/i18n/useT";
 import { useEffect, useState } from "react";
 import type { Dayjs } from "dayjs";
@@ -71,6 +71,7 @@ export function AuditLogsPage() {
   // này (xem AuditLogFilters/audit-logs.service.ts), chỉ còn thiếu UI (tiêu
   // chí 3: bảng tra cứu/đối soát cần có filter).
   const [searchInput, setSearchInput] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [module, setModule] = useState<AuditModule | "">("");
   const [action, setAction] = useState<AuditAction | "">("");
@@ -269,7 +270,26 @@ export function AuditLogsPage() {
             )}
           />
         </div>
-        <div className="hn-audit-secondary-filters">
+        <button
+          type="button"
+          className="hn-audit-more-filters"
+          aria-expanded={filtersOpen}
+          aria-controls="hn-audit-extra-filters"
+          onClick={() => setFiltersOpen((current) => !current)}
+        >
+          <FilterOutlined aria-hidden="true" />
+          {t("inbound.list.filterButton")}
+        </button>
+        {hasFilters ? (
+          <ActionButton kind="clear" appearance="flat" onClick={clearFilters}>
+            {t("audit.filterReset")}
+          </ActionButton>
+        ) : null}
+        <div
+          id="hn-audit-extra-filters"
+          className="hn-audit-extra-filters"
+          hidden={!filtersOpen}
+        >
           <div className="hn-audit-filter">
             <UiSelect
               id="audit-log-action"
@@ -301,11 +321,6 @@ export function AuditLogsPage() {
               options={userOptions}
             />
           </div>
-          {hasFilters ? (
-            <ActionButton kind="clear" appearance="flat" onClick={clearFilters}>
-              {t("audit.filterReset")}
-            </ActionButton>
-          ) : null}
         </div>
       </div>
       <div className="hn-audit-list-card">
