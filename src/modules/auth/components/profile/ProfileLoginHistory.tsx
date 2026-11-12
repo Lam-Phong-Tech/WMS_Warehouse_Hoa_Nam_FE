@@ -19,7 +19,7 @@ import { sessionName } from "./session-presentation";
 export function ProfileLoginHistory({ userId }: { userId: string }) {
   const t = useT();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
+  const [pageSize, setPageSize] = useState(8);
   const query = useQuery({
     queryKey: [...profileKeys.deviceHistory(userId), page, pageSize],
     queryFn: () => profileService.getDeviceHistory(page, pageSize),
@@ -140,7 +140,7 @@ export function ProfileLoginHistory({ userId }: { userId: string }) {
             value={pagination.pageSize}
             disabled={query.isFetching}
             minWidth={FILTER_WIDTH.pageSize}
-            options={[6, 12, 24].map((size) => ({
+            options={[8, 16, 24].map((size) => ({
               value: size,
               label: t("shared.table.perPage", { size }),
             }))}
