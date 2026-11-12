@@ -967,7 +967,7 @@ export function InboundScanModal({
     {
       key: "name",
       header: t("inbound.detail.colNameType"),
-      width: "32%",
+      width: "43%",
       truncate: 0,
       render: (line) => {
         const sku = skuById.get(line.productId);
@@ -1001,7 +1001,7 @@ export function InboundScanModal({
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colInfo"),
-      width: "39%",
+      width: "28%",
       render: (line) =>
         line.infoComplete ? (
           <UiStatusBadge
