@@ -2165,15 +2165,20 @@
   .outbound-page-heading {
     min-height: 0;
     align-items: flex-start;
-    flex-direction: column;
+    flex-direction: row;
   }
   .outbound-page-heading > div:first-child {
     transform: none;
   }
+  /* Tablet: nút xuất + tiếp nhận giữ vị trí góc trên-phải cạnh tiêu đề
+     (như desktop) thay vì trôi xuống hàng riêng bên trái. */
   .outbound-heading-actions {
-    position: static;
-    width: 100%;
-    justify-content: space-between;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: auto;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
   .outbound-filter-card {
     padding: 16px;
@@ -3318,17 +3323,22 @@
   .outbound-page-heading {
     min-height: 0;
     align-items: flex-start;
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .outbound-page-heading > div:first-child {
     transform: none;
   }
 
+  /* Tablet: nút xuất + tiếp nhận giữ vị trí góc trên-phải cạnh tiêu đề
+     (như desktop) thay vì trôi xuống hàng riêng bên trái. */
   .outbound-heading-actions {
-    position: static;
-    width: 100%;
-    justify-content: space-between;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: auto;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
   .outbound-reference-summary__grid {
