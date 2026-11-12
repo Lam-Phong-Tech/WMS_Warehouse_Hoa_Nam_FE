@@ -54,7 +54,10 @@ import {
 import { createRowKey } from "@/shared/components/motion/row-key";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { useActiveWarehouses } from "@/shared/data/reference-queries";
+import {
+  useActiveWarehouses,
+  useWarehouseDirectory,
+} from "@/shared/data/reference-queries";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { useT } from "@/shared/i18n/useT";
@@ -189,6 +192,21 @@ export function ComponentIssueModal({
 
   const warehousesQuery = useActiveWarehouses({ enabled: !documentId });
   const warehouse = warehousesQuery.data?.[0];
+  // Phiếu đã tạo chỉ trả `warehouse_id`; màn danh sách có thể truyền sẵn
+  // warehouseLabel, còn luồng mở từ chi tiết bảo hành thì không. Tra tên kho
+  // trong danh mục dùng chung để không lộ UUID thô ra giao diện.
+  const warehouseDirectoryQuery = useWarehouseDirectory({
+    enabled: Boolean(documentId) && !warehouseLabel,
+  });
+  const resolvedWarehouseLabel = useMemo(() => {
+    if (warehouseLabel) return warehouseLabel;
+    const warehouseId = detail?.warehouse_id;
+    if (!warehouseId) return "";
+    const row = (warehouseDirectoryQuery.data ?? []).find(
+      (candidate) => String(candidate.id ?? "") === String(warehouseId),
+    );
+    return String(row?.name ?? row?.warehouse_name ?? "").trim();
+  }, [warehouseLabel, detail?.warehouse_id, warehouseDirectoryQuery.data]);
   // Catalog COMPONENT có thể lên tới hàng trăm/nghìn SKU — không thể cắt cứng
   // ở per_page (per_page=100 cũ khiến SKU nằm ngoài trang đầu không bao giờ
   // chọn được). Gõ-để-lọc gọi BE theo keyword (ProductRepository::$searchable
@@ -634,9 +652,7 @@ export function ComponentIssueModal({
             </div>
             <div>
               <span>{t("warranty.componentIssue.warehouse")}</span>
-              <strong>
-                {warehouseLabel || detail?.warehouse_id || EMPTY_TEXT}
-              </strong>
+              <strong>{resolvedWarehouseLabel || EMPTY_TEXT}</strong>
             </div>
             <div className="hn-component-issue-context__note">
               <span>{t("warranty.componentIssue.note")}</span>

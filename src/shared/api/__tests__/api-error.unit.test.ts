@@ -83,6 +83,28 @@ describe("api-error.unit", () => {
     );
   });
 
+  // Bug thật trên modal "Xuất linh kiện": BE trả message tiếng Việt hoàn chỉnh
+  // nhưng kèm `errors` là siêu dữ liệu trạng thái hồ sơ (COMPLETED) và danh sách
+  // trạng thái cho phép (CHECKING/REPAIRING). Toast từng hiện thêm
+  // "... khi tạo phiếu. COMPLETED CHECKING" — mã enum thô lọt vào câu cho người đọc.
+  it("should not append raw enum values from business-error details", () => {
+    const error = createMockAxiosError({
+      status: 422,
+      data: {
+        message:
+          "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi tạo phiếu.",
+        errors: {
+          warranty_case_id: "54ce74be-9359-4cbd-9561-cc148efb31a2",
+          warranty_case_status: "COMPLETED",
+          allowed_statuses: ["CHECKING", "REPAIRING"],
+        },
+      },
+    });
+    expect(getApiErrorMessage(error)).toBe(
+      "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi tạo phiếu.",
+    );
+  });
+
   it("should keep a real sentence field error even when siblings are metadata", () => {
     const error = createMockAxiosError({
       status: 422,

@@ -65,10 +65,7 @@ import {
   type PackingLabelRecord,
 } from "@/modules/outbound/services/alignedOutboundService";
 import type { ReactNode } from "react";
-import {
-  ActionButton,
-  ActionIconButton,
-} from "@/shared/components/actions";
+import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import type { MessageKey } from "@/shared/i18n/messages";
@@ -832,7 +829,10 @@ export function AlignedOutboundDetailModal({
               sx={{ justifyContent: "flex-end" }}
             >
               {can("outbound.cancel") && mutable ? (
-                <ActionButton kind="deactivate" onClick={() => setCancelOpen(true)}>
+                <ActionButton
+                  kind="deactivate"
+                  onClick={() => setCancelOpen(true)}
+                >
                   {t("outbound.detail.cancelTrigger")}
                 </ActionButton>
               ) : null}
@@ -1034,13 +1034,15 @@ export function AlignedOutboundDetailModal({
                       : t("outbound.detail.scanAction")}
                   </ActionButton>
                 </Stack>
-                <ResponsiveDataTable<OutboundLineRecord>
-                  columns={lineColumns}
-                  rows={detail.lines}
-                  rowKey={(row) => row.id}
-                  loading={detailQuery.isFetching}
-                  emptyText={t("outbound.detail.linesEmpty")}
-                />
+                <Box className="hn-outbound-lines-table">
+                  <ResponsiveDataTable<OutboundLineRecord>
+                    columns={lineColumns}
+                    rows={detail.lines}
+                    rowKey={(row) => row.id}
+                    loading={detailQuery.isFetching}
+                    emptyText={t("outbound.detail.linesEmpty")}
+                  />
+                </Box>
               </Stack>
             </Box>
           ) : null}
@@ -1202,7 +1204,10 @@ export function AlignedOutboundDetailModal({
                             sx={{
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: { xs: "flex-start", sm: "flex-end" },
+                              justifyContent: {
+                                xs: "flex-start",
+                                sm: "flex-end",
+                              },
                             }}
                           >
                             <ActionButton

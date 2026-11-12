@@ -98,6 +98,19 @@ describe("PackingLabelPreviewDialog", () => {
     expect(screen.getByText("PL-PX-20260830133507-LQPM3Z")).toBeInTheDocument();
   });
 
+  it("giữ khối 'Sử dụng nội bộ kho' nằm trong viền tem thay vì tràn ra ngoài", async () => {
+    renderWithProviders(
+      <PackingLabelPreviewDialog open label={makeLabel()} onClose={vi.fn()} />,
+    );
+
+    const frame = await screen.findByTestId("packing-label-frame");
+    expect(frame).toContainElement(screen.getByText("SỬ DỤNG NỘI BỘ KHO"));
+    // Chiều cao tem phải co theo nội dung (minHeight), không bị khóa cứng
+    // theo tỷ lệ 2/3 như aspectRatio trước đây — nếu khóa, khối nội bộ kho
+    // sẽ tràn xuống dưới đường viền.
+    expect(getComputedStyle(frame).minHeight).toBe("510px");
+  });
+
   it("báo rõ khi nhãn chưa có dòng SKU thay vì để trống im lặng", async () => {
     renderWithProviders(
       <PackingLabelPreviewDialog

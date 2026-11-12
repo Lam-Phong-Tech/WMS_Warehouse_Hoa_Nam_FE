@@ -14,6 +14,7 @@ import {
   UiAddressField,
   UiAlert,
   UiDialog,
+  UiDrawer,
   UiFormAutocomplete,
   UiFormField,
   UiStatusBadge,
@@ -2238,17 +2239,27 @@ export function WarrantyDetailModal({
           </Box>
         </UiDialog>
 
-        <UiDialog
-          className="hn-war-dialog"
+        <UiDrawer
+          className="hn-war-dialog hn-war-edit-drawer"
           open={correctOpen}
           onClose={guardBackdropClose(() => {
             setCorrectOpen(false);
             setCorrectFieldErrors({});
           })}
-          maxWidth="sm"
-          fullWidth
+          width={560}
           aria-label={t("warranty.detail.editAria")}
           title={t("warranty.detail.editTitle")}
+          headerEnd={
+            <ActionIconButton
+              kind="close"
+              label={t("common.close")}
+              disabled={updateMutation.isPending}
+              onClick={() => {
+                setCorrectOpen(false);
+                setCorrectFieldErrors({});
+              }}
+            />
+          }
           actions={
             <>
               <ActionButton
@@ -2522,7 +2533,7 @@ export function WarrantyDetailModal({
               />
             </Grid>
           </Grid>
-        </UiDialog>
+        </UiDrawer>
 
         <UiDialog
           className="hn-war-dialog"

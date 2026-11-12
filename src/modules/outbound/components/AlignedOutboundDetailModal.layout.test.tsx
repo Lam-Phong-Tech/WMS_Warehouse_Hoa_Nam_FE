@@ -149,6 +149,20 @@ it("opens the outbound detail as a right panel with grouped label actions", asyn
   expect(await screen.findByTestId("attachments-panel")).toBeInTheDocument();
 });
 
+it("aligns every line-row cell vertically with the product chips", async () => {
+  renderWithProviders(
+    <AlignedOutboundDetailModal documentId="OUT-1" onClose={vi.fn()} />,
+  );
+
+  await screen.findByText("PL-PX-20261103-001");
+  fireEvent.click(
+    await screen.findByRole("tab", { name: /Quét và đối chiếu hàng/ }),
+  );
+  const skuCell = (await screen.findByText("SKU-001")).closest("td");
+  expect(skuCell).not.toBeNull();
+  expect(getComputedStyle(skuCell as Element).verticalAlign).toBe("middle");
+});
+
 it("offers the header edit action for a DRAFT and opens the edit form", async () => {
   const detail = await services.fetchOutboundDetail();
   services.fetchOutboundDetail.mockResolvedValue({

@@ -109,6 +109,16 @@ const historyRow: PutawayHistory = {
   stock_effect: "NONE",
   movement_created: false,
 };
+const historyOther: PutawayHistory = {
+  ...historyRow,
+  id: "history-2",
+  box_container_id: "container-10",
+  box_code: "BOX-HIST-002",
+  sku_id: "sku-10",
+  sku_code: "COMP-HIST-002",
+  sku_name: "Linh kiện khác",
+  actor_name: "Quản trị viên 02",
+};
 
 let liveClient: QueryClient;
 function CaptureQueryClient() {
@@ -620,11 +630,73 @@ describe("PTW-00 page workflows", () => {
     expect(within(drawer).getByText("Linh kiện lịch sử")).toBeInTheDocument();
     expect(within(drawer).getByText("12")).toBeInTheDocument();
     expect(within(drawer).getByText("Ghi chú lịch sử")).toBeInTheDocument();
+    // Ghi chú chỉ-đọc được thu gọn vào icon i, vẫn có nhãn đầy đủ cho
+    // screen reader và tooltip khi hover/focus.
+    expect(
+      await within(drawer).findByRole("button", {
+        name: "Chỉ xem lịch sử; thao tác này không thay đổi tồn kho.",
+      }),
+    ).toBeInTheDocument();
 
     await user.click(within(drawer).getByRole("button", { name: "Đóng" }));
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
+  });
+
+  it("lọc lịch sử xếp khay theo mã SKU và tên linh kiện trong hộp", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchPutawayHistory).mockResolvedValue([
+      historyRow,
+      historyOther,
+    ]);
+    renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
+
+    await user.click(screen.getByRole("button", { name: "Lịch sử" }));
+    const search = await screen.findByRole("textbox", {
+      name: "Tìm hộp, khay, SKU hoặc người thao tác trong lịch sử xếp khay",
+    });
+
+    await user.type(search, "COMP-HIST-002");
+    expect(await screen.findByText("BOX-HIST-002")).toBeInTheDocument();
+    expect(screen.queryByText("BOX-HIST-001")).not.toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "Linh kiện khác");
+    expect(await screen.findByText("BOX-HIST-002")).toBeInTheDocument();
+    expect(screen.queryByText("BOX-HIST-001")).not.toBeInTheDocument();
+  });
+
+  it("lọc lịch sử xếp khay theo người thao tác", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchPutawayHistory).mockResolvedValue([
+      historyRow,
+      historyOther,
+    ]);
+    renderWithProviders(<MvpPutawayPage />, ["/putaway?screen=PTW-00"]);
+
+    await user.click(screen.getByRole("button", { name: "Lịch sử" }));
+    await user.click(
+      await screen.findByRole("combobox", {
+        name: "Lọc lịch sử theo người thao tác",
+      }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: "Quản trị viên 02" }),
+    );
+
+    expect(await screen.findByText("BOX-HIST-002")).toBeInTheDocument();
+    expect(screen.queryByText("BOX-HIST-001")).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("combobox", {
+        name: "Lọc lịch sử theo người thao tác",
+      }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: "Người thao tác: Tất cả" }),
+    );
+    expect(await screen.findByText("BOX-HIST-001")).toBeInTheDocument();
   });
 
   it("changes the page title to match the active putaway tab", async () => {

@@ -125,14 +125,16 @@ export function PackingLabelPreviewDialog({
     >
       <Stack spacing={1.5} sx={{ alignItems: "center" }}>
         {/* Khung mô phỏng tem: khổ đứng ~10x15cm, viền đậm như tem thật.
-            Tỷ lệ 2/3 chỉ là kích thước TỐI THIỂU: danh sách sản phẩm dài làm
-            khung cao thêm theo nội dung, để cả phiếu cuộn trong DialogContent
-            thay vì khóa chiều cao rồi cho riêng phần sản phẩm tự cuộn. */}
+            Dùng minHeight thay cho aspectRatio: aspectRatio khóa chiều cao
+            đúng 2/3 nên phần "Sử dụng nội bộ kho" bị tràn ra ngoài viền khi
+            nội dung dài. minHeight 510 = 2/3 của chiều rộng tối đa 340, còn
+            chiều cao vẫn tự tăng để viền bao trọn mọi nội dung. */}
         <Box
+          data-testid="packing-label-frame"
           sx={{
             width: "100%",
             maxWidth: 340,
-            aspectRatio: "2 / 3",
+            minHeight: 510,
             border: "2px solid",
             borderColor: "text.primary",
             borderRadius: 1,

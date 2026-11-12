@@ -14,12 +14,50 @@
   line-height: 22px;
 }
 
+.ptw-history-detail__info {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid var(--ops-line);
+  border-radius: 50%;
+  background: var(--ops-surface);
+  color: var(--ops-muted);
+  cursor: help;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.ptw-history-detail__info:hover,
+.ptw-history-detail__info:focus-visible {
+  border-color: var(--ops-primary);
+  background: var(--ops-pale);
+  color: var(--ops-heading);
+}
+
+.ptw-history-detail__info:focus-visible {
+  outline: 2px solid var(--ops-primary);
+  outline-offset: 2px;
+}
+
 .ptw-history-detail__section h3 {
   margin: 0 0 10px;
   color: var(--ops-heading);
   font-size: 16px;
   font-weight: 700;
   line-height: 24px;
+}
+
+/* Nhóm thông tin và nhóm linh kiện là hai khối nghiệp vụ khác nhau — đường
+   chia giúp mắt tách nhóm, tránh cảm giác các dòng dính vào nhau. */
+.ptw-history-detail__section + .ptw-history-detail__section {
+  padding-top: 18px;
+  border-top: 1px solid var(--ops-divider);
 }
 
 .ptw-history-detail__grid {
@@ -53,40 +91,72 @@
 }
 
 .ptw-history-sku {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 12px 20px;
   padding: 14px 16px;
   border: 1px solid var(--ops-line);
   border-radius: var(--ops-radius-card);
-  background: var(--ops-surface);
+  background: var(--ops-pale);
 }
 
-.ptw-history-sku__main,
-.ptw-history-sku__qty {
+.ptw-history-sku__identity {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
-.ptw-history-sku__qty {
+.ptw-history-sku__headline {
+  display: flex;
   align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  color: var(--ops-heading);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.ptw-history-sku__name {
+  margin: 0;
+  color: var(--ops-text);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
 }
 
 .ptw-history-sku__label {
-  color: var(--ops-muted);
-  font-size: 13px;
+  color: var(--ops-text);
+  font-size: 12px;
+  line-height: 18px;
   font-weight: 600;
+}
+
+.ptw-history-sku__qty {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--ops-line);
+  border-radius: 999px;
+  background: var(--ops-surface);
+  white-space: nowrap;
 }
 
 .ptw-history-sku__qty strong {
   color: var(--ops-heading);
   font-size: 18px;
-  line-height: 26px;
+  line-height: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ptw-history-sku__unit {
+  color: var(--ops-text);
+  font-size: 12px;
+  line-height: 18px;
 }
 
 .ptw-history-detail__empty {
@@ -96,16 +166,6 @@
   line-height: 22px;
 }
 
-.ptw-history-detail__readonly {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  color: var(--ops-muted);
-  font-size: 13px;
-  line-height: 20px;
-}
-
 @media (max-width: 600px) {
   .ptw-history-detail__grid {
     grid-template-columns: minmax(0, 1fr);
@@ -113,5 +173,14 @@
 
   .ptw-history-detail__field.is-full {
     grid-column: auto;
+  }
+
+  .ptw-history-sku {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .ptw-history-sku__qty {
+    justify-self: start;
   }
 }

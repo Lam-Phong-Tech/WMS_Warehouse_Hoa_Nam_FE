@@ -189,6 +189,7 @@ export default function MvpPutawayPage() {
   // Lịch sử xếp khay là bảng tra cứu/đối soát — lọc phía FE trên dữ liệu đã tải
   // (không gọi thêm API) để đáp ứng tiêu chí filter cho bảng tra cứu.
   const [historySearchDraft, setHistorySearchDraft] = useState("");
+  const [historyActor, setHistoryActor] = useState("");
   const [historyPageSize, setHistoryPageSize] = useState(10);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyDetail, setHistoryDetail] = useState<PutawayHistory | null>(
@@ -273,6 +274,16 @@ export default function MvpPutawayPage() {
     }
   }, [detailMissing]);
   const history = useMemo(() => historyQuery.data ?? [], [historyQuery.data]);
+  const historyActorOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const row of history) {
+      const name = (row.actor_name ?? "").trim();
+      if (name) names.add(name);
+    }
+    return [...names]
+      .sort((left, right) => left.localeCompare(right, "vi"))
+      .map((name) => ({ value: name, label: name }));
+  }, [history]);
   const historyDetailMissing = Boolean(
     historyDetail &&
     historyQuery.isSuccess &&
@@ -299,18 +310,25 @@ export default function MvpPutawayPage() {
     trays.find((tray) => tray.container_id === putawayForm.to_tray_id) ?? null;
 
   const filteredHistory = useMemo(() => {
-    const keyword = historySearchDraft.trim().toLowerCase();
-    if (!keyword) return history;
-    return history.filter((row) =>
-      [
+    const keyword = historySearchDraft.trim().toLocaleLowerCase("vi");
+    return history.filter((row) => {
+      if (historyActor && (row.actor_name ?? "").trim() !== historyActor) {
+        return false;
+      }
+      if (!keyword) return true;
+      return [
         row.box_code,
+        row.sku_code,
+        row.sku_name,
         row.old_tray_code,
         row.new_tray_code,
         row.location_hint,
         row.actor_name,
-      ].some((field) => (field ?? "").toLowerCase().includes(keyword)),
-    );
-  }, [history, historySearchDraft]);
+      ].some((field) =>
+        (field ?? "").toLocaleLowerCase("vi").includes(keyword),
+      );
+    });
+  }, [history, historySearchDraft, historyActor]);
 
   // Sort toàn danh sách rồi mới cắt trang (đúng hành vi antd Table cũ);
   // clamp trang khi dữ liệu co lại để không rơi vào trang rỗng.
@@ -890,6 +908,18 @@ export default function MvpPutawayPage() {
               }}
             />
             <UiSelect
+              value={historyActor}
+              aria-label={t("putaway.page.historyActorFilterAria")}
+              placeholder={t("putaway.page.historyActorFilterPlaceholder")}
+              options={historyActorOptions}
+              onChange={(value) => {
+                setHistoryActor(String(value));
+                setHistoryPage(1);
+              }}
+              minWidth={FILTER_WIDTH.select}
+              menuClassName="ptw-filter-menu"
+            />
+            <UiSelect
               value={historyPageSize}
               aria-label={t("putaway.page.pageSizeAria")}
               options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
@@ -926,7 +956,7 @@ export default function MvpPutawayPage() {
                 padding: "12px 18px",
               }}
               emptyText={
-                historySearchDraft.trim()
+                historySearchDraft.trim() || historyActor
                   ? t("putaway.page.emptyHistoryFiltered")
                   : t("putaway.page.emptyHistory")
               }

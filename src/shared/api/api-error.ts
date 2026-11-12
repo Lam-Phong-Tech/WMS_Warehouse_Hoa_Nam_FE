@@ -49,6 +49,11 @@ function isGenericValidationMessage(message?: string): boolean {
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PURE_NUMBER_PATTERN = /^-?\d+(\.\d+)?$/;
+// Enum/mã thô dạng UPPER_SNAKE ("COMPLETED", "CHECKING", "WARRANTY_CASE_ID"):
+// BE cố ý giữ nguyên các giá trị máy này trong `errors`/`error.details` để client
+// rẽ nhánh (xem UserFacingMessageLocalizer::isMachineValue). Chúng không phải câu
+// cho người đọc nên không được nối vào toast.
+const MACHINE_TOKEN_PATTERN = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/;
 
 /**
  * `errors`/`error.details` được thiết kế cho lỗi VALIDATE (giá trị luôn là một
@@ -60,9 +65,9 @@ const PURE_NUMBER_PATTERN = /^-?\d+(\.\d+)?$/;
  * Nếu không lọc, một lỗi in nhãn thất bại sẽ hiện đúng như đã gặp thật:
  * "54ce74be-9359-... In thất bại 4 false" thay vì một câu rõ nghĩa, vì
  * {@link formatFieldErrors} nối thẳng mọi giá trị trong `errors` lại. Loại các
- * giá trị không "trông giống câu" (UUID/số thuần/boolean) trước khi hiển thị;
- * không đụng tới câu message thật nào vì câu message luôn có khoảng trắng/chữ
- * cái, không bao giờ khớp các mẫu dưới đây.
+ * giá trị không "trông giống câu" (UUID/số thuần/boolean/enum UPPER_SNAKE)
+ * trước khi hiển thị; không đụng tới câu message thật nào vì câu message luôn
+ * có khoảng trắng/chữ cái, không bao giờ khớp các mẫu dưới đây.
  */
 function looksLikeDisplayMessage(value: string): boolean {
   const trimmed = value.trim();
@@ -70,6 +75,7 @@ function looksLikeDisplayMessage(value: string): boolean {
   if (trimmed === "true" || trimmed === "false") return false;
   if (UUID_PATTERN.test(trimmed)) return false;
   if (PURE_NUMBER_PATTERN.test(trimmed)) return false;
+  if (MACHINE_TOKEN_PATTERN.test(trimmed)) return false;
   return true;
 }
 

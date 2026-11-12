@@ -106,6 +106,24 @@ describe("ComponentIssueModal (COMP-01)", () => {
     ).toBeDisabled();
   });
 
+  it("hiển thị tên kho thay vì UUID khi mở phiếu đã tạo", async () => {
+    vi.mocked(fetchComponentIssueDocument).mockResolvedValue(
+      makeDetail() as never,
+    );
+
+    renderWithProviders(
+      <ComponentIssueModal
+        caseId="wc-1"
+        caseActive
+        documentId="ci-1"
+        onClose={() => {}}
+      />,
+    );
+
+    expect(await screen.findByText("Kho tổng")).toBeInTheDocument();
+    expect(screen.queryByText("wh-1")).not.toBeInTheDocument();
+  });
+
   it("SCANNING: quét serial gửi đúng line đang thiếu + If-Match version", async () => {
     vi.mocked(fetchComponentIssueDocument).mockResolvedValue(
       makeDetail() as never,

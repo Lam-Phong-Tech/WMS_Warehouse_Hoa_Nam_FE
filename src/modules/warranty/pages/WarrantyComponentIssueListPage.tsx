@@ -481,8 +481,17 @@ export default function WarrantyComponentIssueListPage() {
                   const document = detailById.get(row.id) ?? row;
                   const warehouse = warehouseById.get(row.warehouse_id);
                   const warehouseText = warehouse
-                    ? `${String(warehouse.code ?? warehouse.warehouse_code ?? "")} · ${String(warehouse.name ?? warehouse.warehouse_name ?? "")}`
-                    : row.warehouse_id;
+                    ? [
+                        String(
+                          warehouse.code ?? warehouse.warehouse_code ?? "",
+                        ).trim(),
+                        String(
+                          warehouse.name ?? warehouse.warehouse_name ?? "",
+                        ).trim(),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : EMPTY_TEXT;
                   return (
                     <tr key={row.id} onClick={() => openDocument(row)}>
                       <td

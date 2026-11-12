@@ -90,6 +90,13 @@
 .hn-match-empty {
   color: var(--ops-muted);
 }
+/* Cột Sản phẩm chứa chip mã + nút gỡ nên cao hơn chữ thường; các ô còn lại
+   (SKU, Cần xuất, Đã quét) phải căn giữa theo chiều dọc để chữ thẳng hàng với
+   chữ trong chip thay vì dính mép trên. Chỉ áp dụng cho bảng dòng hàng của
+   drawer chi tiết phiếu xuất. */
+.hn-outbound-detail-drawer .hn-outbound-lines-table td {
+  vertical-align: middle;
+}
 .hn-stepper-row {
   display: flex;
   align-items: flex-end;

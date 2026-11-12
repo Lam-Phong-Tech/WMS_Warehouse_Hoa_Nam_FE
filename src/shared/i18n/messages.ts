@@ -1509,7 +1509,7 @@ export const MESSAGES_VI = {
       editCustomerName: "Tên khách gửi (PII)",
       editPhone: "Số điện thoại (PII)",
       editAddress: "Địa chỉ khách (PII)",
-      editReason: "Lý do hiệu chỉnh (hiện trên timeline)",
+      editReason: "Lý do hiệu chỉnh (hiện trên dòng thời gian)",
       statusAria: "Cập nhật trạng thái bảo hành",
       statusTitle: "Cập nhật trạng thái bảo hành",
       statusCancel: "Hủy",
@@ -1524,7 +1524,7 @@ export const MESSAGES_VI = {
       statusCheckRequired: "Kết quả kiểm tra (bắt buộc)",
       statusCheckOptional: "Kết quả kiểm tra (không bắt buộc)",
       statusCancelReason: "Lý do hủy (bắt buộc)",
-      statusNote: "Ghi chú xử lý (hiện trên timeline)",
+      statusNote: "Ghi chú xử lý (hiện trên dòng thời gian)",
       returnLabel: "In nhãn trả máy",
     },
     returnLabel: {
@@ -3010,7 +3010,7 @@ export const MESSAGES_VI = {
       lifecycleTitle: "Vòng đời — {code}",
       lifecycleSubtitle: "{code} · {name}",
       traceUnavailable:
-        "Không tra được mã vật lý này qua dịch vụ truy vết; timeline dưới đây dựng từ sổ biến động trong kỳ đang lọc.",
+        "Không tra được mã vật lý này qua dịch vụ truy vết; dòng thời gian dưới đây dựng từ sổ biến động trong kỳ đang lọc.",
       lifecycleEmpty:
         "Hiện vật này chưa có mốc vòng đời nào trong dữ liệu truy vết.",
       relatedMovements: "Biến động tồn liên quan",
@@ -5561,8 +5561,11 @@ export const MESSAGES_VI = {
       tabHistory: "Lịch sử xếp khay",
       searchPendingPlaceholder: "Tìm hộp / SKU...",
       searchPendingAria: "Tìm hộp hoặc SKU chờ xếp khay",
-      searchHistoryPlaceholder: "Tìm hộp / khay / người thao tác...",
-      searchHistoryAria: "Tìm trong lịch sử xếp khay",
+      searchHistoryPlaceholder: "Tìm hộp / khay / SKU / người thao tác...",
+      searchHistoryAria:
+        "Tìm hộp, khay, SKU hoặc người thao tác trong lịch sử xếp khay",
+      historyActorFilterAria: "Lọc lịch sử theo người thao tác",
+      historyActorFilterPlaceholder: "Người thao tác: Tất cả",
       pageSizeAria: "Số dòng mỗi trang",
       pageSizeOption: "{size} / trang",
       emptyPending: "Không có hộp linh kiện chờ xếp khay",

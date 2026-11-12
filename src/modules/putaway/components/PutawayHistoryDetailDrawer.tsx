@@ -3,7 +3,7 @@ import { ActionIconButton } from "@/shared/components/actions";
 import { SkuLink } from "@/shared/components/data-display/SkuLink";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT } from "@/shared/i18n/useT";
-import { UiDrawer, UiIcon, UiStatusBadge } from "@/shared/ui";
+import { UiDrawer, UiIcon, UiStatusBadge, Tooltip } from "@/shared/ui";
 import { formatDateTime } from "@/shared/utils/format-date";
 import type { PutawayHistory } from "../services/putawayService";
 import "./putaway-history-detail.css";
@@ -61,6 +61,15 @@ export function PutawayHistoryDetailDrawer({
           <span>
             {t("putaway.page.colTime")}: {formatDateTime(history.created_at)}
           </span>
+          <Tooltip title={t("putaway.page.historyReadOnly")}>
+            <button
+              type="button"
+              className="ptw-history-detail__info"
+              aria-label={t("putaway.page.historyReadOnly")}
+            >
+              <UiIcon name="info" size="sm" />
+            </button>
+          </Tooltip>
         </div>
 
         <section
@@ -112,19 +121,25 @@ export function PutawayHistoryDetailDrawer({
           <h3 id="ptw-history-sku">{t("putaway.page.historySkuSection")}</h3>
           {history.sku_code ? (
             <div className="ptw-history-sku">
-              <div className="ptw-history-sku__main">
-                <span className="ptw-history-sku__label">
-                  {t("putaway.page.colSku")}
-                </span>
-                <SkuLink code={history.sku_code} />
-                <span>{history.sku_name || EMPTY_TEXT}</span>
+              <div className="ptw-history-sku__identity">
+                <div className="ptw-history-sku__headline">
+                  <span className="ptw-history-sku__label">
+                    {t("putaway.page.colSku")}
+                  </span>
+                  <SkuLink code={history.sku_code} />
+                </div>
+                <p className="ptw-history-sku__name">
+                  {history.sku_name || EMPTY_TEXT}
+                </p>
               </div>
               <div className="ptw-history-sku__qty">
                 <span className="ptw-history-sku__label">
                   {t("putaway.page.colQuantity")}
                 </span>
                 <strong>{quantity.toLocaleString("vi-VN")}</strong>
-                <span>{history.unit || EMPTY_TEXT}</span>
+                <span className="ptw-history-sku__unit">
+                  {history.unit || EMPTY_TEXT}
+                </span>
               </div>
             </div>
           ) : (
@@ -133,11 +148,6 @@ export function PutawayHistoryDetailDrawer({
             </p>
           )}
         </section>
-
-        <p className="ptw-history-detail__readonly">
-          <UiIcon name="info" size="sm" />
-          <span>{t("putaway.page.historyReadOnly")}</span>
-        </p>
       </div>
     </UiDrawer>
   );

@@ -351,6 +351,15 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     await screen.findByText("BH-0001");
 
     fireEvent.click(screen.getByRole("button", { name: "Sửa thông tin" }));
+    const editDrawer = await screen.findByRole("dialog", {
+      name: "Sửa thông tin hồ sơ bảo hành",
+    });
+    // Yêu cầu 12/11/2026: form sửa mở bằng drawer bên phải, không phải
+    // dialog giữa màn hình.
+    expect(editDrawer).toHaveClass("MuiDrawer-paper");
+    const editDrawerRoot = editDrawer.closest(".hn-war-edit-drawer");
+    expect(editDrawerRoot).not.toBeNull();
+    expect(editDrawerRoot).toHaveClass("MuiDrawer-anchorRight");
     const customerName = await screen.findByLabelText("Tên khách gửi (PII)");
     fireEvent.change(customerName, { target: { value: "Nguyễn Văn B" } });
 
@@ -359,7 +368,9 @@ describe("WarrantyDetailModal (WAR-03)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hủy" }));
     await waitFor(() => {
       expect(
-        screen.queryByRole("dialog", { name: "Sửa thông tin case bảo hành" }),
+        screen.queryByRole("dialog", {
+          name: "Sửa thông tin hồ sơ bảo hành",
+        }),
       ).not.toBeInTheDocument();
     });
     expect(updateWarrantyCase).not.toHaveBeenCalled();

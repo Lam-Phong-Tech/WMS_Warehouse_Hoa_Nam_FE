@@ -284,7 +284,8 @@ function KpiGlyph({ name }: { name: KpiGlyphName }) {
   if (name === "undo") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M9 7H4V2M4 7l4-4M4.5 7.5A8 8 0 1 1 4 16" />
+        <path d="M9 14 4 9l5-5" />
+        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
       </svg>
     );
   }
