@@ -2721,7 +2721,8 @@
 
 .outbound-intake-button {
   min-width: 218px;
-  min-height: var(--ops-control-height);
+  /* Bằng chiều cao nút "Xuất báo cáo" (44px) trên cùng header. */
+  min-height: 44px;
   padding: 0 20px;
   border-radius: var(--ops-radius-control);
   background: var(--ops-primary);
@@ -3180,8 +3181,8 @@
 
   .outbound-intake-button {
     min-width: 260px;
-    min-height: 55px;
-    font-size: 18px;
+    min-height: 44px;
+    font-size: 14px;
   }
 
   .outbound-reference-summary {
@@ -3569,7 +3570,8 @@
 
 .outbound-intake-button {
   min-width: 230px;
-  min-height: var(--ops-control-height);
+  /* Bằng chiều cao nút "Xuất báo cáo" (44px) trên cùng header. */
+  min-height: 44px;
   font-size: 14px;
 }
 
