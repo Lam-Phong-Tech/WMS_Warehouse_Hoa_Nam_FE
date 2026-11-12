@@ -1326,7 +1326,7 @@ export const MESSAGES_VI = {
       uploadImage: "Tải ảnh",
       videosTitle: "Video đính kèm ({count}/{max})",
       videosHint:
-        "MP4/MOV/WEBM, tối đa 2 video, mỗi video ≤ 300MB và ≤ 5 phút. Video được tải lên sau khi hồ sơ bảo hành được tạo.",
+        "MP4/MOV/WEBM, tối đa 1 video, mỗi video ≤ 300MB và ≤ 5 phút. Video được tải lên sau khi hồ sơ bảo hành được tạo.",
       videoDrop: "Kéo thả video vào đây hoặc bấm để chọn",
       videoLimits: "Tối đa {max} video, mỗi video ≤ 300MB, ≤ 5 phút.",
       defectDialogTitle: "Thêm bệnh lỗi",

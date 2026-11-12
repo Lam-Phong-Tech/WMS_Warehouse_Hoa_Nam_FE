@@ -1152,7 +1152,7 @@ export function WarrantyDetailModal({
   };
 
   /**
-   * Cùng trần với màn tiếp nhận: ≤10 ảnh, ≤2 video (≤5 phút) cho MỘT hồ sơ —
+   * Cùng trần với màn tiếp nhận: ≤10 ảnh, ≤1 video (≤5 phút) cho MỘT hồ sơ —
    * đếm cả tệp đã có trên case, vì ở đây mỗi tệp tải lên ngay chứ không gom
    * vào state như intake. Nhiều tệp một lượt thì đếm dồn theo thứ tự chọn.
    */

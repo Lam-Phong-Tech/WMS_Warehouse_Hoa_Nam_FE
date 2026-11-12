@@ -114,7 +114,7 @@ const MAX_INTAKE_IMAGES = MAX_WARRANTY_IMAGES;
  */
 const IMAGE_RULE = FILE_RULES.warrantyImage;
 
-// WAR-02 video đính kèm: mp4/mov/webm, tách riêng khỏi 10 ảnh; <=2 video;
+// WAR-02 video đính kèm: mp4/mov/webm, tách riêng khỏi 10 ảnh; <=1 video;
 // <=300MB và <=5 phút/video (BE đo lại thời lượng bằng getID3, đây chỉ là
 // kiểm tra sớm phía client để không mất công tải file quá dài).
 const MAX_INTAKE_VIDEOS = MAX_WARRANTY_VIDEOS;
