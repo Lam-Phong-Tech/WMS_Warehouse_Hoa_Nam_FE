@@ -367,8 +367,8 @@
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-/* Kết quả nằm sát cột thao tác; lý do dài cắt một dòng và giữ đủ nội dung ở
- * title. Cột này nhận phần rộng dư thay vì để khoảng trống ở các cột trái. */
+/* Kết quả căn trái dưới đúng tiêu đề cột (các cột khác đều căn trái);
+ * lý do dài cắt một dòng và giữ đủ nội dung ở title. */
 .hn-pkg-label__table :is(th, td):nth-child(5) {
   padding-right: 10px;
 }
@@ -376,13 +376,13 @@
   padding-left: 10px;
 }
 .hn-pkg-label__table td.is-result {
-  text-align: right;
+  text-align: left;
 }
 .hn-pkg-label__table td.is-result > .hn-pkg-label__reason {
   display: block;
   width: fit-content;
   max-width: 100%;
-  margin: 4px 0 0 auto;
+  margin: 4px 0 0;
   overflow: hidden;
   text-align: left;
   text-overflow: ellipsis;
