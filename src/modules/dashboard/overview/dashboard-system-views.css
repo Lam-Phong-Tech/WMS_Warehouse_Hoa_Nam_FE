@@ -574,6 +574,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  padding-inline: 14px;
 }
 .snapshot-threshold-totals > div {
   display: grid;
@@ -596,6 +597,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  padding: 0 14px 14px;
 }
 .snapshot-threshold-alerts button {
   display: flex;
@@ -650,6 +652,11 @@
   background: #fff9ec;
   color: #805908;
   font-size: 13px;
+}
+/* Banner "dữ liệu cũ" nằm TRONG card thì lùi vào như phần thân card —
+   còn bản full-width ngoài trang dùng padding của trang, không thêm margin. */
+.snapshot-card .snapshot-partial-alert {
+  margin-inline: 14px;
 }
 .snapshot-partial-alert button {
   border: 0;
