@@ -136,11 +136,11 @@ describe("UiAddressField", () => {
     expect(raw.detail).toBe("1 Lê Duẩn");
   });
 
-  it("chuỗi cũ nhập tự do hiện ở ô địa chỉ cụ thể kèm gợi ý chuẩn hoá", () => {
+  it("chuỗi cũ nhập tự do hiện ở ô địa chỉ cụ thể, không còn gợi ý chuẩn hoá", () => {
     render(<Host initial="Hải Châu, Đà Nẵng" />);
     const detail = screen.getByTestId("addr-detail") as HTMLInputElement;
     expect(detail.value).toBe("Hải Châu, Đà Nẵng");
-    expect(screen.getByText(/Địa chỉ cũ nhập tự do/)).toBeTruthy();
+    expect(screen.queryByText(/Địa chỉ cũ nhập tự do/)).toBeNull();
     expect(screen.queryByTestId("addr-preview")).toBeNull();
   });
 });

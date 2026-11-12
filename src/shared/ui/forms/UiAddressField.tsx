@@ -431,26 +431,6 @@ export function UiAddressField({
         </Box>
       ) : null}
 
-      {!catalogError && legacy && !disabled ? (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 0.75,
-            fontSize: 12.5,
-            lineHeight: 1.4,
-            color: S.textMedium,
-          }}
-        >
-          <i
-            className={flatIconClass("info")}
-            aria-hidden
-            style={{ marginTop: 2, color: S.warning }}
-          />
-          <span>{t("shared.address.legacyHint")}</span>
-        </Box>
-      ) : null}
-
       {!error && helperText ? (
         <FormHelperText sx={{ mx: 0, mt: -0.5 }}>{helperText}</FormHelperText>
       ) : null}

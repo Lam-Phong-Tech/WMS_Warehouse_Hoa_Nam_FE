@@ -771,6 +771,7 @@ export const MESSAGES_EN: MessageTree = {
       fieldSource: "External document number",
       fieldStatus: "Status",
       fieldVersion: "Data version",
+      fieldUpdatedAt: "Updated at",
       fieldWarehouse: "Warehouse",
       fieldSupplier: "Supplier",
       receivedTitle: "Goods received by SKU",

@@ -1307,6 +1307,18 @@ export function InboundScanModal({
                   </Grid>
                   <Grid size={{ xs: 6, sm: 3 }}>
                     <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                      {t("inbound.detail.fieldUpdatedAt")}
+                    </Box>
+                    <Box sx={{ typography: "body2" }}>
+                      {detail.document.updatedAt
+                        ? parseDateTime(detail.document.updatedAt).format(
+                            "DD/MM/YYYY HH:mm",
+                          )
+                        : EMPTY_TEXT}
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
                       {t("inbound.detail.fieldWarehouse")}
                     </Box>
                     <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>

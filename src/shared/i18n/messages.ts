@@ -773,6 +773,7 @@ export const MESSAGES_VI = {
       fieldSupplier: "Nhà cung cấp",
       fieldStatus: "Trạng thái",
       fieldVersion: "Phiên bản dữ liệu",
+      fieldUpdatedAt: "Ngày giờ cập nhật",
       receivedTitle: "Hàng thực nhận theo SKU",
       receivedEmpty:
         "Chưa có dòng SKU nào — quét mã sản phẩm đầu tiên để hệ thống tự tạo dòng.",

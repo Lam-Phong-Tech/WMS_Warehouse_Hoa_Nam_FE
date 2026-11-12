@@ -262,6 +262,28 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     expect(field).not.toHaveTextContent("00:00");
   });
 
+  it("hiển thị ngày giờ cập nhật của phiếu nhập", async () => {
+    mockHooks();
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: {
+        ...DETAIL,
+        document: {
+          ...DETAIL.document,
+          updatedAt: "2026-11-12T08:00:00.000000Z",
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    const field = (await screen.findByText("Ngày giờ cập nhật")).parentElement;
+    expect(field).toHaveTextContent("12/11/2026 15:00");
+  });
+
   it.each([undefined, ""])(
     "không dựng giờ 00:00 từ ngày chứng từ khi thiếu thời điểm tạo (%s)",
     async (createdAt) => {

@@ -1348,6 +1348,7 @@ const BASE_ZH: MessageTree = {
       "fieldSource": "外部单据编号",
       "fieldStatus": "状态",
       "fieldVersion": "数据版本",
+      "fieldUpdatedAt": "更新时间",
       "fieldWarehouse": "仓库",
       "fieldSupplier": "供应商",
       "receivedTitle": "SKU 收到的货物",
