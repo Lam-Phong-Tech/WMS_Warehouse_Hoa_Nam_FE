@@ -15,6 +15,7 @@ export interface WarrantyCase {
   case_code: string;
   sku: string;
   sku_name: string;
+  image_url?: string | null;
   item_code?: string;
   item_id?: string;
   physical_code?: string;

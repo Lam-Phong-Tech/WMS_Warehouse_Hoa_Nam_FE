@@ -78,6 +78,7 @@ const CASES = [
     case_code: "BH-0001",
     sku: "KT-2000",
     sku_name: "Máy khoan KT-2000",
+    image_url: "https://example.com/kt-2000.jpg",
     item_code: "SER-001",
     identification_type: "IDENTIFIED" as const,
     customer_name: "Nguyễn Văn A",
@@ -151,6 +152,15 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     ).toBeInTheDocument();
     // Không có warranty.pii.view => hiện ghi chú mask PII.
     expect(screen.getByText(/warranty.pii.view/)).toBeInTheDocument();
+  });
+
+  it("hiển thị ảnh sản phẩm và giữ icon khi thiếu ảnh", async () => {
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0001");
+
+    expect(screen.getByTestId("sku-thumbnail")).toBeInTheDocument();
+    // CASES[1] không có image_url: vẫn dùng icon hộp như trước.
+    expect(document.querySelectorAll(".hn-war-product-icon")).toHaveLength(1);
   });
 
   it("ẩn nút tiếp nhận khi thiếu warranty.manage", async () => {

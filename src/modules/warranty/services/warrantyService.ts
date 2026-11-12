@@ -92,6 +92,7 @@ function normalizeWarrantyCase(row: RawRecord): WarrantyCase {
     case_code: text(row.case_code ?? row.warranty_case_code ?? row.warranty_case_no ?? row.code ?? row.doc_no),
     sku: text(row.sku ?? row.sku_code ?? row.product_sku),
     sku_name: text(row.sku_name ?? row.product_name),
+    image_url: text(row.image_url) || undefined,
     item_code: text(row.item_code ?? row.serial_number) || undefined,
     item_id: text(row.item_id) || undefined,
     physical_code: text(row.physical_code) || undefined,
