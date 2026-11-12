@@ -777,6 +777,7 @@ export default function InventoryPage() {
               <ResponsiveDataTable<InventoryBalanceRow>
                 headerCellStyle={TABLE_HEADER_STYLE}
                 actionColumnWidth="8%"
+                mobileBreakpoint="lg"
                 rowKey={(row) => row.id}
                 columns={balanceColumns}
                 rows={balances}
@@ -799,6 +800,7 @@ export default function InventoryPage() {
               <ResponsiveDataTable<StockMovementRow>
                 headerCellStyle={TABLE_HEADER_STYLE}
                 actionColumnWidth="10%"
+                mobileBreakpoint="lg"
                 rowKey={(row) => row.id}
                 columns={movementColumns}
                 rows={movements}

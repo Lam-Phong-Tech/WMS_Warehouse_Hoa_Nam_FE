@@ -255,6 +255,41 @@ describe("InventoryPage (INV-01 hub)", () => {
     expect(await chip("Phiếu đảo")).toHaveAttribute("data-tone", "warning");
   });
 
+  it("dùng card ở tablet thay vì bảng bị cắt", async () => {
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: (query: string) => ({
+        // jsdom không tự đánh giá media query; mô phỏng màn tablet khớp
+        // breakpoint lg để kiểm tra nhánh card của ResponsiveDataTable.
+        matches: true,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }),
+    });
+    try {
+      renderWithProviders(<InventoryPage />);
+      await screen.findByText("SKU-001");
+      fireEvent.click(screen.getByRole("tab", { name: /Lịch sử biến động/ }));
+
+      expect(await screen.findByText("SKU-MV-001")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("columnheader", { name: "SKU" }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("SKU")).toBeInTheDocument();
+    } finally {
+      Object.defineProperty(window, "matchMedia", {
+        writable: true,
+        value: originalMatchMedia,
+      });
+    }
+  });
+
   it("chỉ hiển thị vị trí trong chi tiết tồn kho của đúng dòng", async () => {
     renderWithProviders(<InventoryPage />);
     await screen.findByText("SKU-001");

@@ -460,6 +460,15 @@
   .hn-inventory-filters--movement .hn-inventory-reset {
     grid-column: 1 / -1;
   }
+  /* Tablet: pager chỉ giữ ‹ [trang hiện tại] › để không tràn/cắt số trang. */
+  .hn-inventory-footer .MuiPaginationItem-page:not(.Mui-selected),
+  .hn-inventory-footer .MuiPaginationItem-ellipsis {
+    display: none;
+  }
+  .hn-inventory-footer .MuiPagination-ul {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
 }
 @container hn-inventory (max-width: 620px) {
   .hn-inventory-navigation {
