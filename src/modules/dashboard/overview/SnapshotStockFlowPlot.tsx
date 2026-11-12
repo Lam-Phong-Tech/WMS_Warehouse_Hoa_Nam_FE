@@ -196,7 +196,7 @@ export class StockFlowPlotCanvas extends Component<CanvasProps, CanvasState> {
             <span className={this.state.lineMetric === "outbound" ? "is-line-active" : undefined}>{copy.outbound}<b>{format(hovered.outbound)}</b></span>
             <span className={`hn-stock-flow__tooltip-stock${this.state.lineMetric === "stock" ? " is-line-active" : ""}`}>{copy.closing}<b>{format(hovered.closing)}</b></span>
             {hovered.change !== null ? <small>
-              Δ {copy.variance} ({shortDate(dates[hoveredIndex - 1])} → {shortDate(hovered.date)})
+              {copy.variance} ({shortDate(dates[hoveredIndex - 1])} → {shortDate(hovered.date)})
               <b>{hovered.change > 0 ? "+" : ""}{format(hovered.change)}</b>
             </small> : null}
           </div> : null}
