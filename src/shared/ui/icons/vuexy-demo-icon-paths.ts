@@ -38,28 +38,31 @@ export const VUEXY_DEMO_ICONS = {
     ["path", { d: "m20.2 20.2 1.8 1.8" }],
   ],
   "package-plus": [
-    ["path", { d: "m7.5 4.27 9 5.15" }],
+    // Bản lucide gốc — trùng VUEXY_NAV_ICONS["package-plus"] (sidebar). Biến
+    // thể hộp-đóng cũ dấu +/− nhỏ bên trong nên trông mỏng nét so với sidebar.
+    ["path", { d: "M12 22V12" }],
+    ["path", { d: "M16 17h6" }],
+    ["path", { d: "M19 14v6" }],
     [
       "path",
       {
-        d: "M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z",
+        d: "M21 10.535V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.729l7 4a2 2 0 0 0 2 .001l1.675-.955",
       },
     ],
-    ["path", { d: "m3.3 7 8.7 5 8.7-5" }],
-    ["path", { d: "M12 22V12" }],
-    ["path", { d: "M16 13h4M18 11v4" }],
+    ["path", { d: "M3.29 7 12 12l8.71-5" }],
+    ["path", { d: "m7.5 4.27 8.997 5.148" }],
   ],
   "package-minus": [
-    ["path", { d: "m7.5 4.27 9 5.15" }],
+    ["path", { d: "M12 22V12" }],
+    ["path", { d: "M16 17h6" }],
     [
       "path",
       {
-        d: "M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z",
+        d: "M21 13V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.729l7 4a2 2 0 0 0 2 .001l1.675-.955",
       },
     ],
-    ["path", { d: "m3.3 7 8.7 5 8.7-5" }],
-    ["path", { d: "M12 22V12" }],
-    ["path", { d: "M16 13h4" }],
+    ["path", { d: "M3.29 7 12 12l8.71-5" }],
+    ["path", { d: "m7.5 4.27 8.997 5.148" }],
   ],
   "briefcase-medical": [
     ["path", { d: "M12 11v4M10 13h4" }],
@@ -67,9 +70,17 @@ export const VUEXY_DEMO_ICONS = {
     ["rect", { x: "3", y: "6", width: "18", height: "14", rx: "2" }],
   ],
   warehouse: [
-    ["path", { d: "M3 21V8l9-5 9 5v13" }],
-    ["path", { d: "M13 13h4v8M13 17h4M3 21h18" }],
-    ["path", { d: "M7 10h2v2H7z" }],
+    // Bản lucide gốc — trùng VUEXY_NAV_ICONS["warehouse"] (sidebar). Biến thể
+    // cũ (mái liền + cửa nhỏ) ít trùng với sidebar và trông mỏng nét.
+    ["path", { d: "M18 21V10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v11" }],
+    [
+      "path",
+      {
+        d: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 1.132-1.803l7.95-3.974a2 2 0 0 1 1.837 0l7.948 3.974A2 2 0 0 1 22 8z",
+      },
+    ],
+    ["path", { d: "M6 13h12" }],
+    ["path", { d: "M6 17h12" }],
   ],
   "chart-column-big": [
     ["path", { d: "M3 3v18h18" }],
@@ -137,9 +148,17 @@ export const VUEXY_DEMO_ICONS = {
     ["path", { d: "M4 22a8 8 0 0 1 16 0" }],
   ],
   "file-clock": [
-    ["path", { d: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h7" }],
-    ["path", { d: "M14 2v6h6M16 13.5V16l1.5 1" }],
-    ["circle", { cx: "16", cy: "16", r: "5" }],
+    // Bản lucide gốc (đồng hồ phía dưới-trái, đường kính 12) — biến thể cũ
+    // đồng hồ r=5 nét nhỏ nên trông mỏng nét so với sidebar/lucide chuẩn.
+    [
+      "path",
+      {
+        d: "M16 22h2a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v2.85",
+      },
+    ],
+    ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5" }],
+    ["path", { d: "M8 14v2.2l1.6 1" }],
+    ["circle", { cx: "8", cy: "16", r: "6" }],
   ],
   "log-out": [
     ["path", { d: "M10 17l5-5-5-5M15 12H3" }],
