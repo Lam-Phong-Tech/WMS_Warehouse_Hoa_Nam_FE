@@ -557,7 +557,7 @@ describe("PTW-00 page workflows", () => {
     await user.clear(search);
     await waitFor(() => expect(fetchPutawayTasks).toHaveBeenLastCalledWith({}));
   });
-  it("resets receipt and selection when switching from pending BOX to draft orders", async () => {
+  it("resets selection when switching from pending BOX to draft orders", async () => {
     const user = userEvent.setup();
     vi.mocked(fetchPutawayTasks).mockResolvedValue([
       { ...pending, receipt_code: "PN-A" },
@@ -568,10 +568,10 @@ describe("PTW-00 page workflows", () => {
     expect(
       screen.queryByRole("combobox", { name: "Trạng thái BOX" }),
     ).not.toBeInTheDocument();
-    await user.click(
-      screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
-    );
-    await user.click(screen.getByRole("option", { name: "PN-A" }));
+    // Bộ lọc "Phiếu nhập nguồn" đã được gỡ bỏ khỏi màn hình.
+    expect(
+      screen.queryByRole("combobox", { name: "Phiếu nhập nguồn" }),
+    ).not.toBeInTheDocument();
     await user.click(
       screen.getByRole("checkbox", { name: `Chọn BOX ${pending.box_code}` }),
     );
@@ -582,27 +582,17 @@ describe("PTW-00 page workflows", () => {
       screen.getByRole("button", { name: draft.box_code }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
-    ).toHaveTextContent("Tất cả");
-    expect(
       screen.queryByRole("combobox", { name: "Trạng thái BOX" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Đã chọn 1 BOX")).not.toBeInTheDocument();
-    await user.click(
-      screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
-    );
-    expect(screen.getByRole("option", { name: "PN-B" })).toBeInTheDocument();
+    // và vẫn không có combobox "Phiếu nhập nguồn".
     expect(
-      screen.queryByRole("option", { name: "PN-A" }),
+      screen.queryByRole("combobox", { name: "Phiếu nhập nguồn" }),
     ).not.toBeInTheDocument();
-    await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "Hàng chờ" }));
     expect(
       screen.getByRole("checkbox", { name: `Chọn BOX ${pending.box_code}` }),
     ).not.toBeChecked();
-    expect(
-      screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
-    ).toHaveTextContent("Tất cả");
   });
 
   it("opens a read-only history drawer from the detail arrow and hides the old tray column", async () => {

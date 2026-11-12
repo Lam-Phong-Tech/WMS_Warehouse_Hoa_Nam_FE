@@ -199,18 +199,14 @@
 }
 .hn-putaway-page .ptw-filters {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr);
-  grid-template-areas: "search receipt";
+  grid-template-columns: minmax(220px, 1fr);
+  grid-template-areas: "search";
   gap: 10px 18px;
   padding: 12px 14px;
   align-items: end;
 }
 .hn-putaway-page .ptw-search {
   grid-area: search;
-  min-width: 0;
-}
-.hn-putaway-page .ptw-receipt-filter {
-  grid-area: receipt;
   min-width: 0;
 }
 .hn-putaway-page .ptw-filters label {
@@ -276,23 +272,7 @@
   background: transparent;
   color: var(--ptw-muted);
 }
-.hn-putaway-page :is(.ptw-status-filter, .ptw-receipt-filter) select {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  height: var(--ops-control-height);
-  padding: 8px 10px;
-  color: var(--ptw-heading);
-  background: var(--ptw-card);
-  border: 1px solid var(--ptw-line);
-  border-radius: var(--ops-radius-control);
-  text-overflow: ellipsis;
-  cursor: pointer;
-  transition: border-color 150ms ease;
-}
-.hn-putaway-page :is(.ptw-status-filter, .ptw-receipt-filter) select:hover {
-  border-color: var(--ptw-primary);
-}
+
 .hn-putaway-page .ptw-filter-actions {
   grid-area: actions;
   display: flex;

@@ -1,7 +1,7 @@
 /* PTW-00 filters and tables follow the MST-01 list rhythm. */
 .hn-putaway-page form.ptw-filters {
-  grid-template-columns: minmax(260px, 2fr) minmax(220px, 1fr);
-  grid-template-areas: "search receipt";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "search";
   align-items: center;
   gap: 12px;
   padding: 0;
@@ -21,8 +21,7 @@
   border: 0;
   margin: 0;
 }
-.hn-putaway-page form.ptw-filters .ptw-search-control,
-.hn-putaway-page form.ptw-filters :is(.ptw-status-filter, .ptw-receipt-filter) {
+.hn-putaway-page form.ptw-filters .ptw-search-control {
   min-height: 48px;
   border: 1px solid var(--ops-line);
   border-radius: var(--ops-radius-control);
@@ -31,55 +30,9 @@
 .hn-putaway-page form.ptw-filters .ptw-search-control {
   height: 48px;
 }
-.hn-putaway-page form.ptw-filters .ptw-search-control:focus-within,
-.hn-putaway-page
-  form.ptw-filters
-  :is(.ptw-status-filter, .ptw-receipt-filter):focus-within {
+.hn-putaway-page form.ptw-filters .ptw-search-control:focus-within {
   border-color: var(--ops-link);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-link) 13%, transparent);
-}
-.hn-putaway-page form.ptw-filters :is(.ptw-status-filter, .ptw-receipt-filter) {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  padding-left: 12px;
-}
-.hn-putaway-page form.ptw-filters .ptw-inline-label {
-  flex: 0 0 auto;
-  margin: 0;
-  color: var(--ops-muted);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.hn-putaway-page
-  form.ptw-filters
-  :is(.ptw-status-filter, .ptw-receipt-filter)
-  .MuiFormControl-root {
-  flex: 1 1 auto;
-  width: 100%;
-  min-width: 0;
-}
-.hn-putaway-page
-  form.ptw-filters
-  :is(.ptw-status-filter, .ptw-receipt-filter)
-  .MuiInputBase-root {
-  min-height: 46px;
-  color: var(--ops-text);
-  background: transparent;
-  box-shadow: none;
-}
-.hn-putaway-page
-  form.ptw-filters
-  :is(.ptw-status-filter, .ptw-receipt-filter)
-  .MuiOutlinedInput-notchedOutline {
-  border: 0;
-}
-.hn-putaway-page
-  form.ptw-filters
-  :is(.ptw-status-filter, .ptw-receipt-filter)
-  .MuiSelect-select {
-  padding-left: 8px;
 }
 .hn-putaway-page .ptw-list {
   border-color: var(--ops-line);
@@ -256,9 +209,4 @@
 .hn-putaway-page .ptw-list .ptw-footer nav {
   margin-left: auto;
 }
-@container hn-putaway (max-width: 1000px) {
-  .hn-putaway-page form.ptw-filters {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "search" "receipt";
-  }
-}
+

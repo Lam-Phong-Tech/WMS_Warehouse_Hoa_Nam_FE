@@ -51,15 +51,6 @@ function visibleBoxes() {
     .map((button) => button.textContent);
 }
 
-async function selectFilter(
-  user: ReturnType<typeof userEvent.setup>,
-  name: string,
-  option: string,
-) {
-  await user.click(screen.getByRole("combobox", { name }));
-  await user.click(screen.getByRole("option", { name: option }));
-}
-
 afterEach(cleanupTestState);
 
 describe("PTW-00 queue interactions", () => {
@@ -73,8 +64,7 @@ describe("PTW-00 queue interactions", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
-  it("excludes active drafts and filters by receipt immediately", async () => {
-    const user = userEvent.setup();
+  it("excludes active drafts from the pending BOX list", async () => {
     const input = props([
       task(1, { quantity: 1200, sku_id: "shared", receipt_code: "PN-01" }),
       task(2, { quantity: 300, sku_id: "shared", receipt_code: "PN-02" }),
@@ -85,16 +75,15 @@ describe("PTW-00 queue interactions", () => {
     expect(
       screen.queryByRole("combobox", { name: "Trạng thái BOX" }),
     ).not.toBeInTheDocument();
-
-    await selectFilter(user, "Phiếu nhập nguồn", "PN-02");
-    expect(visibleBoxes()).toEqual(["BOX-02"]);
-    await selectFilter(user, "Phiếu nhập nguồn", "Tất cả");
-    expect(visibleBoxes()).toEqual(["BOX-01", "BOX-02"]);
     expect(
       screen.queryByRole("button", { name: "Áp dụng" }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Đặt lại" }),
+    ).not.toBeInTheDocument();
+    // Bộ lọc "Phiếu nhập nguồn" đã được gỡ bỏ khỏi màn hình.
+    expect(
+      screen.queryByRole("combobox", { name: "Phiếu nhập nguồn" }),
     ).not.toBeInTheDocument();
   });
 
@@ -308,36 +297,5 @@ describe("PTW-00 queue interactions", () => {
     await user.click(screen.getByRole("button", { name: "Làm mới" }));
     expect(input.onRefresh).toHaveBeenCalledTimes(2);
   });
-  it("keeps the selected receipt visible when refreshed data no longer contains it", async () => {
-    const user = userEvent.setup();
-    const input = props([
-      task(1, { receipt_code: "PN-A" }),
-      task(2, { receipt_code: "PN-B" }),
-    ]);
-    const rendered = renderWithProviders(<PutawayQueue {...input} />);
-    await selectFilter(user, "Phiếu nhập nguồn", "PN-A");
-    expect(visibleBoxes()).toEqual(["BOX-01"]);
 
-    rendered.rerender(
-      <PutawayQueue {...input} tasks={[task(2, { receipt_code: "PN-B" })]} />,
-    );
-    expect(
-      screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
-    ).toHaveTextContent("PN-A");
-    expect(screen.getByText("Không tìm thấy BOX phù hợp")).toBeInTheDocument();
-    await user.click(
-      screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
-    );
-    expect(screen.getByRole("option", { name: "PN-A" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(screen.getByRole("option", { name: "PN-B" })).toBeInTheDocument();
-    await user.keyboard("{Escape}");
-    await selectFilter(user, "Phiếu nhập nguồn", "Tất cả");
-    expect(visibleBoxes()).toEqual(["BOX-02"]);
-    expect(
-      screen.getByRole("combobox", { name: "Phiếu nhập nguồn" }),
-    ).toHaveTextContent("Tất cả");
-  });
 });

@@ -44,9 +44,6 @@ type Props = {
 export function PutawayQueue(props: Props) {
   const t = useT();
   const { tasks, orders, loading, refreshing, error, canManage } = props;
-  const [filters, setFilters] = useState({
-    receipt: "",
-  });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(TABLE_PAGE_SIZE_OPTIONS[0]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -55,24 +52,7 @@ export function PutawayQueue(props: Props) {
       tasks.filter((row) => (orders ? Boolean(row.draft_id) : !row.draft_id)),
     [tasks, orders],
   );
-  const receipts = useMemo(
-    () =>
-      [
-        ...new Set(
-          [...baseRows.map((row) => row.receipt_code), filters.receipt].filter(
-            (code): code is string => Boolean(code),
-          ),
-        ),
-      ].sort((a, b) => a.localeCompare(b, "vi", { numeric: true })),
-    [baseRows, filters.receipt],
-  );
-  const rows = useMemo(
-    () =>
-      baseRows.filter(
-        (row) => !filters.receipt || row.receipt_code === filters.receipt,
-      ),
-    [baseRows, filters.receipt],
-  );
+  const rows = baseRows;
   const { sortedRows, sortState, requestSort } = useClientSort(rows, SORT);
   const safePage = Math.min(
     page,
@@ -137,28 +117,6 @@ export function PutawayQueue(props: Props) {
               }}
             />
           </div>
-        </div>
-        <div className="ptw-receipt-filter">
-          <label className="ptw-inline-label" htmlFor="ptw-receipt">
-            {t("putaway.queue.receipt")}:
-          </label>
-          <UiSelect
-            id="ptw-receipt"
-            aria-label={t("putaway.queue.receipt")}
-            fullWidth
-            displayEmpty
-            menuClassName="ptw-filter-menu"
-            value={filters.receipt}
-            onChange={(receipt) => {
-              setFilters((current) => ({ ...current, receipt }));
-              setPage(1);
-              setSelectedIds(new Set());
-            }}
-            options={[
-              { value: "", label: t("putaway.queue.all") },
-              ...receipts.map((value) => ({ value, label: value })),
-            ]}
-          />
         </div>
       </form>
       {error ? (
@@ -350,14 +308,14 @@ export function PutawayQueue(props: Props) {
                   <td colSpan={columnCount} className="ptw-empty">
                     <UiIcon name="cube" size="lg" />
                     <strong>
-                      {props.search || filters.receipt
+                      {props.search
                         ? t("putaway.queue.emptyFiltered")
                         : orders
                           ? t("putaway.queue.emptyOrders")
                           : t("putaway.queue.emptyPending")}
                     </strong>
                     <span>
-                      {props.search || filters.receipt
+                      {props.search
                         ? t("putaway.queue.emptyFilteredHint")
                         : t("putaway.queue.emptyHint")}
                     </span>
