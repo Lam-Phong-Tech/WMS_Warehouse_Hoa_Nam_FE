@@ -917,12 +917,15 @@
   .hn-pkg-label__kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  /* Tablet: nút xuất báo cáo giữ vị trí góc trên-phải cạnh tiêu đề
+     (như desktop) thay vì trôi xuống hàng riêng bên trái. */
   .hn-pkg-label__header {
-    flex-direction: column;
+    align-items: flex-start;
+    flex-direction: row;
     gap: 16px;
   }
   .hn-pkg-label__header-actions {
-    justify-content: flex-start;
+    justify-content: flex-end;
   }
 }
 @container packing-label (max-width:580px) {
