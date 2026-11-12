@@ -1809,7 +1809,7 @@ const BASE_ZH: MessageTree = {
       "imagesHint": "JPG/PNG/WEBP，最多 10 张图片，每张 ≤ 10MB。创建保修案例后上传图像。",
       "uploadImage": "上传图片",
       "videosTitle": "附加视频 ({count}/{max})",
-      "videosHint": "MP4/MOV/WEBM，最多 2 个视频，每个 ≤ 300MB 且 ≤ 5 分钟。创建保修案例后上传视频。",
+      "videosHint": "MP4/MOV/WEBM，最多 1 个视频，每个 ≤ 300MB 且 ≤ 5 分钟。创建保修案例后上传视频。",
       "videoDrop": "将视频拖放到此处，或单击选择",
       "videoLimits": "最多 {max} 视频，每个 ≤ 300MB，≤ 5 分钟。",
       "defectDialogTitle": "添加症状",

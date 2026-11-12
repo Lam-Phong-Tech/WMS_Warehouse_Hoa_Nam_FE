@@ -1293,7 +1293,7 @@ export const MESSAGES_EN: MessageTree = {
       uploadImage: "Upload image",
       videosTitle: "Attached videos ({count}/{max})",
       videosHint:
-        "MP4/MOV/WEBM, up to 2 videos, each ≤ 300MB and ≤ 5 minutes. Videos upload after the warranty case is created.",
+        "MP4/MOV/WEBM, up to 1 video, each ≤ 300MB and ≤ 5 minutes. Videos upload after the warranty case is created.",
       videoDrop: "Drag and drop a video here, or click to choose",
       videoLimits: "Up to {max} videos, each ≤ 300MB, ≤ 5 minutes.",
       defectDialogTitle: "Add a symptom",
