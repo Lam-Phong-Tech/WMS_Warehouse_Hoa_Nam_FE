@@ -1040,7 +1040,7 @@
 
 .outbound-progress-content {
   display: grid;
-  grid-template-columns: minmax(126px, 158px) minmax(118px, 190px);
+  grid-template-columns: minmax(104px, 132px) minmax(118px, 190px);
   flex: 1;
   align-items: center;
   justify-content: center;
@@ -1053,7 +1053,7 @@
   position: relative;
   display: grid;
   width: 100%;
-  max-width: 158px;
+  max-width: 130px;
   height: auto;
   aspect-ratio: 1;
   flex: 0 0 auto;
@@ -1090,7 +1090,7 @@
 .outbound-donut strong {
   color: var(--ops-heading);
   color: var(--ops-heading);
-  font-size: 34px;
+  font-size: 28px;
 }
 
 .outbound-donut small {
@@ -2029,18 +2029,18 @@
     min-height: 350px;
   }
   .outbound-progress-content {
-    grid-template-columns: 185px 270px;
+    grid-template-columns: 148px 270px;
     gap: 48px;
     min-height: 210px;
   }
   .outbound-donut {
-    width: 185px;
-    max-width: 185px;
-    height: 185px;
+    width: 148px;
+    max-width: 148px;
+    height: 148px;
   }
   .outbound-donut::after {
-    width: 120px;
-    height: 120px;
+    width: 96px;
+    height: 96px;
   }
   .outbound-progress-legend {
     min-width: 270px;
@@ -2350,7 +2350,7 @@
   }
   .outbound-donut {
     width: 100%;
-    max-width: 115px;
+    max-width: 96px;
     height: auto;
   }
   .outbound-donut::after {
@@ -2358,7 +2358,7 @@
     height: auto;
   }
   .outbound-donut strong {
-    font-size: 28px;
+    font-size: 24px;
   }
   .outbound-progress-legend {
     max-width: none;
@@ -3761,14 +3761,14 @@
   }
 
   .outbound-progress-content {
-    grid-template-columns: minmax(126px, 158px) minmax(118px, 190px);
+    grid-template-columns: minmax(104px, 132px) minmax(118px, 190px);
     gap: 24px;
     min-height: 0;
   }
 
   .outbound-donut {
     width: 100%;
-    max-width: 158px;
+    max-width: 130px;
     height: auto;
   }
 

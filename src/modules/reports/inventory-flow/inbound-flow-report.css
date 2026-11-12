@@ -926,7 +926,7 @@
 
 .inbound-progress-content {
   display: grid;
-  grid-template-columns: minmax(126px, 158px) minmax(118px, 190px);
+  grid-template-columns: minmax(104px, 132px) minmax(118px, 190px);
   flex: 1;
   align-items: center;
   justify-content: center;
@@ -939,7 +939,7 @@
   position: relative;
   display: grid;
   width: 100%;
-  max-width: 158px;
+  max-width: 130px;
   height: auto;
   aspect-ratio: 1;
   flex: 0 0 auto;
@@ -976,7 +976,7 @@
 .inbound-donut strong {
   color: var(--ops-heading);
   color: var(--ops-heading);
-  font-size: 30px;
+  font-size: 26px;
 }
 
 .inbound-donut small {
@@ -1920,18 +1920,18 @@
     min-height: 350px;
   }
   .inbound-progress-content {
-    grid-template-columns: 185px 270px;
+    grid-template-columns: 148px 270px;
     gap: 48px;
     min-height: 210px;
   }
   .inbound-donut {
-    width: 185px;
-    max-width: 185px;
-    height: 185px;
+    width: 148px;
+    max-width: 148px;
+    height: 148px;
   }
   .inbound-donut::after {
-    width: 120px;
-    height: 120px;
+    width: 96px;
+    height: 96px;
   }
   .inbound-progress-legend {
     min-width: 270px;
@@ -2273,7 +2273,7 @@
   }
   .inbound-donut {
     width: 100%;
-    max-width: 115px;
+    max-width: 96px;
     height: auto;
   }
   .inbound-donut::after {
@@ -2281,7 +2281,7 @@
     height: auto;
   }
   .inbound-donut strong {
-    font-size: 25px;
+    font-size: 22px;
   }
   .inbound-progress-legend {
     max-width: none;
@@ -2705,14 +2705,14 @@
   }
 
   .inbound-progress-content {
-    grid-template-columns: minmax(126px, 158px) minmax(118px, 190px);
+    grid-template-columns: minmax(104px, 132px) minmax(118px, 190px);
     gap: 24px;
     min-height: 0;
   }
 
   .inbound-donut {
     width: 100%;
-    max-width: 158px;
+    max-width: 130px;
     height: auto;
   }
 
