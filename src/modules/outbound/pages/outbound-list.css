@@ -581,20 +581,20 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   flex: none;
 }
 .hn-outbound-col-code {
-  width: 24%;
+  width: 16%;
 }
 .hn-outbound-col-index {
   width: 6%;
   text-align: center !important;
   white-space: nowrap !important;
 }
-.hn-outbound-index {
+.hn-outbound-table td.hn-outbound-index {
   text-align: center;
   white-space: nowrap;
   font-weight: 500;
 }
 .hn-outbound-col-recipient {
-  width: 28%;
+  width: 36%;
 }
 .hn-outbound-col-match {
   width: 18%;

@@ -872,7 +872,11 @@ export function AlignedOutboundDetailModal({
             </Grid>
             <details
               className="hn-outbound-detail__additional"
-              open={!doc.outboundRequestId || !doc.requestNo}
+              open={
+                Boolean(doc.postedAt) ||
+                !doc.outboundRequestId ||
+                !doc.requestNo
+              }
             >
               <summary>{t("outbound.detail.additionalInfo")}</summary>
               <Grid container spacing={2}>
@@ -902,6 +906,14 @@ export function AlignedOutboundDetailModal({
                       ? parseDateTime(doc.createdAt ?? doc.date).format(
                           "DD/MM/YYYY HH:mm",
                         )
+                      : EMPTY_TEXT
+                  }
+                />
+                <DetailField
+                  label={t("outbound.detail.fieldPostedAt")}
+                  value={
+                    doc.postedAt && parseDateTime(doc.postedAt).isValid()
+                      ? parseDateTime(doc.postedAt).format("DD/MM/YYYY HH:mm")
                       : EMPTY_TEXT
                   }
                 />

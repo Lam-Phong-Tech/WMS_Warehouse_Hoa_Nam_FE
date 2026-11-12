@@ -50,6 +50,8 @@ export interface OutboundDocumentRecord {
   createdBy: string;
   createdAt?: string;
   updatedAt?: string;
+  /** Thời điểm ghi nhận xuất kho thành công (BE `posted_at`). */
+  postedAt?: string;
   /** Aggregate BE trả kèm ở GET /outbound-documents (SCR-OUT-01). */
   matchedCount?: number;
   labelPrintedCount?: number;
@@ -378,6 +380,7 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     createdBy: text(row.created_by_name, "-"),
     createdAt: text(row.created_at) || undefined,
     updatedAt: text(row.updated_at) || undefined,
+    postedAt: text(row.posted_at) || undefined,
   };
 }
 
