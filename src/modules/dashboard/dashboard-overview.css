@@ -3123,6 +3123,11 @@
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
+  /* Đầu bút round: vạch chấm "M12 17h.01" của triangle-alert (dấu chấm than)
+     chỉ hiện khi linecap=round — thiếu dòng này thì dấu chấm biến mất và
+     tam giác trông như thiếu nét so với icon cảnh báo khác. */
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .snapshot-priority-row > span:nth-child(2) {
   display: grid;
