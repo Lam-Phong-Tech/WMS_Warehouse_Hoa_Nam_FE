@@ -165,6 +165,21 @@ describe("RPT-MOV-01 · Truy vết hàng hóa", () => {
     cleanupTestState();
   });
 
+  it("dùng mũi tên cho biến động thường và cảnh báo cho bút toán đảo", async () => {
+    renderReport();
+    expect(await screen.findAllByText("SKU-VENT-01")).not.toHaveLength(0);
+
+    const positive = document.querySelector(".trace-delta--positive");
+    expect(positive).toHaveTextContent("+2");
+    const negative = document.querySelector(".trace-delta--negative");
+    expect(negative).toHaveTextContent("-1");
+
+    const warning = document.querySelector(".trace-delta--warning");
+    expect(warning).toHaveTextContent("+1");
+    expect(warning).toHaveAttribute("title", "Cần kiểm tra");
+    expect(warning?.querySelector(".trace-delta__icon")).not.toBeNull();
+  });
+
   it("mặc định lọc 7 ngày gần nhất cho thông tin báo cáo bên dưới", async () => {
     renderReport();
     await screen.findByTestId("movement-trace-report");

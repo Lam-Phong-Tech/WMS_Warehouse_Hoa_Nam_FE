@@ -338,6 +338,42 @@ function traceStatusOf(row: MovementTraceRow): {
   return { tone: "success", labelKey: "reports.traceability.inStock" };
 }
 
+/**
+ * Biến động tồn kho: bình thường dùng mũi tên + số có dấu để không tạo cảm
+ * giác lỗi; tam giác cảnh báo chỉ dành cho bút toán đảo/hàng lỗi/chờ kiểm tra
+ * (cùng tín hiệu với cột "Độ đầy đủ").
+ */
+function MovementDelta({ row }: { row: MovementTraceRow }) {
+  const t = useT();
+  const delta = row.qtyDelta;
+  const sign = delta > 0 ? `+${delta}` : String(delta);
+
+  if (traceStatusOf(row).tone === "warning") {
+    return (
+      <span
+        className="trace-delta trace-delta--warning"
+        title={t("reports.traceability.needsReviewState")}
+      >
+        <WarningOutlined className="trace-delta__icon" />
+        {sign}
+      </span>
+    );
+  }
+
+  if (delta === 0) {
+    return <span className="trace-delta trace-delta--neutral">0</span>;
+  }
+
+  return (
+    <span
+      className={`trace-delta trace-delta--${delta > 0 ? "positive" : "negative"}`}
+    >
+      <span aria-hidden="true">{delta > 0 ? "↑" : "↓"}</span>
+      {sign}
+    </span>
+  );
+}
+
 function TraceAnalytics({ rows }: { rows: MovementTraceRow[] }) {
   const t = useT();
   const chart = useMemo(() => {
@@ -1270,9 +1306,9 @@ export default function MovementTraceReport() {
             renderRow={(row, index, isLast) => {
               const kind = movementKindOf(row);
               const documentCode = documentCodeOf(row);
-              const details = [
+              const details: ReactNode[] = [
                 row.productCode || EMPTY_TEXT,
-                `Δ ${row.qtyDelta}`,
+                <MovementDelta key="delta" row={row} />,
                 documentCode,
                 row.originalMovementId !== ""
                   ? t("reports.movementTrace.reversalOf", {
@@ -1344,7 +1380,12 @@ export default function MovementTraceReport() {
                       {formatTraceDateTime(row.occurredAt)}
                     </Box>
                     <Box sx={{ fontSize: 13, color: S.textMedium }}>
-                      {details.join(" · ")}
+                      {details.map((detail, detailIndex) => (
+                        <span key={detailIndex}>
+                          {detailIndex > 0 ? " · " : null}
+                          {detail}
+                        </span>
+                      ))}
                     </Box>
                   </Box>
                 </Box>
@@ -1471,7 +1512,9 @@ export default function MovementTraceReport() {
                     {movementSourceLabel(row.sourceType) ||
                       MOVEMENT_KIND_LABELS[movementKindOf(row)]}
                     <small>{documentCodeOf(row) || EMPTY_TEXT}</small>
-                    <small>Δ {row.qtyDelta}</small>
+                    <small>
+                      <MovementDelta row={row} />
+                    </small>
                     <span className="trace-sr-only">
                       {MOVEMENT_KIND_LABELS[movementKindOf(row)]}
                     </span>

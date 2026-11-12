@@ -976,6 +976,37 @@
   content: "· ";
 }
 
+#traceability-rpt03 .trace-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+#traceability-rpt03 .trace-delta--positive {
+  color: var(--trace-success);
+}
+
+#traceability-rpt03 .trace-delta--negative {
+  color: var(--trace-danger);
+}
+
+#traceability-rpt03 .trace-delta--neutral {
+  color: var(--trace-muted);
+}
+
+#traceability-rpt03 .trace-delta--warning {
+  color: var(--trace-warning);
+  cursor: help;
+}
+
+#traceability-rpt03 .trace-delta__icon {
+  font-size: 12px;
+  line-height: 1;
+  color: inherit;
+}
+
 #traceability-rpt03 .trace-completeness {
   display: inline-flex;
   min-width: 75px;
