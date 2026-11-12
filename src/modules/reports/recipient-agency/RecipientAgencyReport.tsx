@@ -1149,12 +1149,6 @@ export default function RecipientAgencyReport() {
                           </td>
                           <td data-label={tUi("updatedUi.text_61d6c9f042ea")}>
                             <div className="rpt07-recipient-identity">
-                              <span
-                                className="rpt07-recipient-icon"
-                                aria-hidden="true"
-                              >
-                                <TeamOutlined />
-                              </span>
                               <div>
                                 <strong
                                   className="rpt07-dealer-name"

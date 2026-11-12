@@ -1063,24 +1063,12 @@
 #recipient-agency-rpt07 .rpt07-recipient-identity {
   display: flex;
   align-items: center;
-  gap: 12px;
   min-width: 0;
 }
 
 #recipient-agency-rpt07 .rpt07-recipient-identity > div {
   min-width: 0;
   text-align: left;
-}
-
-#recipient-agency-rpt07 .rpt07-recipient-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 44px;
-  height: 44px;
-  border-radius: var(--ops-radius-control);
-  background: var(--ops-pale);
-  color: var(--ops-link);
-  font-size: 24px;
 }
 
 #recipient-agency-rpt07 .rpt07-progress {
