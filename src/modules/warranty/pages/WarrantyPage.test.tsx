@@ -169,11 +169,20 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     renderWithProviders(<WarrantyPage />, ["/warranty"]);
 
     await screen.findByText("BH-0001");
-    const placeholder = screen
-      .getByRole("textbox", { name: /Tìm hồ sơ bảo hành/ })
-      .getAttribute("placeholder");
+    const searchInput = screen.getByRole("textbox", {
+      name: /Tìm hồ sơ bảo hành/,
+    });
+    const placeholder = searchInput.getAttribute("placeholder");
     expect(placeholder).toContain("sản phẩm");
     expect(placeholder).not.toContain("tên khách");
+    // Dùng đúng icon kính lúp chuẩn của SearchInput và giữ toàn bộ gợi ý
+    // trong title để hover vẫn đọc được khi placeholder bị cắt.
+    expect(
+      searchInput
+        .closest(".MuiInputBase-root")
+        ?.querySelector(".fi-rr-search"),
+    ).not.toBeNull();
+    expect(searchInput).toHaveAttribute("title", placeholder);
   });
 
   it("có warranty.pii.view: placeholder ô tìm hứa cả tên khách và sản phẩm", async () => {

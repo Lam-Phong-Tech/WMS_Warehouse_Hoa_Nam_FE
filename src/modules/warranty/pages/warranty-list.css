@@ -180,28 +180,8 @@
 .hn-war-field .MuiSelect-icon {
   color: var(--war-muted);
 }
-.hn-war-search .MuiInputBase-root::before {
-  content: "";
-  flex: 0 0 14px;
-  height: 14px;
-  border: 1.7px solid var(--war-primary);
-  border-radius: 50%;
-  margin-left: 12px;
-  width: 14px;
-}
-.hn-war-search .MuiInputBase-root::after {
-  content: "";
-  position: absolute;
-  left: 24px;
-  top: 25px;
-  height: 7px;
-  width: 1.7px;
-  background: var(--war-primary);
-  transform: rotate(-43deg);
-}
 .hn-war-search .MuiInputBase-input {
   min-width: 0;
-  padding-left: 10px;
 }
 .hn-war-more-filters,
 .hn-war-clear-filters {

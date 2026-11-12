@@ -10,10 +10,10 @@ import {
   UiSelect,
   UiStatusBadge,
   UiText,
-  UiTextField,
   type UiStatusTone,
   FILTER_WIDTH,
 } from "@/shared/ui";
+import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { type ResponsiveTableColumn } from "@/shared/components/data-display/ResponsiveDataTable";
 import { FilterOutlined, ToolOutlined } from "@/shared/components/icons";
 import { useQueryClient } from "@tanstack/react-query";
@@ -132,6 +132,11 @@ export default function WarrantyPage() {
 
   const canManage = can("warranty.manage");
   const canViewPii = can("warranty.pii.view");
+  const searchPlaceholder = t(
+    canViewPii
+      ? "warranty.list.searchPlaceholder"
+      : "warranty.list.searchPlaceholderNoPii",
+  );
 
   const listQuery = useWarrantyCases({
     search: search || undefined,
@@ -382,20 +387,23 @@ export default function WarrantyPage() {
         >
           <div className="hn-war-filters" role="search">
             <div className="hn-war-field hn-war-search">
-              <UiTextField
+              <SearchInput
                 id="hn-war-search"
                 fullWidth
+                autoFocus
                 value={searchInput}
-                placeholder={t(
-                  canViewPii
-                    ? "warranty.list.searchPlaceholder"
-                    : "warranty.list.searchPlaceholderNoPii",
-                )}
+                placeholder={searchPlaceholder}
+                width="100%"
                 slotProps={{
-                  htmlInput: { "aria-label": t("warranty.list.searchAria") },
-                  input: { inputRef: searchRef, autoFocus: true },
+                  htmlInput: {
+                    "aria-label": t("warranty.list.searchAria"),
+                    // Placeholder dài bị cắt ở tablet/hẹp — title giữ nguyên
+                    // toàn bộ gợi ý để trình duyệt hiện tooltip khi hover.
+                    title: searchPlaceholder,
+                  },
+                  input: { inputRef: searchRef },
                 }}
-                onChange={(event) => setSearchInput(event.target.value)}
+                onChange={setSearchInput}
                 onKeyDown={(event) => {
                   if (event.key !== "Enter") return;
                   event.preventDefault();
