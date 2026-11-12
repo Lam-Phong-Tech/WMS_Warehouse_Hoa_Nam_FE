@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "@/test/test-utils";
@@ -220,5 +222,17 @@ describe("Chi tiết báo cáo nhập kho", () => {
     expect(supplierField).not.toBeNull();
     expect(supplierField?.textContent).toContain("—");
     expect(supplierField?.textContent).not.toContain("QR-IN-20261029-015");
+  });
+
+  it("nút quay lại dùng đúng token hover chung của cài đặt accent", () => {
+    const css = readFileSync(
+      join(__dirname, "inbound-report-detail.css"),
+      "utf8",
+    );
+    const hoverRule = css.match(
+      /\.inbound-report-detail__back:hover\s*\{([^}]*)\}/,
+    );
+    expect(hoverRule).not.toBeNull();
+    expect(hoverRule?.[1]).toContain("var(--ops-primary-hover)");
   });
 });

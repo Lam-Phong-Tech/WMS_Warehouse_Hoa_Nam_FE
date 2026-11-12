@@ -24,7 +24,7 @@
   font-weight: 600;
 }
 .inbound-report-detail__back:hover {
-  color: #00899b;
+  color: var(--ops-primary-hover);
 }
 .inbound-report-detail__heading-row {
   display: flex;
