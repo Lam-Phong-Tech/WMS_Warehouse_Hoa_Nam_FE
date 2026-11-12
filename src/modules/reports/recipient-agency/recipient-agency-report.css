@@ -742,7 +742,7 @@
 
 #recipient-agency-rpt07 .rpt07-donut strong {
   color: var(--rpt07-navy);
-  font-size: 23px;
+  font-size: 20px;
   font-weight: 850;
   line-height: 1;
 }
@@ -1007,6 +1007,10 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   text-align: left;
+  /* Thắng rule global .hn-mvp-source-screen th { white-space: nowrap } —
+     không cho tiêu đề tràn sang ô cạnh bên ở tablet, cho phép xuống dòng. */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 #recipient-agency-rpt07 .rpt07-table td {
@@ -1183,16 +1187,11 @@
   padding: 14px 16px;
   border-top: 1px solid var(--ops-line);
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 16px;
   color: var(--ops-muted);
   font-size: 14px;
-}
-
-#recipient-agency-rpt07 .rpt07-table-footer__meta {
-  color: var(--ops-muted);
-  white-space: nowrap;
 }
 
 #recipient-agency-rpt07 .rpt07-table-footer__count,
@@ -1568,16 +1567,28 @@
 
 @media (max-width: 1080px) {
   #recipient-agency-rpt07 .rpt07-header {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
   }
 
   #recipient-agency-rpt07 .rpt07-head-actions {
-    justify-content: flex-start;
+    justify-content: flex-end;
   }
 
   #recipient-agency-rpt07 .rpt07-export-wrap {
-    margin-left: auto;
+    margin-left: 0;
+  }
+
+  #recipient-agency-rpt07 .rpt07-table th {
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0.04em;
+  }
+
+  #recipient-agency-rpt07 .rpt07-donut strong {
+    font-size: 17px;
   }
 
   #recipient-agency-rpt07 .rpt07-analysis-grid {
@@ -1637,23 +1648,14 @@
   #recipient-agency-rpt07 .rpt07-bar-panel {
     min-height: 220px;
   }
-
-  #recipient-agency-rpt07 .rpt07-table-footer {
-    grid-template-columns: 1fr auto;
-  }
-
-  #recipient-agency-rpt07 .rpt07-table-footer__meta {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  #recipient-agency-rpt07 .rpt07-pagination {
-    grid-column: 2;
-    grid-row: 1 / 3;
-  }
 }
 
 @media (max-width: 640px) {
+  /* Mobile thật: nút export xuống dòng riêng cho dễ bấm. */
+  #recipient-agency-rpt07 .rpt07-header {
+    grid-template-columns: 1fr;
+  }
+
   #recipient-agency-rpt07 .rpt07-head-actions {
     display: grid;
     grid-template-columns: 1fr;
@@ -1775,7 +1777,6 @@
     gap: 7px;
   }
 
-  #recipient-agency-rpt07 .rpt07-table-footer__meta,
   #recipient-agency-rpt07 .rpt07-pagination {
     grid-column: 1;
     grid-row: auto;
