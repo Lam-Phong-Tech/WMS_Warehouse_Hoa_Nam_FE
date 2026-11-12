@@ -2745,29 +2745,10 @@
 .hn-rpt02 .rpt02-sku-identity {
   display: flex;
   align-items: center;
-  gap: 12px;
   min-width: 0;
 }
 .hn-rpt02 .rpt02-sku-identity > div {
   min-width: 0;
-}
-.hn-rpt02 .rpt02-sku-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 44px;
-  height: 44px;
-  border-radius: var(--ops-radius-control);
-  background: var(--ops-pale);
-  color: var(--ops-link);
-}
-.hn-rpt02 .rpt02-sku-icon svg {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentcolor;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 .hn-rpt02 .rpt02-sku-cell strong,
 .hn-rpt02 .rpt02-sku-cell .rpt02-flow-sku-link {

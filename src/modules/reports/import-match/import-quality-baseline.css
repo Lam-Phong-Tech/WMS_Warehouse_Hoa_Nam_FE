@@ -128,18 +128,7 @@
 #rpt04-results .rpt04-reference {
   display: flex;
   align-items: center;
-  gap: 12px;
   min-width: 0;
-}
-#rpt04-results .rpt04-reference__icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 44px;
-  height: 44px;
-  border-radius: var(--ops-radius-control);
-  background: var(--ops-pale);
-  color: var(--ops-link);
-  font-size: 22px;
 }
 #rpt04-results .rpt04-reference__code {
   color: var(--ops-heading);

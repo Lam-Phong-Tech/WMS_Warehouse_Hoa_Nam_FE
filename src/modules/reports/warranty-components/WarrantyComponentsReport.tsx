@@ -1288,30 +1288,7 @@ export default function WarrantyComponentsReport() {
                               1}
                           </td>
                           <td className="warranty-case-cell">
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "12px",
-                                minWidth: 0,
-                              }}
-                            >
-                              <Box
-                                aria-hidden="true"
-                                sx={{
-                                  display: "grid",
-                                  placeItems: "center",
-                                  flex: "0 0 44px",
-                                  height: 44,
-                                  borderRadius: "var(--ops-radius-control)",
-                                  bgcolor: "transparent",
-                                  color: "var(--ops-link)",
-                                  fontSize: 22,
-                                }}
-                              >
-                                <FileTextOutlined />
-                              </Box>
-                              <Box sx={{ minWidth: 0 }}>
+                            <Box sx={{ minWidth: 0 }}>
                                 <Box
                                   title={row.caseNo}
                                   sx={{
@@ -1334,7 +1311,6 @@ export default function WarrantyComponentsReport() {
                                 >
                                   {row.serial}
                                 </Box>
-                              </Box>
                             </Box>
                           </td>
                           <td className="warranty-sku-cell">

@@ -1559,12 +1559,6 @@ export default function StockReconcileReport() {
                                           </td>
                                           <td className="rpt02-sku-cell">
                                             <div className="rpt02-sku-identity">
-                                              <span
-                                                className="rpt02-sku-icon"
-                                                aria-hidden="true"
-                                              >
-                                                <Icon name="package-search" />
-                                              </span>
                                               <div>
                                                 <strong>{row.skuCode}</strong>
                                                 <small>
@@ -1635,12 +1629,6 @@ export default function StockReconcileReport() {
                                         </td>
                                         <td className="rpt02-sku-cell">
                                           <div className="rpt02-sku-identity">
-                                            <span
-                                              className="rpt02-sku-icon"
-                                              aria-hidden="true"
-                                            >
-                                              <Icon name="package-search" />
-                                            </span>
                                             <div>
                                               <button
                                                 type="button"

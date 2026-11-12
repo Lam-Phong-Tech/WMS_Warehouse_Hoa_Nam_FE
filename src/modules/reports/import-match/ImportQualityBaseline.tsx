@@ -901,9 +901,6 @@ export default function ImportQualityBaseline() {
                 header: tUi("updatedUi.text_cbd08c7c8080"),
                 render: (row) => (
                   <Box className="rpt04-reference">
-                    <span className="rpt04-reference__icon">
-                      <FileTextOutlined />
-                    </span>
                     <Box sx={{ minWidth: 0 }}>
                       <Box
                         className="rpt04-reference__code"
