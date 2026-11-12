@@ -80,6 +80,34 @@ describe("RPT-08 shared report presentation", () => {
     );
   });
 
+  it("fits the tablet history table instead of scrolling columns out of view", () => {
+    const css = readFileSync(
+      "src/modules/reports/io-history/rpt08/sku-table.css",
+      "utf8",
+    );
+    const tablet = css.slice(css.indexOf("@media (max-width: 1180px)"));
+    expect(tablet).toContain("min-width: 0");
+    expect(tablet).toContain("table-layout: fixed");
+    expect(tablet).toContain("th.rpt08-code-col");
+    expect(tablet).toContain("th:nth-child(5) {\n    width: 41%;");
+    expect(css).toContain("@media (max-width: 700px)");
+    expect(css).toContain("min-width: 760px");
+  });
+  it("spreads the stacked activity card across its full tablet width", () => {
+    const css = readFileSync(
+      "src/modules/reports/io-history/rpt08/alignment.css",
+      "utf8",
+    );
+    const block = css.slice(
+      css.indexOf(
+        "@container hn-rpt08-layout (min-width: 701px) and (max-width: 1050px)",
+      ),
+    );
+    expect(block).toContain(
+      "grid-template-columns: minmax(62px, 1fr) 144px minmax(62px, 1fr);",
+    );
+    expect(block).toContain("grid-template-columns: 42px minmax(0, 1fr) auto;");
+  });
   it("numbers rows continuously for the selected page size and forwards size changes", () => {
     const onPageSizeChange = vi.fn();
     const { container } = mountTable(2, 42, { pageSize: 10, onPageSizeChange });

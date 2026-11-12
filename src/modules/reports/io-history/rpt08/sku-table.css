@@ -155,3 +155,81 @@
   outline: 2px solid var(--ops-link);
   outline-offset: 2px;
 }
+/* Tablet: the rules in responsive.css cannot beat the desktop metrics above,
+   so every column was pushed out of view. Keep the same tablet layout here,
+   in the last table stylesheet, with fluid fixed columns instead of scrolling. */
+@media (max-width: 1180px) {
+  #rpt08-history-report .rpt08-table-card table {
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
+    font-size: 11px;
+  }
+  #rpt08-history-report .rpt08-table-card table col {
+    width: auto !important;
+  }
+  #rpt08-history-report .rpt08-table-card table th.rpt08-code-col,
+  #rpt08-history-report .rpt08-table-card table td.rpt08-code-cell {
+    display: none;
+  }
+  #rpt08-history-report .rpt08-table-card .rpt08-desktop-label {
+    display: none;
+  }
+  #rpt08-history-report .rpt08-table-card .rpt08-mobile-code,
+  #rpt08-history-report .rpt08-table-card .rpt08-tablet-label {
+    display: inline;
+  }
+  #rpt08-history-report .rpt08-table-card .rpt08-time-cell > span,
+  #rpt08-history-report .rpt08-table-card .rpt08-time-cell > strong {
+    display: block;
+  }
+  #rpt08-history-report .rpt08-table-card .rpt08-mobile-code {
+    margin-top: 3px;
+  }
+  #rpt08-history-report .rpt08-table-card .rpt08-object-cell > span,
+  #rpt08-history-report .rpt08-table-card .rpt08-object-cell > small {
+    display: block;
+  }
+  #rpt08-history-report .rpt08-table-card .rpt08-object-cell > small {
+    margin-top: 3px;
+    color: var(--ops-muted);
+  }
+  #rpt08-history-report .rpt08-table-card table th,
+  #rpt08-history-report .rpt08-table-card table td {
+    padding-inline: 9px;
+  }
+  #rpt08-history-report .rpt08-table-card table th {
+    height: 39px;
+  }
+  #rpt08-history-report .rpt08-table-card table td {
+    height: 67px;
+    white-space: normal;
+  }
+  #rpt08-history-report .rpt08-table-card table th:nth-child(1) {
+    width: 6%;
+  }
+  #rpt08-history-report .rpt08-table-card table th:nth-child(2) {
+    width: 24%;
+  }
+  #rpt08-history-report .rpt08-table-card table th:nth-child(3) {
+    width: 14%;
+  }
+  #rpt08-history-report .rpt08-table-card table th:nth-child(4) {
+    width: 0;
+    padding: 0;
+  }
+  #rpt08-history-report .rpt08-table-card table th:nth-child(5) {
+    width: 41%;
+  }
+  #rpt08-history-report .rpt08-table-card table th:nth-child(6) {
+    width: 6%;
+  }
+  #rpt08-history-report .rpt08-table-card table th:nth-child(7) {
+    width: 9%;
+  }
+}
+@media (max-width: 700px) {
+  #rpt08-history-report .rpt08-table-card table {
+    min-width: 760px;
+  }
+}

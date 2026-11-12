@@ -322,6 +322,30 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* The activity card is now a full row, but the viewport rules still size the
+   donut for a narrow column. Spread it across the row so the card does not
+   leave half of its width empty. */
+@container hn-rpt08-layout (min-width: 701px) and (max-width: 1050px) {
+  #rpt08-history-report .rpt08-donut-layout {
+    grid-template-columns: minmax(62px, 1fr) 144px minmax(62px, 1fr);
+    gap: 10px;
+  }
+  #rpt08-history-report .rpt08-donut {
+    width: 144px;
+    height: 144px;
+  }
+  #rpt08-history-report .rpt08-donut::before {
+    inset: 20px;
+  }
+  #rpt08-history-report .rpt08-peak {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+  }
+  #rpt08-history-report .rpt08-peak__value {
+    grid-column: auto;
+    padding-left: 18px;
+    border-left: 1px solid #d7e9f2;
+  }
+}
 @container hn-rpt08-layout (max-width: 900px) {
   #rpt08-history-report.rpt08-report {
     padding: 16px 20px 24px;
