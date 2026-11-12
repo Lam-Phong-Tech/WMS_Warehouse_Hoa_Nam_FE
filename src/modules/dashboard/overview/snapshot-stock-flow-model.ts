@@ -92,26 +92,39 @@ export function stockPath(days: readonly StockFlowDay[], points: readonly (PlotP
   }).join(" ");
 }
 
-export function snapshotPlotGeometry(days: readonly StockFlowDay[], availableWidth: number) {
+/** Line metrics selectable from the legend — the closing line only follows the selection. */
+export type LineMetric = "inbound" | "outbound" | "stock";
+
+export function snapshotPlotGeometry(
+  days: readonly StockFlowDay[],
+  availableWidth: number,
+  line: LineMetric = "stock",
+) {
   const flowAxis = plotAxis(days.flatMap((day) => [day.inbound, day.outbound]));
   const stockAxis = plotAxis(days.map((day) => day.closing));
   const viewport = Math.max(240, Number.isFinite(availableWidth) ? availableWidth : 760);
   const height = viewport < 600 ? 300 : 320;
   const pad = { left: 76, right: 86, top: 34, bottom: 34 };
   // At most a local horizontal scroll on narrow/long ranges; never squeeze bars or glyphs.
-  const width = Math.max(viewport, pad.left + pad.right + days.length * 18);
+  // 3 bar series (nhập/xuất/tồn) need a wider per-day slot than the 2-series layout.
+  const width = Math.max(viewport, pad.left + pad.right + days.length * 26);
   const plotWidth = width - pad.left - pad.right;
   const plotHeight = height - pad.top - pad.bottom;
   const step = plotWidth / Math.max(days.length, 1);
-  const barWidth = Math.min(18, step * 0.28);
-  const barGap = Math.min(4, step * 0.12);
+  const barWidth = Math.min(16, step * 0.26);
+  const barGap = Math.min(4, step * 0.08);
+  const slot = barWidth + barGap;
   const x = (index: number) => pad.left + step * (index + 0.5);
-  const points = days.map((day, index) => day.closing === null ? null : ({
-    x: x(index), y: axisY(day.closing, stockAxis, pad.top, plotHeight),
-  }));
+  const linePoints = days.map((day, index) => {
+    const value =
+      line === "inbound" ? day.inbound : line === "outbound" ? day.outbound : day.closing;
+    if (value === null) return null;
+    const axis = line === "stock" ? stockAxis : flowAxis;
+    return { x: x(index), y: axisY(value, axis, pad.top, plotHeight) };
+  });
   return {
-    width, height, pad, plotWidth, plotHeight, step, barWidth, barGap,
-    flowAxis, stockAxis, points, path: stockPath(days, points),
+    width, height, pad, plotWidth, plotHeight, step, barWidth, barGap, slot,
+    flowAxis, stockAxis, points: linePoints, path: stockPath(days, linePoints),
     labelIndices: visibleDateLabels(days.length, plotWidth), x,
   };
 }

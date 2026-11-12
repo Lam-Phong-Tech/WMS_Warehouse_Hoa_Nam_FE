@@ -4537,8 +4537,13 @@
 :root[data-theme="dark"] .hn-dash .snapshot-card h2,
 :root[data-theme="dark"] .hn-dash .snapshot-priority-row strong,
 :root[data-theme="dark"] .hn-dash .snapshot-link-cards > button,
-:root[data-theme="dark"] .hn-dash .hn-stock-flow__legend > span {
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__legend > button {
   color: var(--ops-heading);
+}
+:root[data-theme="dark"] .hn-dash .hn-stock-flow__legend > button.is-active {
+  /* --stock-flow-stock tối quá trên nền tối — dùng màu link sáng của dark. */
+  color: var(--ops-link);
+  background: rgba(114, 201, 238, 0.14);
 }
 
 :root[data-theme="dark"] .hn-dash .hn-stock-flow__axis-title {

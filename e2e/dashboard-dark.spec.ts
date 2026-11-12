@@ -4,7 +4,7 @@ const TEXT_TARGETS = [
   [".snapshot-heading h1", "heading"],
   [".snapshot-heading p", "subtitle"],
   [".snapshot-card h2", "card heading"],
-  [".hn-stock-flow__legend > span", "chart legend"],
+  [".hn-stock-flow__legend > button", "chart legend"],
   [".hn-stock-flow__tick", "chart axis tick"],
   [".hn-stock-flow__axis-title", "chart axis title"],
   [".snapshot-filter > button", "period filter"],

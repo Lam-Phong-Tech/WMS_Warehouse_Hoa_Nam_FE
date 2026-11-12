@@ -7,6 +7,7 @@ import {
   snapshotPlotGeometry,
   stockFlowDays,
   type FlowInput,
+  type LineMetric,
   type StockInput,
 } from "./snapshot-stock-flow-model";
 import "./snapshot-stock-flow.css";
@@ -23,11 +24,11 @@ type PlotCopy = {
   point: (date: string, inbound: string, outbound: string, stock: string) => string;
 };
 type CanvasProps = PlotProps & { copy: PlotCopy; locale: string };
-type CanvasState = { width: number; hovered: string | null; scrollLeft: number };
+type CanvasState = { width: number; hovered: string | null; scrollLeft: number; lineMetric: LineMetric };
 
 /** Measures CSS pixels instead of stretching text and round markers in an SVG. */
 export class StockFlowPlotCanvas extends Component<CanvasProps, CanvasState> {
-  state: CanvasState = { width: 760, hovered: null, scrollLeft: 0 };
+  state: CanvasState = { width: 760, hovered: null, scrollLeft: 0, lineMetric: "stock" };
   private viewport: HTMLDivElement | null = null;
   private scroller: HTMLDivElement | null = null;
   private observer: ResizeObserver | null = null;
@@ -82,8 +83,8 @@ export class StockFlowPlotCanvas extends Component<CanvasProps, CanvasState> {
   render() {
     const { rows, trend, copy, locale } = this.props;
     const days = stockFlowDays(rows, trend);
-    const geometry = snapshotPlotGeometry(days, this.state.width);
-    const { width, height, pad, plotHeight, step, barWidth, barGap,
+    const geometry = snapshotPlotGeometry(days, this.state.width, this.state.lineMetric);
+    const { width, height, pad, plotHeight, step, barWidth, slot,
       flowAxis, stockAxis, points, path, labelIndices, x } = geometry;
     const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 3 });
     const format = (value: number | null) => value === null ? "—" : number.format(value);
@@ -97,19 +98,28 @@ export class StockFlowPlotCanvas extends Component<CanvasProps, CanvasState> {
     const tooltipLeft = Math.max(8, Math.min(this.state.width - tooltipWidth - 8, localX - tooltipWidth / 2));
     const tooltipVisible = hovered && localX >= 0 && localX <= this.state.width;
     const zero = axisY(0, flowAxis, pad.top, plotHeight);
-    const stockVisible = points.some((point) => point !== null);
+    const zeroStock = axisY(0, stockAxis, pad.top, plotHeight);
+    const closingVisible = days.some((day) => day.closing !== null);
 
     return (
       <div className="hn-stock-flow">
-        <div className="hn-stock-flow__legend" aria-label={copy.legend}>
-          <span><i className="hn-stock-flow__in" />{copy.inbound}</span>
-          <span><i className="hn-stock-flow__out" />{copy.outbound}</span>
-          <span><i className="hn-stock-flow__stock" />{copy.stock}</span>
+        <div className="hn-stock-flow__legend" role="group" aria-label={copy.legend}>
+          {(["inbound", "outbound", "stock"] as const).map((metric) => {
+            const active = this.state.lineMetric === metric;
+            const swatch = metric === "inbound" ? "hn-stock-flow__in" : metric === "outbound" ? "hn-stock-flow__out" : "hn-stock-flow__stock";
+            const label = metric === "inbound" ? copy.inbound : metric === "outbound" ? copy.outbound : copy.stock;
+            return (
+              <button key={metric} type="button" className={active ? "is-active" : undefined}
+                aria-pressed={active} onClick={() => this.setState({ lineMetric: metric })}>
+                <i className={swatch} />{label}
+              </button>
+            );
+          })}
         </div>
         <div className="hn-stock-flow__viewport" ref={(node) => { this.viewport = node; }}>
           <div className="hn-stock-flow__scroll" ref={(node) => { this.scroller = node; }}
             onScroll={(event) => this.setState({ scrollLeft: event.currentTarget.scrollLeft })}>
-            <svg className="hn-stock-flow__svg" width={width} height={height}
+            <svg className="hn-stock-flow__svg" width={width} height={height} data-line={this.state.lineMetric}
               style={{ width, height }} viewBox={`0 0 ${width} ${height}`}
               preserveAspectRatio="xMinYMin meet" role="img" aria-label={copy.chart}>
               <text className="hn-stock-flow__axis-title" x={8} y={16}>
@@ -124,7 +134,7 @@ export class StockFlowPlotCanvas extends Component<CanvasProps, CanvasState> {
                   <text className="hn-stock-flow__tick" data-axis="flow" x={pad.left - 10} y={y + 4} textAnchor="end">{format(value)}</text>
                 </g>;
               })}
-              {stockVisible ? stockAxis.ticks.map((value) => {
+              {closingVisible ? stockAxis.ticks.map((value) => {
                 const y = axisY(value, stockAxis, pad.top, plotHeight);
                 return <g key={value}>
                   <line className="hn-stock-flow__right-tick" x1={width - pad.right} x2={width - pad.right + 5} y1={y} y2={y} />
@@ -134,16 +144,26 @@ export class StockFlowPlotCanvas extends Component<CanvasProps, CanvasState> {
               }) : null}
               {days.map((day, index) => {
                 const center = x(index);
+                // Ba cột mỗi ngày: nhập (trái) · xuất (giữa) · tồn (phải, trục tồn).
+                const barX = (offset: number) => center + offset * slot - barWidth / 2;
                 const bar = (value: number | null, outbound: boolean) => {
                   if (value === null) return null;
                   const y = axisY(value, flowAxis, pad.top, plotHeight);
                   return <rect className={outbound ? "hn-stock-flow__bar is-out" : "hn-stock-flow__bar"}
                     data-flow={outbound ? "outbound" : "inbound"} data-date={day.date}
-                    x={outbound ? center + barGap / 2 : center - barWidth - barGap / 2}
+                    x={barX(outbound ? 0 : -1)}
                     y={Math.min(zero, y)} width={barWidth} height={Math.abs(zero - y)} rx={2} />;
                 };
+                const stockBar = (value: number | null) => {
+                  if (value === null) return null;
+                  const y = axisY(value, stockAxis, pad.top, plotHeight);
+                  return <rect className="hn-stock-flow__bar is-stock"
+                    data-flow="stock" data-date={day.date}
+                    x={barX(1)}
+                    y={Math.min(zeroStock, y)} width={barWidth} height={Math.abs(zeroStock - y)} rx={2} />;
+                };
                 return <g key={day.date}>
-                  {bar(day.inbound, false)}{bar(day.outbound, true)}
+                  {stockBar(day.closing)}{bar(day.inbound, false)}{bar(day.outbound, true)}
                   {labelIndices.has(index) ? <text className="hn-stock-flow__tick" data-axis="date"
                     x={center} y={height - 12} textAnchor="middle">{shortDate(day.date)}</text> : null}
                 </g>;
@@ -172,9 +192,9 @@ export class StockFlowPlotCanvas extends Component<CanvasProps, CanvasState> {
             style={{ width: tooltipWidth, left: tooltipLeft,
               top: hoveredPoint && hoveredPoint.y > height / 2 ? 34 : height - 174 }}>
             <strong>{dayjs(hovered.date).format("DD/MM/YYYY")}</strong>
-            <span>{copy.inbound}<b>{format(hovered.inbound)}</b></span>
-            <span>{copy.outbound}<b>{format(hovered.outbound)}</b></span>
-            <span className="hn-stock-flow__tooltip-stock">{copy.closing}<b>{format(hovered.closing)}</b></span>
+            <span className={this.state.lineMetric === "inbound" ? "is-line-active" : undefined}>{copy.inbound}<b>{format(hovered.inbound)}</b></span>
+            <span className={this.state.lineMetric === "outbound" ? "is-line-active" : undefined}>{copy.outbound}<b>{format(hovered.outbound)}</b></span>
+            <span className={`hn-stock-flow__tooltip-stock${this.state.lineMetric === "stock" ? " is-line-active" : ""}`}>{copy.closing}<b>{format(hovered.closing)}</b></span>
             {hovered.change !== null ? <small>
               Δ {copy.variance} ({shortDate(dates[hoveredIndex - 1])} → {shortDate(hovered.date)})
               <b>{hovered.change > 0 ? "+" : ""}{format(hovered.change)}</b>
