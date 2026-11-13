@@ -14,7 +14,7 @@ export function ReportDateRangePicker({
   className,
   popupClassName,
   maxDate,
-  showFieldPrefixes = true,
+  showFieldPrefixes = false,
   ...props
 }: UiVuexyDateRangePickerProps) {
   const t = useT();
