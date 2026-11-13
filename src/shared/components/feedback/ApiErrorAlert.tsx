@@ -22,6 +22,8 @@ export interface ApiErrorAlertProps {
   title?: string;
   /** Thông điệp khi BE không kèm `message` (network/timeout/lỗi không rõ dạng). */
   fallback?: string;
+  /** Chỉ hiện tiêu đề + nút thử lại, bỏ message và danh sách lỗi chi tiết. */
+  hideDetails?: boolean;
   /** Có nút "Thử lại" khi truyền onRetry. */
   onRetry?: () => void;
   style?: CSSProperties;
@@ -41,6 +43,7 @@ export function ApiErrorAlert({
   error,
   title,
   fallback,
+  hideDetails = false,
   onRetry,
   style,
   testId,
@@ -108,8 +111,8 @@ export function ApiErrorAlert({
         }
       >
         <AlertTitle>{resolvedTitle}</AlertTitle>
-        <div>{message}</div>
-        {fieldMessages.length > 0 && (
+        {hideDetails ? null : <div>{message}</div>}
+        {!hideDetails && fieldMessages.length > 0 && (
           <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
             {fieldMessages.map((m, i) => (
               <li key={i}>{m}</li>

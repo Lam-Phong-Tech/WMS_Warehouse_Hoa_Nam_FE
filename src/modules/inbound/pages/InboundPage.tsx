@@ -444,6 +444,7 @@ function InboundListScreen() {
             <ApiErrorAlert
               error={query.error}
               title={t("inbound.list.loadError")}
+              hideDetails
               onRetry={() => query.refetch()}
             />
           </div>

@@ -543,6 +543,7 @@ export default function AlignedMvpOutboundPage() {
                 <ApiErrorAlert
                   error={listQuery.error}
                   title={t("outbound.list.loadError")}
+                  hideDetails
                   onRetry={() => listQuery.refetch()}
                 />
               </div>
