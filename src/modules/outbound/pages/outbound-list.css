@@ -525,7 +525,7 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 }
 .hn-outbound-list .hn-outbound-table {
   width: 100%;
-  min-width: 960px;
+  min-width: 1100px;
   border-collapse: collapse;
   table-layout: fixed;
   color: var(--out-text);
@@ -580,11 +580,12 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
 .hn-outbound-table .hn-sortable-th > span:last-child {
   flex: none;
 }
+/* Kế hoạch 5 cột nội dung đều nhau (17% mỗi cột), # và nút mũi tên thu hẹp. */
 .hn-outbound-col-code {
-  width: 16%;
+  width: 17%;
 }
 .hn-outbound-col-index {
-  width: 6%;
+  width: 5%;
   text-align: center !important;
   white-space: nowrap !important;
 }
@@ -594,16 +595,34 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   font-weight: 500;
 }
 .hn-outbound-col-recipient {
-  width: 36%;
+  width: 17%;
 }
 .hn-outbound-col-match {
-  width: 18%;
+  width: 17%;
+}
+.hn-outbound-col-datetime {
+  width: 17%;
 }
 .hn-outbound-col-status {
-  width: 16%;
+  width: 17%;
 }
 .hn-outbound-col-actions {
-  width: 8%;
+  width: 10%;
+}
+.hn-outbound-datetime-cell {
+  min-width: 0;
+}
+.hn-outbound-datetime-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--out-ink);
+}
+.hn-outbound-datetime-line.is-posted {
+  color: var(--out-muted);
 }
 .hn-outbound-actions-cell {
   text-align: center;
@@ -638,6 +657,7 @@ body:has(.hn-outbound-recipient input[aria-expanded="true"])
   display: block;
   flex: 1;
   min-width: 24px;
+  max-width: 50%;
   height: 6px;
   background: var(--out-track);
   overflow: hidden;

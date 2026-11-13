@@ -15,6 +15,7 @@ import {
 } from "@/shared/ui";
 import { invalidateStockDerived } from "@/shared/cache/invalidation";
 import { useT } from "@/shared/i18n/useT";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   MVP_PAGE_SIZE_OPTIONS,
@@ -45,6 +46,7 @@ import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { formatQuantity } from "@/shared/utils/format-number";
+import { formatDateTime } from "@/shared/utils/format-date";
 import {
   fetchOutboundRecipientIndex,
   fetchOutboundRowsForRecipient,
@@ -54,6 +56,14 @@ import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const OVERVIEW_STORAGE_KEY = "hn-out01-overview-open";
+/** Nhãn cột ngày — inline vì messages.en/zh đang có thay đổi dở của người khác. */
+const getDateColumnLabel = (language: string) =>
+  language === "vi"
+    ? "Ngày tạo/xuất"
+    : language === "zh"
+      ? "创建 / 出库"
+      : "Created / Exported";
+const EMPTY_DATE_PLACEHOLDER = "____";
 const getSTATUS_OPTIONS = localizedUiValue(() =>
   Object.entries(OUTBOUND_STATUS_LABELS).map(([value, label]) => ({
     value,
@@ -71,6 +81,8 @@ const SORT_ACCESSORS = {
 /** OUT-01: presentation and filtering over the existing outbound contracts. */
 export default function AlignedMvpOutboundPage() {
   const t = useT();
+  const language = useLanguageStore((state) => state.language);
+  const dateColLabel = getDateColumnLabel(language);
   const can = useHasPermission();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -565,6 +577,9 @@ export default function AlignedMvpOutboundPage() {
                       "recipientName",
                       "hn-outbound-col-recipient",
                     )}
+                    <th scope="col" className="hn-outbound-col-datetime">
+                      {dateColLabel}
+                    </th>
                     {sortHeader(
                       t("outbound.list.colReconcile"),
                       "match",
@@ -596,6 +611,18 @@ export default function AlignedMvpOutboundPage() {
                         <TruncatedText lines={2} maxWidth="100%">
                           {row.recipientName || EMPTY_TEXT}
                         </TruncatedText>
+                      </td>
+                      <td className="hn-outbound-datetime-cell">
+                        <div className="hn-outbound-datetime-line">
+                          {row.createdAt
+                            ? formatDateTime(row.createdAt)
+                            : EMPTY_DATE_PLACEHOLDER}
+                        </div>
+                        <div className="hn-outbound-datetime-line is-posted">
+                          {row.postedAt
+                            ? formatDateTime(row.postedAt)
+                            : EMPTY_DATE_PLACEHOLDER}
+                        </div>
                       </td>
                       <td className="hn-outbound-match">{progress(row)}</td>
                       <td className="hn-outbound-status-cell">
@@ -649,6 +676,7 @@ export default function AlignedMvpOutboundPage() {
                 <div className="hn-outbound-skeleton" aria-hidden="true">
                   {Array.from({ length: 7 }, (_, index) => (
                     <div key={index}>
+                      <span />
                       <span />
                       <span />
                       <span />
