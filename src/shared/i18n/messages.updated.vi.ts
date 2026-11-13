@@ -1,5 +1,6 @@
 /** UI copy for the aligned warehouse screens; keys are stable across wording changes. */
 export const MESSAGES_UPDATED_VI = {
+  postedSkuCaption: "{count} SKU · Phiếu đã ghi sổ",
   searchSourceIncomplete:
     "Danh sách tìm kiếm tải chưa đầy đủ hoặc đã thay đổi. Vui lòng thu hẹp bộ lọc hoặc tải lại.",
   text_000a7ce014e9: "Loại nơi nhận",

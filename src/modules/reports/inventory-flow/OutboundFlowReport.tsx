@@ -1,4 +1,5 @@
 import { useT } from "@/shared/i18n/useT";
+import { countPostedSkus } from "./posted-sku-count";
 import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
@@ -675,6 +676,13 @@ export default function OutboundFlowReport() {
   }, [filteredDocuments]);
 
   const completedCount = progress.complete;
+  const postedSkuCount = countPostedSkus(
+    filteredDocuments.filter(
+      (document) => statusTone(document.status) === "complete",
+    ),
+    snapshot.ledger,
+    ["ISSUE", "COMPONENT_ISSUE"],
+  );
   const pendingCount = progress.pending;
   const recipientCount = useMemo(
     () =>
@@ -1120,7 +1128,9 @@ export default function OutboundFlowReport() {
                   icon="package-plus"
                   title={tUi("updatedUi.text_71beef8c0375")}
                   value={issuedQuantity}
-                  note={tUi("uiAudit.text_539d7ae245")}
+                  note={tUi("updatedUi.postedSkuCaption", {
+                    count: formatNumber(postedSkuCount),
+                  })}
                   empty={reportEmpty}
                   expanded={kpiOpen.cyan}
                   onToggle={() => toggleKpi("cyan")}
@@ -1245,16 +1255,17 @@ export default function OutboundFlowReport() {
                               key={point.date}
                               title={`${formatDay(point.date)}: ${formatNumber(point.value)}`}
                             >
-                              <span>
-                                {point.value > 0
-                                  ? formatNumber(point.value)
-                                  : ""}
-                              </span>
                               <i
                                 style={{
                                   height: `${Math.max(2, (point.value / chartCeiling) * 100)}%`,
                                 }}
-                              />
+                              >
+                                <span>
+                                  {point.value > 0
+                                    ? formatNumber(point.value)
+                                    : ""}
+                                </span>
+                              </i>
                               <small>{dayjs(point.date).format("DD/MM")}</small>
                             </div>
                           ))}

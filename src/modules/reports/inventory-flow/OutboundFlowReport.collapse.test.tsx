@@ -67,14 +67,14 @@ it.each([
     language: "en" as const,
     status: "Search statuses...",
     recipient: "Search recipients...",
-    period: "During the selected period",
+    period: "0 SKU · Posted documents",
     activity: "With issues during the period",
   },
   {
     language: "zh" as const,
     status: "搜索状态...",
     recipient: "搜索收货人...",
-    period: "在所选期间内",
+    period: "0 SKU · 已过账单据",
     activity: "有出库记录",
   },
 ])(
@@ -112,7 +112,7 @@ it.each([
     expect(
       screen.getAllByPlaceholderText("Tìm trạng thái...").length,
     ).toBeGreaterThan(0);
-    expect(screen.getByText("Trong kỳ đã chọn")).toBeInTheDocument();
+    expect(screen.getByText("0 SKU · Phiếu đã ghi sổ")).toBeInTheDocument();
   },
 );
 

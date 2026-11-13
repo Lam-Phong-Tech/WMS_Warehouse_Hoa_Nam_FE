@@ -111,6 +111,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
     failed: "失败",
   },
   updatedUi: {
+    postedSkuCaption: "{count} SKU · 已过账单据",
     searchSourceIncomplete:
       "搜索列表未完整加载或已发生变化。请缩小筛选范围或重新加载。",
     text_000a7ce014e9: "收件人类型",

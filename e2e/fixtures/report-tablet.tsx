@@ -223,9 +223,26 @@ http.get = async (url: string) => {
   if (url === API_ENDPOINTS.REPORTS_XNT_ENHANCED)
     return { lines: XNT_LINES } as never;
   if (url === API_ENDPOINTS.REPORTS_INVENTORY_LEDGER)
-    return { rows: [] } as never;
+    return { rows: new URLSearchParams(location.search).has("dailyBars")
+      ? ["in", "out"].flatMap((kind) => [4, 46].map((qty, index) => {
+        const date = new Date();
+        date.setDate(date.getDate() - index);
+        return {
+          id: `${kind}-movement-${index}`,
+          occurred_at: `${date.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" })}T08:00:00+07:00`,
+          movement_type: kind === "in" ? "RECEIPT" : "ISSUE",
+          product_code: index === 0 ? "SKU-A" : "SKU-B",
+          source_id: `${kind}-${index * 2}`,
+          qty_delta: kind === "in" ? qty : -qty,
+        };
+      })) : [] } as never;
   if (url === API_ENDPOINTS.REPORTS_DOCUMENT_HISTORY)
-    return { rows: DOCUMENTS } as never;
+    return { rows: new URLSearchParams(location.search).has("dailyBars")
+      ? DOCUMENTS.map((document) => ({
+        ...document,
+        posted_at: new Date().toISOString(),
+        document_date: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }),
+      })) : DOCUMENTS } as never;
   if (url === OPERATIONS_REPORT_ENDPOINTS.OUTBOUND_BY_RECIPIENT)
     return {
       rows: RECIPIENT_ROWS,

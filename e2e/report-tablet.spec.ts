@@ -9,6 +9,34 @@ const REPORTS: ReportName[] = [
   "import-quality",
 ];
 
+for (const report of ["inbound", "outbound"] as const) {
+  for (const width of [1920, 768]) {
+    test(`${report} daily values follow bar tops at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1080 });
+      if (width === 768) await page.addInitScript(() => localStorage.setItem("hoa-nam-theme", "dark"));
+      await page.goto(`/e2e/fixtures/report-tablet.html?report=${report}&dailyBars=1`);
+      await waitForReport(page, report);
+      await expect(page.getByText("2 SKU · Phiếu đã ghi sổ")).toBeVisible();
+      const bars = page.locator(`.${report}-chart-bar > i`);
+      const high = bars.filter({ has: page.locator("span", { hasText: /^46$/ }) });
+      const low = bars.filter({ has: page.locator("span", { hasText: /^4$/ }) });
+      await expect(high).toHaveCount(1);
+      await expect(low).toHaveCount(1);
+      await high.scrollIntoViewIfNeeded();
+      // Wait for the height transition to settle before checking geometry.
+      await expect.poll(async () => (await high.boundingBox())!.height).toBeGreaterThan(40);
+      for (const bar of [high, low]) {
+        const box = (await bar.boundingBox())!;
+        const label = (await bar.locator("span").boundingBox())!;
+        expect(box.y - label.y - label.height).toBeGreaterThanOrEqual(3);
+        expect(box.y - label.y - label.height).toBeLessThanOrEqual(5);
+      }
+      expect((await high.locator("span").boundingBox())!.y).toBeLessThan((await low.locator("span").boundingBox())!.y);
+      await page.screenshot({ path: `test-results/report-tablet/${report}-bar-labels-${width}.png`, fullPage: true });
+    });
+  }
+}
+
 async function waitForReport(page: Page, report: ReportName) {
   if (report === "inbound") {
     await expect(page.locator(".inbound-table-wrap tbody tr")).toHaveCount(6);

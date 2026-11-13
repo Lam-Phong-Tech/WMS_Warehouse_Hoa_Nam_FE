@@ -1,5 +1,6 @@
 /** UI copy for the aligned warehouse screens; keys are stable across wording changes. */
 export const MESSAGES_UPDATED_EN = {
+  postedSkuCaption: "{count} SKU · Posted documents",
   searchSourceIncomplete:
     "The search list is incomplete or has changed. Narrow the filters or reload.",
   text_000a7ce014e9: "Recipient type",

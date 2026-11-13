@@ -1,3 +1,4 @@
+import { countPostedSkus } from "./posted-sku-count";
 import { useT } from "@/shared/i18n/useT";
 import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
@@ -513,6 +514,13 @@ export default function InboundFlowReport() {
   }, [filteredDocuments]);
 
   const completedCount = progress.complete;
+  const postedSkuCount = countPostedSkus(
+    filteredDocuments.filter(
+      (document) => statusTone(document.status) === "complete",
+    ),
+    snapshot.ledger,
+    ["RECEIPT"],
+  );
   const pendingCount = progress.pending;
   const supplierCount = useMemo(
     () =>
@@ -958,7 +966,9 @@ export default function InboundFlowReport() {
                   icon="package-plus"
                   title={tUi("updatedUi.text_df2300943e94")}
                   value={receivedQuantity}
-                  note={tUi("uiAudit.text_539d7ae245")}
+                  note={tUi("updatedUi.postedSkuCaption", {
+                    count: formatNumber(postedSkuCount),
+                  })}
                   empty={reportEmpty}
                 />
                 <KpiCard
@@ -1063,14 +1073,17 @@ export default function InboundFlowReport() {
                             key={point.date}
                             title={`${formatDay(point.date)}: ${formatNumber(point.value)}`}
                           >
-                            <span>
-                              {point.value > 0 ? formatNumber(point.value) : ""}
-                            </span>
                             <i
                               style={{
                                 height: `${Math.max(2, (point.value / chartCeiling) * 100)}%`,
                               }}
-                            />
+                            >
+                              <span>
+                                {point.value > 0
+                                  ? formatNumber(point.value)
+                                  : ""}
+                              </span>
+                            </i>
                             <small>{dayjs(point.date).format("DD/MM")}</small>
                           </div>
                         ))}

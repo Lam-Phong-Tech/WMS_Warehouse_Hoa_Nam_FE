@@ -874,7 +874,6 @@
   font-size: 14px;
 }
 
-.outbound-kpi[data-tone="cyan"] .outbound-kpi__copy small,
 .outbound-kpi[data-tone="green"] .outbound-kpi__copy small {
   color: #1f7f42;
 }
@@ -1006,13 +1005,22 @@
   min-width: 42px;
 }
 
-.outbound-chart-bar > span {
+.outbound-chart-bar > i > span {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 4px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-style: normal;
   color: var(--ops-heading);
   font-size: 12px;
   font-weight: 600;
 }
 
 .outbound-chart-bar > i {
+  position: relative;
+  grid-row: 2;
   width: min(48px, 66%);
   min-height: 2px;
   align-self: end;
@@ -1029,6 +1037,7 @@
 }
 
 .outbound-chart-bar > small {
+  grid-row: 3;
   padding-top: 8px;
   color: var(--ops-muted);
   font-size: 12px;
