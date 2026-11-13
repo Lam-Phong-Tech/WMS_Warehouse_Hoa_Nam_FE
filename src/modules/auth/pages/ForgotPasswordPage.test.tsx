@@ -1,5 +1,7 @@
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { ForgotPasswordPage } from "./ForgotPasswordPage";
@@ -40,10 +42,23 @@ async function goToPasswordStep(user: ReturnType<typeof userEvent.setup>) {
 }
 describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API", () => {
   beforeEach(() => {
+    useLanguageStore.getState().setLanguage("vi");
     vi.clearAllMocks();
   });
   afterEach(() => {
     vi.useRealTimers();
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+  });
+  it("updates visible recovery validation after switching language", async () => {
+    await ensureEnglishMessages();
+    renderWithProviders(<ForgotPasswordPage />);
+    fireEvent.submit(screen.getByLabelText(/email/i).closest("form")!);
+    expect(await screen.findByText("Vui lòng nhập email")).toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("en"));
+    expect(
+      await screen.findByText("Please enter your email"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Vui lòng nhập email")).not.toBeInTheDocument();
   });
   it("sends the supported email OTP request; never pretends to send a reset link", async () => {
     const user = userEvent.setup();

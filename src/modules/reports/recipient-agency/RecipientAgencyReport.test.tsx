@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
@@ -129,7 +132,37 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
 
   afterEach(() => {
     cleanupTestState();
+    useLanguageStore.getState().setLanguage("vi");
   });
+
+  it.each([
+    {
+      language: "en" as const,
+      all: "All documents during the period",
+      activity: "With stock issues during the period",
+    },
+    {
+      language: "zh" as const,
+      all: "期间内全部单据",
+      activity: "期间内有出库记录",
+    },
+  ])(
+    "translates KPI hints into $language and updates them when the language changes",
+    async ({ language, all, activity }) => {
+      await (language === "zh"
+        ? ensureChineseMessages()
+        : ensureEnglishMessages());
+      useLanguageStore.getState().setLanguage(language);
+      renderReport();
+      expect(await screen.findByText(all)).toBeInTheDocument();
+      expect(screen.getByText(activity)).toBeInTheDocument();
+      act(() => useLanguageStore.getState().setLanguage("vi"));
+      expect(screen.getByText("Tất cả phiếu trong kỳ")).toBeInTheDocument();
+      expect(
+        screen.getByText("Có phát sinh xuất trong kỳ"),
+      ).toBeInTheDocument();
+    },
+  );
 
   it("đánh số STT liên tục qua trang và đổi số dòng mỗi trang", async () => {
     const user = userEvent.setup();
@@ -164,19 +197,23 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
       Array.from({ length: 10 }, (_, i) => String(i + 1)),
     );
     const section = table.closest("section")!;
+    expect(
+      screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
+    ).toHaveTextContent("10 / trang");
+    expect(screen.queryByText("Số dòng/trang")).not.toBeInTheDocument();
     await user.click(within(section).getByRole("button", { name: "2" }));
     expect(numbers()).toEqual(["11", "12"]);
     await user.click(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
     );
-    await user.click(screen.getByRole("option", { name: "20" }));
+    await user.click(screen.getByRole("option", { name: "20 / trang" }));
     expect(numbers()).toEqual(
       Array.from({ length: 12 }, (_, i) => String(i + 1)),
     );
     await user.click(
       screen.getByRole("combobox", { name: "Số dòng mỗi trang" }),
     );
-    await user.click(screen.getByRole("option", { name: "50" }));
+    await user.click(screen.getByRole("option", { name: "50 / trang" }));
     expect(numbers()).toHaveLength(12);
   });
 

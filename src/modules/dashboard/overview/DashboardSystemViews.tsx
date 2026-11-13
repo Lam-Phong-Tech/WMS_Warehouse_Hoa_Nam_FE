@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import { useState, type ReactNode } from "react";
 import dayjs from "dayjs";
 import { DashIcon } from "../components/DashIcon";
@@ -39,11 +40,15 @@ function Frame({
   onNavigate: Props["onNavigate"];
   children: ReactNode;
 }) {
+  const t = useT();
   return (
     <div className={`dashboard-system-view ${className}`}>
-      <nav className="system-view-breadcrumb" aria-label="Điều hướng">
+      <nav
+        className="system-view-breadcrumb"
+        aria-label={t("dashboardAudit.navigation")}
+      >
         <button type="button" onClick={() => onNavigate(home)}>
-          Tổng quan
+          {t("dashboardAudit.overview")}
         </button>
         <span aria-hidden="true">/</span>
         <strong>{title}</strong>
@@ -54,7 +59,7 @@ function Frame({
           <p>{description}</p>
         </div>
         <button type="button" onClick={() => onNavigate(home)}>
-          <DashIcon name="arrow-right" /> Về tổng quan
+          <DashIcon name="arrow-right" /> {t("dashboardAudit.backOverview")}
         </button>
       </header>
       {children}
@@ -73,18 +78,19 @@ function DataState({
   onRetry: () => void;
   empty: string;
 }) {
+  const t = useT();
   if (loading)
     return (
       <div className="system-view-state" role="status">
-        Đang tải số liệu…
+        {t("dashboardAudit.loading")}
       </div>
     );
   if (error)
     return (
       <div className="system-view-state is-error" role="alert">
-        Không tải được số liệu.{" "}
+        {t("dashboardAudit.loadFailed")}{" "}
         <button type="button" onClick={onRetry}>
-          Thử lại
+          {t("dashboardAudit.retry")}
         </button>
       </div>
     );
@@ -92,11 +98,12 @@ function DataState({
 }
 
 function PartialNotice({ onRetry }: { onRetry: () => void }) {
+  const t = useT();
   return (
     <div className="snapshot-partial-alert" role="status">
-      Dữ liệu đang hiển thị có thể đã cũ. Lần cập nhật mới chưa hoàn tất.{" "}
+      {t("dashboardAudit.stale")}{" "}
       <button type="button" onClick={onRetry}>
-        Thử lại
+        {t("dashboardAudit.retry")}
       </button>
     </div>
   );
@@ -107,6 +114,7 @@ function WorkView({
   showWarranty = false,
   onNavigate,
 }: Omit<Props, "view">) {
+  const t = useT();
   const source = useStockReconcileSnapshot({ asOf: "" });
   const hasSnapshot = Boolean(source.snapshot.as_of);
   const [selectedKey, setSelectedKey] = useState("");
@@ -121,28 +129,33 @@ function WorkView({
   const groups = [
     {
       id: "reconcile",
-      label: "Đối soát tồn",
+      label: t("dashboardAudit.reconcile"),
       count: overview?.issues.inventory_mismatch ?? null,
       route: "/reports/stock-reconcile",
     },
     {
       id: "outbound",
-      label: "Yêu cầu xuất lỗi",
+      label: t("dashboardAudit.outboundErrors"),
       count: null,
       route: "/outbound",
     },
     {
       id: "labels",
-      label: "Nhãn in lỗi",
+      label: t("dashboardAudit.labelErrors"),
       count: overview?.issues.print_failed ?? null,
       route: "/reports/packing-label",
     },
-    { id: "putaway", label: "Chờ xếp khay", count: null, route: "/putaway" },
+    {
+      id: "putaway",
+      label: t("dashboardAudit.pendingPutaway"),
+      count: null,
+      route: "/putaway",
+    },
     ...(showWarranty
       ? [
           {
             id: "warranty",
-            label: "Bảo hành quá hạn",
+            label: t("dashboardAudit.overdueWarranty"),
             count: overview?.warranty.overdue_count ?? null,
             route: WARRANTY_OVERDUE_ROUTE,
           },
@@ -152,14 +165,14 @@ function WorkView({
   const active = groups.find((group) => group.id === category) ?? groups[0];
   return (
     <Frame
-      title="Việc cần xử lý"
-      description="Các nhóm có thể trùng chứng từ; số lượng từng nhóm không cộng thành tổng duy nhất."
+      title={t("dashboardAudit.workTitle")}
+      description={t("dashboardAudit.workDescription")}
       onNavigate={onNavigate}
     >
       <div
         className="system-view-tabs"
         role="tablist"
-        aria-label="Nhóm công việc"
+        aria-label={t("dashboardAudit.workGroups")}
       >
         {groups.map((group) => (
           <button
@@ -181,9 +194,13 @@ function WorkView({
         <div className="system-view-split">
           <section className="system-view-card">
             <header>
-              <h2>Chênh lệch cần xác minh · {fmt(mismatches.length)} dòng</h2>
+              <h2>
+                {t("dashboardAudit.verifyDifferences")} {fmt(mismatches.length)}{" "}
+                {t("dashboardAudit.rows")}
+              </h2>
               <button type="button" onClick={() => onNavigate(active.route)}>
-                Mở đối soát <DashIcon name="arrow-right" />
+                {t("dashboardAudit.openReconcile")}
+                <DashIcon name="arrow-right" />
               </button>
             </header>
             {source.loading ||
@@ -193,7 +210,7 @@ function WorkView({
                 loading={source.loading}
                 error={hasSnapshot ? null : source.error}
                 onRetry={() => void source.refetch()}
-                empty="Hiện không có dòng đối soát lệch."
+                empty={t("dashboardAudit.noMismatches")}
               />
             ) : (
               <div className="system-view-table-wrap">
@@ -201,11 +218,11 @@ function WorkView({
                   <thead>
                     <tr>
                       <th>SKU</th>
-                      <th>Sản phẩm</th>
-                      <th>Kho</th>
-                      <th>Sổ</th>
-                      <th>Số dư</th>
-                      <th>Lệch</th>
+                      <th>{t("dashboardAudit.product")}</th>
+                      <th>{t("dashboardAudit.warehouse")}</th>
+                      <th>{t("dashboardAudit.ledger")}</th>
+                      <th>{t("dashboardAudit.balance")}</th>
+                      <th>{t("dashboardAudit.difference")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -239,7 +256,7 @@ function WorkView({
             )}
           </section>
           <section className="system-view-card system-view-detail">
-            <h2>Chi tiết dòng đang chọn</h2>
+            <h2>{t("dashboardAudit.selectedRow")}</h2>
             {selected ? (
               <>
                 <strong className="system-view-code">
@@ -248,44 +265,43 @@ function WorkView({
                 <p>{selected.sku_name}</p>
                 <dl>
                   <div>
-                    <dt>Kho</dt>
+                    <dt>{t("dashboardAudit.warehouse")}</dt>
                     <dd>{selected.warehouse_code || "—"}</dd>
                   </div>
                   <div>
-                    <dt>Trạng thái tồn</dt>
+                    <dt>{t("dashboardAudit.stockStatus")}</dt>
                     <dd>{selected.stock_status || "—"}</dd>
                   </div>
                   <div>
-                    <dt>Sổ movement</dt>
+                    <dt>{t("dashboardAudit.movementLedger")}</dt>
                     <dd>{fmt(selected.ledger_qty)}</dd>
                   </div>
                   <div>
-                    <dt>Số dư hệ thống</dt>
+                    <dt>{t("dashboardAudit.systemBalance")}</dt>
                     <dd>{fmt(selected.balance_qty)}</dd>
                   </div>
                   <div>
-                    <dt>Chênh lệch</dt>
+                    <dt>{t("dashboardAudit.delta")}</dt>
                     <dd className="is-negative">{fmt(selected.delta_qty)}</dd>
                   </div>
                   <div>
-                    <dt>Cập nhật số dư</dt>
+                    <dt>{t("dashboardAudit.balanceUpdated")}</dt>
                     <dd>{dateTime(selected.balance_updated_at)}</dd>
                   </div>
                 </dl>
                 <p className="system-view-note">
-                  Chênh lệch sổ và số dư cần kiểm tra. Đây chưa phải kết luận
-                  thiếu hàng thực tế.
+                  {t("dashboardAudit.differenceNote")}
                 </p>
                 <button
                   className="system-view-primary"
                   type="button"
                   onClick={() => onNavigate(active.route)}
                 >
-                  Mở đối soát tồn
+                  {t("dashboardAudit.openStockReconcile")}
                 </button>
               </>
             ) : (
-              <p>Chọn một dòng để xem chi tiết.</p>
+              <p>{t("dashboardAudit.selectRow")}</p>
             )}
           </section>
         </div>
@@ -294,16 +310,19 @@ function WorkView({
           <h2>{active.label}</h2>
           <p>
             {active.count === null
-              ? "Chưa có số tổng hợp đáng tin cậy cho nhóm này trong Dashboard API."
-              : `Có ${fmt(active.count)} mục được ghi nhận.`}{" "}
-            Danh sách và thao tác nằm ở màn nghiệp vụ gốc.
+              ? t("dashboardAudit.noSummary")
+              : t("dashboardAudit.recordedItems", {
+                  count: fmt(active.count),
+                })}{" "}
+            {t("dashboardAudit.originalScreen")}
           </p>
           <button
             className="system-view-primary"
             type="button"
             onClick={() => onNavigate(active.route)}
           >
-            Mở {active.label.toLowerCase()} <DashIcon name="arrow-right" />
+            {t("dashboardAudit.open")} {active.label.toLowerCase()}{" "}
+            <DashIcon name="arrow-right" />
           </button>
         </section>
       )}
@@ -312,6 +331,7 @@ function WorkView({
 }
 
 function ThresholdView({ onNavigate }: Omit<Props, "view">) {
+  const t = useT();
   const source = useStockReconcileSnapshot({ asOf: "" });
   const hasSnapshot =
     Boolean(source.snapshot.as_of) && source.thresholds.size > 0;
@@ -323,8 +343,8 @@ function ThresholdView({ onNavigate }: Omit<Props, "view">) {
   return (
     <Frame
       className="dashboard-threshold-view"
-      title="Cảnh báo định mức tồn"
-      description="Chỉ SKU đã đặt min hoặc max mới được đánh giá; chưa cấu hình khác với min = 0."
+      title={t("dashboardAudit.thresholdTitle")}
+      description={t("dashboardAudit.thresholdDescription")}
       onNavigate={onNavigate}
     >
       {source.error && hasSnapshot ? (
@@ -341,19 +361,19 @@ function ThresholdView({ onNavigate }: Omit<Props, "view">) {
         <>
           <div className="system-view-metrics">
             <div>
-              <span>Đã cấu hình</span>
+              <span>{t("dashboardAudit.configured")}</span>
               <strong>{fmt(configured)}</strong>
             </div>
             <div>
-              <span>Chưa cấu hình</span>
+              <span>{t("dashboardAudit.unconfigured")}</span>
               <strong>{fmt(unconfigured)}</strong>
             </div>
             <div>
-              <span>Dưới mức tối thiểu</span>
+              <span>{t("dashboardAudit.belowMin")}</span>
               <strong>{fmt(summary.below)}</strong>
             </div>
             <div>
-              <span>Vượt mức tối đa</span>
+              <span>{t("dashboardAudit.aboveMax")}</span>
               <strong>{fmt(summary.above)}</strong>
             </div>
           </div>

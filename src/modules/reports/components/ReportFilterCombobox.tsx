@@ -1,7 +1,7 @@
+import { useT } from "@/shared/i18n/useT";
 import { useEffect, useRef, useState } from "react";
 import { CheckOutlined } from "@/shared/components/icons";
 import { VuexyDemoIcon } from "@/shared/ui";
-import { tStatic as tUi } from "@/shared/i18n/useT";
 import "./report-filter-combobox.css";
 function Icon({ name }: { name: Parameters<typeof VuexyDemoIcon>[0]["name"] }) {
   return <VuexyDemoIcon name={name} />;
@@ -35,6 +35,7 @@ export function ReportFilterCombobox({
   ariaLabel: string;
   disabled?: boolean;
 }) {
+  const tUi = useT();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement | null>(null);

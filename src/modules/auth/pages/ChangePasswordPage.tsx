@@ -32,15 +32,29 @@ export function ChangePasswordPage() {
     () => buildChangePasswordSchema(t, user ?? undefined),
     [t, user],
   );
-  const { control, handleSubmit, setError, clearErrors } =
-    useForm<ChangePasswordFormValues>({
-      resolver: zodResolver(changePasswordSchema),
-      defaultValues: {
-        currentPassword: "",
-        newPassword: "",
-        newPasswordConfirmation: "",
-      },
+  const {
+    control,
+    handleSubmit,
+    setError,
+    clearErrors,
+    getFieldState,
+    trigger,
+  } = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      newPasswordConfirmation: "",
+    },
+  });
+
+  useEffect(() => {
+    const invalidFields = PASSWORD_FORM_FIELDS.filter((field) => {
+      const error = getFieldState(field).error;
+      return error && error.type !== "server";
     });
+    if (invalidFields.length) void trigger(invalidFields);
+  }, [t, getFieldState, trigger]);
 
   const onSubmit = handleSubmit((values) =>
     changePassword.mutate({
@@ -57,7 +71,9 @@ export function ChangePasswordPage() {
       changePassword.isError
         ? resolveFormErrors(changePassword.error, PASSWORD_FORM_FIELDS)
         : null,
-    [changePassword.error, changePassword.isError],
+    // t changes when the active dictionary/locale changes; resolveFormErrors reads that locale.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [changePassword.error, changePassword.isError, t],
   );
 
   useEffect(() => {

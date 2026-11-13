@@ -1,7 +1,16 @@
 import dayjs from "dayjs";
 import { useInventoryFlowSnapshot } from "./inventory-flow-api";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 import type { FlowDocument, InventoryFlowSnapshot } from "./inventory-flow-api";
@@ -50,7 +59,62 @@ import OutboundFlowReport from "./OutboundFlowReport";
 afterEach(() => {
   snapshot.documents = [];
   cleanupTestState();
+  useLanguageStore.getState().setLanguage("vi");
 });
+
+it.each([
+  {
+    language: "en" as const,
+    status: "Search statuses...",
+    recipient: "Search recipients...",
+    period: "During the selected period",
+    activity: "With issues during the period",
+  },
+  {
+    language: "zh" as const,
+    status: "搜索状态...",
+    recipient: "搜索收货人...",
+    period: "在所选期间内",
+    activity: "有出库记录",
+  },
+])(
+  "translates report placeholders and KPI notes into $language while preserving recipient data",
+  async ({ language, status, recipient, period, activity }) => {
+    await (language === "zh"
+      ? ensureChineseMessages()
+      : ensureEnglishMessages());
+    useLanguageStore.getState().setLanguage(language);
+    snapshot.documents = [
+      {
+        id: "locale-document",
+        document_no: "PX-LOCALE",
+        doc_type: "OUTBOUND",
+        status: "POSTED",
+        warehouse_code: "KHO-TONG-HN",
+        counterpart: "Đại lý Nguyễn Văn An",
+        created_by_name: "Nguyễn Văn An",
+        posted_at: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+        document_date: dayjs().format("YYYY-MM-DD"),
+        drillKey: "",
+      },
+    ];
+    renderWithProviders(<OutboundFlowReport />, [
+      "/reports/outbound-flow?screen=RPT-01B",
+    ]);
+    expect(screen.getAllByPlaceholderText(status).length).toBeGreaterThan(0);
+    expect(screen.getAllByPlaceholderText(recipient).length).toBeGreaterThan(0);
+    expect(screen.getByText(period)).toBeInTheDocument();
+    expect(screen.getByText(activity)).toBeInTheDocument();
+    expect(screen.getAllByText("Đại lý Nguyễn Văn An").length).toBeGreaterThan(
+      0,
+    );
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(
+      screen.getAllByPlaceholderText("Tìm trạng thái...").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Trong kỳ đã chọn")).toBeInTheDocument();
+  },
+);
 
 describe("RPT-01B · đóng mở các khối báo cáo", () => {
   it("đóng mở từng khối độc lập và giữ bảng báo cáo hiển thị", () => {
@@ -125,9 +189,7 @@ describe("RPT-01B · phân trang phiếu xuất", () => {
       });
     const choosePageSize = (size: number) => {
       fireEvent.mouseDown(pageSize());
-      fireEvent.click(
-        screen.getByRole("option", { name: `${size} / trang` }),
-      );
+      fireEvent.click(screen.getByRole("option", { name: `${size} / trang` }));
     };
 
     await waitFor(() => expect(rows()).toHaveLength(10));

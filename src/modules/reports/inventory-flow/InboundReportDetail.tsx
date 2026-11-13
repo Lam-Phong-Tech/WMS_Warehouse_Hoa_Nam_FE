@@ -1,3 +1,5 @@
+import { useT } from "@/shared/i18n/useT";
+import { bilingual } from "@/shared/constants/business-labels";
 import { parseDateTime } from "@/shared/utils/date-time";
 import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
 import { ReportExportAction } from "../components/ReportExportAction";
@@ -26,12 +28,20 @@ type InboundReportDetailProps = {
   onBack: () => void;
 };
 
-const statusNames: Record<string, string> = {
-  DRAFT: "Chờ nhập",
-  SCANNING: "Đang nhập",
-  POSTED: "Đã nhập kho",
-  CANCELLED: "Đã hủy",
-};
+const statusNames: Record<string, string> = bilingual(
+  {
+    DRAFT: "Chờ nhập",
+    SCANNING: "Đang nhập",
+    POSTED: "Đã nhập kho",
+    CANCELLED: "Đã hủy",
+  },
+  {
+    DRAFT: "Awaiting receipt",
+    SCANNING: "Receiving",
+    POSTED: "Received into stock",
+    CANCELLED: "Cancelled",
+  },
+);
 
 function formatDateTime(value?: string) {
   if (!value) return "—";
@@ -49,6 +59,7 @@ export function InboundReportDetail({
   canExport,
   onBack,
 }: InboundReportDetailProps) {
+  const tUi = useT();
   useDateTimePreferences();
   const detailQuery = useInboundDetail(document.id, { readOnly: true });
   const entriesQuery = useInboundScanEntries(document.id, "ALL");
@@ -168,23 +179,23 @@ export function InboundReportDetail({
           className="inbound-report-detail__back"
           onClick={onBack}
         >
-          ← <span>Báo cáo nhập kho</span>
+          ← <span>{tUi("reports.inventoryFlowReport.inboundTitle")}</span>
         </button>
         <div className="inbound-report-detail__heading-row">
           <div>
-            <h1>Chi tiết báo cáo nhập kho</h1>
+            <h1>{tUi("uiAudit.text_8e3993e4b2")}</h1>
           </div>
           <div className="inbound-report-detail__actions">
             <small>
-              Phạm vi báo cáo: {range.from} – {range.to} · {warehouseName} · Giờ
-              Việt Nam
+              {tUi("uiAudit.text_200f9b114b")} {range.from} – {range.to} ·{" "}
+              {warehouseName} {tUi("uiAudit.text_d41c70f5f2")}{" "}
             </small>
             <div>
               <Link
                 className="inbound-report-detail__source"
                 to={`/inbound?screen=IN-03&id=${encodeURIComponent(document.id)}`}
               >
-                Mở chứng từ gốc ↗
+                {tUi("uiAudit.text_094f0b8a27")}{" "}
               </Link>
               {canExport ? (
                 <ReportExportAction
@@ -206,13 +217,13 @@ export function InboundReportDetail({
       </header>
 
       {detailQuery.isPending ? (
-        <p role="status">Đang tải chi tiết phiếu nhập...</p>
+        <p role="status">{tUi("uiAudit.text_773121aa7a")}</p>
       ) : null}
       {detailQuery.isError ? (
         <div role="alert" className="inbound-report-detail__error">
-          Không tải được chi tiết phiếu nhập.{" "}
+          {tUi("uiAudit.text_a21bf07a2f")}{" "}
           <button type="button" onClick={() => void detailQuery.refetch()}>
-            Thử lại
+            {tUi("dashboardAudit.retry")}{" "}
           </button>
         </div>
       ) : null}
@@ -222,10 +233,12 @@ export function InboundReportDetail({
             className="inbound-report-detail__info"
             aria-labelledby="inbound-detail-info-title"
           >
-            <h2 id="inbound-detail-info-title">Thông tin phiếu nhập</h2>
+            <h2 id="inbound-detail-info-title">
+              {tUi("inbound.draft.titleEdit")}
+            </h2>
             <dl>
               <div>
-                <dt>Mã phiếu nhập</dt>
+                <dt>{tUi("uiAudit.text_c939745d88")}</dt>
                 <dd>{receipt?.code || "—"}</dd>
               </div>
               <div>
@@ -233,7 +246,7 @@ export function InboundReportDetail({
                 <dd>{receipt?.sourceReference || "—"}</dd>
               </div>
               <div>
-                <dt>Trạng thái</dt>
+                <dt>{tUi("dashboardAudit.status")}</dt>
                 <dd>
                   <span
                     className="inbound-report-detail__status"
@@ -244,23 +257,23 @@ export function InboundReportDetail({
                 </dd>
               </div>
               <div>
-                <dt>Ngày tạo</dt>
+                <dt>{tUi("inbound.list.colCreated")}</dt>
                 <dd>{formatDateTime(receipt?.createdAt)}</dd>
               </div>
               <div>
-                <dt>Nhà cung cấp</dt>
+                <dt>{tUi("updatedUi.text_039d667495cd")}</dt>
                 <dd>{supplierLabel || document.counterpart || "—"}</dd>
               </div>
               <div>
-                <dt>Kho nhập</dt>
+                <dt>{tUi("uiAudit.text_26e4121581")}</dt>
                 <dd>{warehouseName}</dd>
               </div>
               <div>
-                <dt>Người tạo</dt>
+                <dt>{tUi("reverse.detail.fieldCreatedBy")}</dt>
                 <dd>{receipt?.createdBy || document.created_by_name || "—"}</dd>
               </div>
               <div>
-                <dt>Ngày ghi nhận nhập kho</dt>
+                <dt>{tUi("uiAudit.text_240b7e9225")}</dt>
                 <dd>{formatDateTime(document.posted_at)}</dd>
               </div>
             </dl>
@@ -271,21 +284,25 @@ export function InboundReportDetail({
               className="inbound-report-detail__panel"
               aria-labelledby="inbound-detail-sku-title"
             >
-              <h2 id="inbound-detail-sku-title">Danh sách SKU nhập kho</h2>
+              <h2 id="inbound-detail-sku-title">
+                {tUi("uiAudit.text_0e65ef253a")}
+              </h2>
               <div className="inbound-report-detail__table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th>Mã SKU</th>
-                      <th>Tên hàng</th>
-                      <th>Đơn vị tính</th>
-                      <th className="is-number">Số lượng</th>
+                      <th>{tUi("inbound.skuInfo.fieldCode")}</th>
+                      <th>{tUi("inventory.balance.colName")}</th>
+                      <th>{tUi("inbound.skuInfo.fieldUnit")}</th>
+                      <th className="is-number">
+                        {tUi("dashboardSnapshot.quantity")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {lines.length === 0 ? (
                       <tr>
-                        <td colSpan={4}>Chưa có SKU được ghi nhận.</td>
+                        <td colSpan={4}>{tUi("uiAudit.text_2cca482a6a")}</td>
                       </tr>
                     ) : (
                       lines.map((line) => (
@@ -298,7 +315,9 @@ export function InboundReportDetail({
                       ))
                     )}
                     <tr className="inbound-report-detail__total">
-                      <td colSpan={3}>Tổng cộng</td>
+                      <td colSpan={3}>
+                        {tUi("reports.stockReconcileReport.totalRow")}
+                      </td>
                       <td className="is-number">{total}</td>
                     </tr>
                   </tbody>
@@ -309,7 +328,9 @@ export function InboundReportDetail({
               className="inbound-report-detail__panel"
               aria-labelledby="inbound-detail-history-title"
             >
-              <h2 id="inbound-detail-history-title">Lịch sử xử lý</h2>
+              <h2 id="inbound-detail-history-title">
+                {tUi("warranty.detail.historyTitle")}
+              </h2>
               {history.length > 0 ? (
                 <ol className="inbound-report-detail__timeline">
                   {history.map((event, index) => (
@@ -329,7 +350,7 @@ export function InboundReportDetail({
                 </ol>
               ) : (
                 <p className="inbound-report-detail__muted">
-                  Chưa có lịch sử trạng thái.
+                  {tUi("uiAudit.text_7ce4362136")}{" "}
                 </p>
               )}
             </section>
@@ -340,12 +361,12 @@ export function InboundReportDetail({
             aria-labelledby="inbound-detail-records-title"
           >
             <h2 id="inbound-detail-records-title" className="inbound-sr-only">
-              Dữ liệu nhập kho
+              {tUi("uiAudit.text_435e3fb340")}{" "}
             </h2>
             <div
               className="inbound-report-detail__tabs"
               role="tablist"
-              aria-label="Dữ liệu nhập kho"
+              aria-label={tUi("uiAudit.text_435e3fb340")}
             >
               <button
                 type="button"
@@ -356,7 +377,8 @@ export function InboundReportDetail({
                   setSearch("");
                 }}
               >
-                Mã đã ghi nhận ({entries.length})
+                {tUi("uiAudit.text_b3c09fb699")}
+                {entries.length})
               </button>
               <button
                 type="button"
@@ -367,33 +389,36 @@ export function InboundReportDetail({
                   setSearch("");
                 }}
               >
-                Tổng hợp SKU
+                {tUi("reportExport.sku")}{" "}
               </button>
             </div>
             <div className="inbound-report-detail__records-bar">
               <label>
-                <span className="inbound-sr-only">Tìm mã hoặc SKU</span>
+                <span className="inbound-sr-only">
+                  {tUi("uiAudit.text_8918a38147")}
+                </span>
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Tìm mã hoặc SKU..."
+                  placeholder={tUi("uiAudit.text_891bdcbace")}
                 />
               </label>
               <span>
-                {entries.length} mã · {skuCount} SKU · {total} sản phẩm
+                {entries.length} {tUi("uiAudit.text_74f03a604c")} {skuCount} SKU
+                · {total} {tUi("updatedUi.text_9bfcaa70b19e")}{" "}
               </span>
             </div>
             {entriesQuery.isPending && tab === "codes" ? (
-              <p role="status">Đang tải mã đã ghi nhận...</p>
+              <p role="status">{tUi("uiAudit.text_e9c00d24f5")}</p>
             ) : null}
             {entriesQuery.isError && tab === "codes" ? (
               <div role="alert">
-                Không tải được mã đã ghi nhận.{" "}
+                {tUi("uiAudit.text_6814c60695")}{" "}
                 <button
                   type="button"
                   onClick={() => void entriesQuery.refetch()}
                 >
-                  Thử lại
+                  {tUi("dashboardAudit.retry")}{" "}
                 </button>
               </div>
             ) : null}
@@ -403,21 +428,25 @@ export function InboundReportDetail({
                   {tab === "codes" ? (
                     <tr>
                       <th>#</th>
-                      <th>Mã serial / mã quét</th>
-                      <th>Mã SKU</th>
-                      <th>Tên hàng</th>
-                      <th>Đơn vị tính</th>
-                      <th className="is-number">Số lượng</th>
-                      <th>Trạng thái</th>
-                      <th>Ngày ghi nhận</th>
+                      <th>{tUi("uiAudit.text_62b090dd7e")}</th>
+                      <th>{tUi("inbound.skuInfo.fieldCode")}</th>
+                      <th>{tUi("inventory.balance.colName")}</th>
+                      <th>{tUi("inbound.skuInfo.fieldUnit")}</th>
+                      <th className="is-number">
+                        {tUi("dashboardSnapshot.quantity")}
+                      </th>
+                      <th>{tUi("dashboardAudit.status")}</th>
+                      <th>{tUi("uiAudit.text_9bcd410dfc")}</th>
                     </tr>
                   ) : (
                     <tr>
                       <th>#</th>
-                      <th>Mã SKU</th>
-                      <th>Tên hàng</th>
-                      <th>Đơn vị tính</th>
-                      <th className="is-number">Số lượng</th>
+                      <th>{tUi("inbound.skuInfo.fieldCode")}</th>
+                      <th>{tUi("inventory.balance.colName")}</th>
+                      <th>{tUi("inbound.skuInfo.fieldUnit")}</th>
+                      <th className="is-number">
+                        {tUi("dashboardSnapshot.quantity")}
+                      </th>
                     </tr>
                   )}
                 </thead>
@@ -425,7 +454,7 @@ export function InboundReportDetail({
                   {tab === "codes" ? (
                     filteredEntries.length === 0 ? (
                       <tr>
-                        <td colSpan={8}>Không có mã phù hợp.</td>
+                        <td colSpan={8}>{tUi("uiAudit.text_6422313133")}</td>
                       </tr>
                     ) : (
                       filteredEntries.map((entry, index) => {
@@ -454,8 +483,8 @@ export function InboundReportDetail({
                                 data-status={receipt?.status ?? document.status}
                               >
                                 {receipt?.status === "POSTED"
-                                  ? "Đã ghi nhận"
-                                  : "Đã quét"}
+                                  ? tUi("uiAudit.recorded")
+                                  : tUi("uiAudit.scanned")}
                               </span>
                             </td>
                             <td>{formatDateTime(entry.capturedAt)}</td>
@@ -465,7 +494,7 @@ export function InboundReportDetail({
                     )
                   ) : filteredLines.length === 0 ? (
                     <tr>
-                      <td colSpan={5}>Không có SKU phù hợp.</td>
+                      <td colSpan={5}>{tUi("uiAudit.text_0e02128daf")}</td>
                     </tr>
                   ) : (
                     filteredLines.map((line, index) => (

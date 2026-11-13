@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-13",
+  "catalog": {
+    "vi": 6858,
+    "en": 6858,
+    "zh": 6858,
+    "missing": 0,
+    "extra": 0,
+    "empty": 0,
+    "placeholders": 0,
+    "retainedVietnamese": 2,
+    "sameAsEnglish": 25,
+    "withoutHan": 33
+  },
+  "chinese": {
+    "failed": 0,
+    "testFiles": [
+      "src/shared/api/api-error.chinese.test.tsx",
+      "src/shared/api/api-error.localization.test.tsx",
+      "src/shared/i18n/chinese-coverage.test.ts",
+      "src/shared/i18n/chinese-label-coverage.test.ts",
+      "src/shared/i18n/english-coverage.test.ts",
+      "src/shared/i18n/EnglishLanguageBoundary.test.tsx",
+      "src/shared/i18n/i18n.test.ts",
+      "src/shared/i18n/language-locale.test.ts",
+      "src/modules/reports/inventory-flow/OutboundFlowReport.collapse.test.tsx",
+      "src/modules/reports/movement-trace/GoodsTraceReport.test.tsx",
+      "src/modules/reports/recipient-agency/RecipientAgencyReport.test.tsx",
+      "src/modules/auth/components/profile/ProfilePasswordDrawer.test.tsx",
+      "src/shared/api/api-error.test.ts",
+      "src/shared/api/__tests__/api-error.unit.test.ts"
+    ],
+    "tests": 106,
+    "files": 14
+  },
+  "english": {
+    "failed": 0,
+    "tests": 133,
+    "files": 17
+  },
+  "notes": [
+    "Counts record focused localization regression runs; they are not full-suite results.",
+    "Raw local inventories and runner output are retained under outputs/ and are not committed.",
+    "Language-independent acronyms, variable-only templates and native language names were reviewed."
+  ]
+}

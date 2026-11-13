@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
@@ -129,6 +130,7 @@ function FilterCombobox({
   ariaLabel: string;
   disabled?: boolean;
 }) {
+  const tUi = useT();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -316,6 +318,7 @@ function KpiCard({
   note: string;
   empty: boolean;
 }) {
+  const tUi = useT();
   return (
     <article className="inbound-kpi" data-tone={tone}>
       <div className="inbound-kpi__copy">
@@ -348,6 +351,7 @@ function KpiSkeleton() {
 }
 
 export default function InboundFlowReport() {
+  const tUi = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const [draftRange, setDraftRange] = useState<DateRange>(initialRange);
   const [appliedRange, setAppliedRange] = useState<DateRange>(initialRange);
@@ -438,7 +442,7 @@ export default function InboundFlowReport() {
         label: supplier,
       })),
     ],
-    [appliedSupplier, supplierOptions],
+    [appliedSupplier, supplierOptions, tUi],
   );
 
   const statusFilterOptions = useMemo<FilterOption[]>(
@@ -451,7 +455,7 @@ export default function InboundFlowReport() {
         }),
       ),
     ],
-    [appliedStatus, statusOptions],
+    [appliedStatus, statusOptions, tUi],
   );
 
   const filteredDocuments = useMemo(
@@ -879,8 +883,8 @@ export default function InboundFlowReport() {
               options={supplierFilterOptions}
               icon="user-round"
               fieldLabel={tUi("updatedUi.text_039d667495cd")}
-              searchPlaceholder="Tìm nhà cung cấp..."
-              ariaLabel="Chọn nhà cung cấp"
+              searchPlaceholder={tUi("uiAudit.text_7a05fc95f3")}
+              ariaLabel={tUi("uiAudit.text_31fcf9b1ee")}
               disabled={uiUpdating}
             />
           </div>
@@ -900,8 +904,8 @@ export default function InboundFlowReport() {
               options={statusFilterOptions}
               icon="file-clock"
               fieldLabel={tUi("dashboard.composition.colStatus")}
-              searchPlaceholder="Tìm trạng thái..."
-              ariaLabel="Chọn trạng thái phiếu nhập"
+              searchPlaceholder={tUi("uiAudit.text_4c99ba2b46")}
+              ariaLabel={tUi("uiAudit.text_175b13ad44")}
               disabled={uiUpdating}
             />
           </div>
@@ -954,7 +958,7 @@ export default function InboundFlowReport() {
                   icon="package-plus"
                   title={tUi("updatedUi.text_df2300943e94")}
                   value={receivedQuantity}
-                  note="Trong kỳ đã chọn"
+                  note={tUi("uiAudit.text_539d7ae245")}
                   empty={reportEmpty}
                 />
                 <KpiCard
@@ -980,7 +984,7 @@ export default function InboundFlowReport() {
                   icon="warehouse"
                   title={tUi("updatedUi.text_039d667495cd")}
                   value={supplierCount}
-                  note="Có phát sinh nhập"
+                  note={tUi("uiAudit.text_72e6c18c2d")}
                   empty={reportEmpty}
                 />
                 <KpiCard
@@ -1350,7 +1354,11 @@ export default function InboundFlowReport() {
                           <td
                             data-label={tUi("dashboard.composition.colStatus")}
                           >
-                            <span className="inbound-status" data-tone={tone} title={inboundStatusLabel(document.status)}>
+                            <span
+                              className="inbound-status"
+                              data-tone={tone}
+                              title={inboundStatusLabel(document.status)}
+                            >
                               {inboundStatusLabel(document.status)}
                             </span>
                           </td>

@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { StrictMode } from "react";
-import { screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { LoginPage } from "./LoginPage";
@@ -8,12 +9,24 @@ import { rememberLoginThrottle } from "../utils/login-feedback";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { useThemeStore } from "@/shared/ui/theme/theme.store";
 describe("LoginPage — TC_UI_LOGIN_01/02", () => {
+  beforeAll(ensureEnglishMessages);
+  afterEach(() => act(() => useLanguageStore.getState().setLanguage("vi")));
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
     rememberLoginThrottle(null);
     useLanguageStore.getState().setLanguage("vi");
     useThemeStore.getState().setPreference("light");
+  });
+  it("updates visible login validation after switching language", async () => {
+    renderWithProviders(<LoginPage />);
+    await userEvent.click(screen.getByRole("button", { name: /đăng nhập/i }));
+    expect(await screen.findByText("Vui lòng nhập email.")).toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("en"));
+    expect(
+      await screen.findByText("Please enter your email."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Vui lòng nhập email.")).not.toBeInTheDocument();
   });
   it("renders the canonical login form and filled access shield", () => {
     renderWithProviders(<LoginPage />);

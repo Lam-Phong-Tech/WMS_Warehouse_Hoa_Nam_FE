@@ -1602,14 +1602,13 @@ export default function MovementTraceReport() {
               })}
             </span>
             <label className="trace-page-size">
-              Số dòng/trang{" "}
               <UiSelect
-                aria-label="Số dòng mỗi trang"
+                aria-label={t("shared.table.rowsPerPageAria")}
                 value={ledgerPageSize}
                 minWidth={FILTER_WIDTH.pageSize}
                 options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
                   value: size,
-                  label: String(size),
+                  label: t("shared.table.perPage", { size }),
                 }))}
                 onChange={(value) => {
                   setLedgerPageSize(Number(value));

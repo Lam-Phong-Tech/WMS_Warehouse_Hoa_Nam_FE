@@ -1,5 +1,16 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { createMockAxiosError } from "@/shared/api/api-error";
@@ -31,6 +42,10 @@ function fillDrawer(values: {
 }
 
 describe("ProfilePasswordDrawer", () => {
+  beforeAll(async () => {
+    await Promise.all([ensureEnglishMessages(), ensureChineseMessages()]);
+  });
+  afterEach(() => act(() => useLanguageStore.getState().setLanguage("vi")));
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({
@@ -48,6 +63,42 @@ describe("ProfilePasswordDrawer", () => {
       currentContext: null,
     });
   });
+
+  it.each(["en", "zh"] as const)(
+    "updates already visible client validation when the language changes to %s",
+    async (language) => {
+      renderWithProviders(<ProfilePasswordDrawer onClose={vi.fn()} />);
+      fireEvent.click(screen.getByRole("button", { name: "Đổi mật khẩu" }));
+      expect(
+        await screen.findByText("Vui lòng nhập mật khẩu hiện tại"),
+      ).toBeInTheDocument();
+      act(() => useLanguageStore.getState().setLanguage(language));
+      expect(
+        await screen.findByText(
+          language === "zh"
+            ? "请输入您当前的密码"
+            : "Please enter your current password",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          language === "zh" ? "请输入新密码" : "Please enter your new password",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          language === "zh" ? "请确认密码" : "Please confirm the password",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText("Vui lòng nhập mật khẩu hiện tại"),
+      ).not.toBeInTheDocument();
+      act(() => useLanguageStore.getState().setLanguage("vi"));
+      expect(
+        await screen.findByText("Vui lòng nhập mật khẩu hiện tại"),
+      ).toBeInTheDocument();
+    },
+  );
 
   it("validates against the signed-in account and caps inputs at 64 characters", async () => {
     renderWithProviders(<ProfilePasswordDrawer onClose={vi.fn()} />);
@@ -108,5 +159,16 @@ describe("ProfilePasswordDrawer", () => {
     expect(
       screen.queryByText("Thông tin đổi mật khẩu không hợp lệ."),
     ).not.toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("en"));
+    expect(
+      await screen.findByText("The current password is incorrect."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Mật khẩu hiện tại không chính xác"),
+    ).not.toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(
+      await screen.findByText("Mật khẩu hiện tại không chính xác"),
+    ).toBeInTheDocument();
   });
 });

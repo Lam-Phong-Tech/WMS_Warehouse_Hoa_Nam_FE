@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { businessToday } from "@/shared/utils/date-time";
 import { parseDateTime } from "@/shared/utils/date-time";
 import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
@@ -37,22 +38,6 @@ import {
 } from "@/shared/constants/business-labels";
 import { rowActivationProps } from "@/shared/components/data-display/row-activation";
 import "./goods-trace-report.css";
-const sourceLabels = {
-  ...SOURCE_DOCUMENT_TYPE_LABELS,
-  INBOUND: "Phiếu nhập kho",
-  INBOUND_DOCUMENT: "Phiếu nhập kho",
-  OUTBOUND: "Phiếu xuất kho",
-  OUTBOUND_DOCUMENT: "Phiếu xuất kho",
-  PUTAWAY: "Phiếu xếp khay",
-  LABEL: "In nhãn",
-  WARRANTY: "Bảo hành",
-  REVERSAL_DOCUMENT: "Phiếu đảo",
-  RECEIPT_DOCUMENT: "Phiếu nhập kho",
-  ISSUE_DOCUMENT: "Phiếu xuất kho",
-  LABEL_PRINT: "In nhãn",
-};
-const sourceLabel = (value: string) =>
-  enumLabelOrText(sourceLabels, value) || "—";
 const empty = "—";
 const text = (value: unknown) =>
   value === null || value === undefined || value === "" ? empty : String(value);
@@ -74,14 +59,6 @@ const netDelta = (events: GoodsTraceEvent[]): number | null =>
   events.some((e) => isStockEvent(e) && e.qty_delta == null)
     ? null
     : events.reduce((sum, e) => sum + (e.qty_delta ?? 0), 0);
-const codeTypes = [
-  ["all", "Tất cả"],
-  ["serial", "Serial"],
-  ["box", "BOX"],
-  ["tray", "TRAY"],
-  ["document", "Chứng từ"],
-  ["sku", "SKU"],
-];
 function Panel({
   title,
   children,
@@ -111,6 +88,32 @@ function Facts({ rows }: { rows: [string, ReactNode][] }) {
   );
 }
 export default function GoodsTraceReport() {
+  const tUi = useT();
+  const sourceLabels = {
+    ...SOURCE_DOCUMENT_TYPE_LABELS,
+    INBOUND: tUi("goodsTraceAudit.inboundDocument"),
+    INBOUND_DOCUMENT: tUi("goodsTraceAudit.inboundDocument"),
+    OUTBOUND: tUi("goodsTraceAudit.outboundDocument"),
+    OUTBOUND_DOCUMENT: tUi("goodsTraceAudit.outboundDocument"),
+    PUTAWAY: tUi("goodsTraceAudit.putawayDocument"),
+    LABEL: tUi("goodsTraceAudit.labelPrinting"),
+    WARRANTY: tUi("goodsTraceAudit.warranty"),
+    REVERSAL_DOCUMENT: tUi("goodsTraceAudit.reversalDocument"),
+    RECEIPT_DOCUMENT: tUi("goodsTraceAudit.inboundDocument"),
+    ISSUE_DOCUMENT: tUi("goodsTraceAudit.outboundDocument"),
+    LABEL_PRINT: tUi("goodsTraceAudit.labelPrinting"),
+  };
+  const sourceLabel = (value: string) =>
+    enumLabelOrText(sourceLabels, value) || "—";
+  const codeTypes = [
+    ["all", tUi("goodsTraceAudit.all")],
+    ["serial", tUi("nfc.serial")],
+    ["box", "BOX"],
+    ["tray", "TRAY"],
+    ["document", tUi("goodsTraceAudit.document")],
+    ["sku", "SKU"],
+  ];
+
   useDateTimePreferences();
   const [query, setQuery] = useState<GoodsTraceQuery>({
     code_type: "all",
@@ -212,18 +215,25 @@ export default function GoodsTraceReport() {
   const queryInfo = (
     <Facts
       rows={[
-        ["Mã cần truy vết", text(activeProfile?.code || query.code)],
         [
-          "Loại mã",
-          codeTypes.find((x) => x[0] === query.code_type)?.[1] ?? "Tất cả",
+          tUi("goodsTraceAudit.traceCode"),
+          text(activeProfile?.code || query.code),
         ],
         [
-          "Khoảng ngày",
-          `${query.from_date ? dayjs(query.from_date).format("DD/MM/YYYY") : "Tất cả"} – ${query.to_date ? dayjs(query.to_date).format("DD/MM/YYYY") : "Tất cả"}`,
+          tUi("goodsTraceAudit.codeType"),
+          codeTypes.find((x) => x[0] === query.code_type)?.[1] ??
+            tUi("goodsTraceAudit.all"),
         ],
-        ["Loại hoạt động", query.activity_type || "Tất cả"],
-        ["Thời điểm cập nhật", time(data?.data_as_of ?? "")],
-        ["Nguồn dữ liệu", "Số liệu nghiệp vụ trong hệ thống Hoa Nam WMS"],
+        [
+          tUi("goodsTraceAudit.dateRange"),
+          `${query.from_date ? dayjs(query.from_date).format("DD/MM/YYYY") : tUi("goodsTraceAudit.all")} – ${query.to_date ? dayjs(query.to_date).format("DD/MM/YYYY") : tUi("goodsTraceAudit.all")}`,
+        ],
+        [
+          tUi("goodsTraceAudit.activityType"),
+          query.activity_type || tUi("goodsTraceAudit.all"),
+        ],
+        [tUi("goodsTraceAudit.updatedAt"), time(data?.data_as_of ?? "")],
+        [tUi("goodsTraceAudit.dataSource"), tUi("goodsTraceAudit.systemData")],
       ]}
     />
   );
@@ -325,7 +335,7 @@ export default function GoodsTraceReport() {
       );
       setExportOpen(false);
     } catch {
-      setExportError("Chưa thể xuất báo cáo. Vui lòng thử lại.");
+      setExportError(tUi("goodsTraceAudit.exportError"));
     } finally {
       setExporting(false);
     }
@@ -338,7 +348,7 @@ export default function GoodsTraceReport() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          Mở tra cứu tồn ↗
+          {tUi("uiAudit.text_eafb525542")}{" "}
         </a>
       </p>
       <div className="goods-trace-profile-title">
@@ -355,22 +365,30 @@ export default function GoodsTraceReport() {
           </p>
         </div>
         {profile && (
-          <button onClick={() => setProfile(null)}>← Trở lại kết quả</button>
+          <button onClick={() => setProfile(null)}>
+            {tUi("uiAudit.text_d204b5a47f")}
+          </button>
         )}
       </div>
       <div className="goods-trace-current">
         {[
           [
-            "Trạng thái hiện tại",
+            tUi("goodsTraceAudit.currentStatus"),
             enumLabelOrText(ITEM_STATUS_LABELS, activeProfile.current_status) ||
               empty,
           ],
-          ["Vị trí hiện tại", text(activeProfile.current_location)],
           [
-            "Số lượng trong kho",
+            tUi("goodsTraceAudit.currentLocation"),
+            text(activeProfile.current_location),
+          ],
+          [
+            tUi("goodsTraceAudit.stockQuantity"),
             `${number(activeProfile.current_quantity)} ${activeProfile.unit || ""}`,
           ],
-          ["Nguồn chứng từ", text(activeProfile.current_source_no)],
+          [
+            tUi("goodsTraceAudit.sourceDocument"),
+            text(activeProfile.current_source_no),
+          ],
         ].map(([label, value]) => (
           <div key={label}>
             <small>{label}</small>
@@ -379,8 +397,8 @@ export default function GoodsTraceReport() {
         ))}
       </div>
       <p className="goods-trace-note">
-        Trạng thái hiện tại tại {time(data?.data_as_of ?? "")}; độc lập với lịch
-        sử trong kỳ.
+        {tUi("uiAudit.text_a33e9e8dde")} {time(data?.data_as_of ?? "")}
+        {tUi("uiAudit.text_6297a32d85")}{" "}
       </p>
     </Panel>
   );
@@ -394,9 +412,11 @@ export default function GoodsTraceReport() {
   return (
     <div className="goods-trace-report">
       <header className="goods-trace-header">
-        <h1>Báo cáo Truy vết hàng hóa</h1>
+        <h1>{tUi("reports.traceability.title")}</h1>
         <div>
-          <small>Cập nhật: {time(data?.data_as_of ?? "")}</small>
+          <small>
+            {tUi("uiAudit.text_1f2d4d35a3")} {time(data?.data_as_of ?? "")}
+          </small>
           <button
             className="goods-trace-primary"
             disabled={
@@ -411,20 +431,20 @@ export default function GoodsTraceReport() {
               setExportOpen(true);
             }}
           >
-            ⇩ Xuất Excel
+            {tUi("uiAudit.text_1a619d4396")}{" "}
           </button>
         </div>
       </header>
       <div className="goods-trace-filters">
         <input
           ref={input}
-          aria-label="Mã cần truy vết"
-          placeholder="Tìm serial, mã BOX, TRAY, chứng từ hoặc SKU"
+          aria-label={tUi("uiAudit.text_de41a17406")}
+          placeholder={tUi("uiAudit.text_fa6e926d5a")}
           value={query.code ?? ""}
           onChange={(e) => update({ code: e.target.value || undefined })}
         />
         <select
-          aria-label="Loại mã"
+          aria-label={tUi("inventory.trace.fieldCodeType")}
           value={query.code_type}
           onChange={(e) =>
             update({
@@ -434,7 +454,7 @@ export default function GoodsTraceReport() {
         >
           {codeTypes.map(([value, label]) => (
             <option key={value} value={value}>
-              Loại mã: {label}
+              {tUi("uiAudit.text_3417fec764")} {label}
             </option>
           ))}
         </select>
@@ -452,68 +472,70 @@ export default function GoodsTraceReport() {
           }
         />
         <select
-          aria-label="Loại hoạt động"
+          aria-label={tUi("uiAudit.text_55cb99d3e5")}
           value={query.activity_type ?? ""}
           onChange={(e) =>
             update({ activity_type: e.target.value || undefined })
           }
         >
-          <option value="">Hoạt động: Tất cả</option>
+          <option value="">{tUi("uiAudit.text_ab28eea9c3")}</option>
           {Array.from(
             new Map(
               allEvents.map((e) => [e.event_type, e.event_label]),
             ).entries(),
           ).map(([value, label]) => (
             <option key={value} value={value}>
-              Hoạt động: {label}
+              {tUi("uiAudit.text_beed899a22")} {label}
             </option>
           ))}
         </select>
         <select
-          aria-label="Nguồn chứng từ"
+          aria-label={tUi("uiAudit.text_843900338f")}
           value={query.source ?? ""}
           onChange={(e) => update({ source: e.target.value || undefined })}
         >
-          <option value="">Nguồn: Tất cả</option>
+          <option value="">{tUi("uiAudit.text_d4767ab8d5")}</option>
           {Array.from(
             new Set(allEvents.map((e) => e.source_type).filter(Boolean)),
           ).map((value) => (
             <option key={value} value={value}>
-              Nguồn: {sourceLabel(value)}
+              {tUi("uiAudit.text_dcd2b5f785")} {sourceLabel(value)}
             </option>
           ))}
         </select>
         <select
-          aria-label="Người thực hiện"
+          aria-label={tUi("packingLabelReport.operator")}
           value={query.actor ?? ""}
           onChange={(e) => update({ actor: e.target.value || undefined })}
         >
-          <option value="">Người thực hiện: Tất cả</option>
+          <option value="">{tUi("uiAudit.text_0d63458be8")}</option>
           {Array.from(
             new Set(allEvents.map((e) => e.actor).filter(Boolean)),
           ).map((value) => (
             <option key={value} value={value}>
-              Người thực hiện: {value}
+              {tUi("uiAudit.text_f7aaa4d291")} {value}
             </option>
           ))}
         </select>
         <select
-          aria-label="Quan hệ"
+          aria-label={tUi("reports.movementTrace.relation")}
           value={query.relation ?? "all"}
           onChange={(e) =>
             update({ relation: e.target.value as GoodsTraceQuery["relation"] })
           }
         >
-          <option value="all">Quan hệ: Tất cả</option>
-          <option value="original">Quan hệ: Bút toán gốc</option>
-          <option value="reversal">Quan hệ: Bút toán đảo</option>
+          <option value="all">{tUi("uiAudit.text_fcc88705d6")}</option>
+          <option value="original">{tUi("uiAudit.text_f9b9712862")}</option>
+          <option value="reversal">{tUi("uiAudit.text_d34baeafc8")}</option>
         </select>
-        {filtered && <button onClick={reset}>Xóa lọc</button>}
+        {filtered && (
+          <button onClick={reset}>{tUi("dashboardAudit.clearFilters")}</button>
+        )}
       </div>
       {result.isPending || result.isFetching ? (
         <Panel>
           <div role="status" className="goods-trace-empty">
-            Đang tải lịch sử truy vết…
+            {tUi("uiAudit.text_4916506f3d")}{" "}
           </div>
         </Panel>
       ) : (
@@ -521,14 +543,14 @@ export default function GoodsTraceReport() {
           {data && !complete && (
             <div role="alert" className="goods-trace-warning">
               <div>
-                <strong>Lịch sử chưa đầy đủ</strong>
+                <strong>{tUi("uiAudit.text_cf4c899fdf")}</strong>
                 <p>
-                  Đã tải {data.loaded_count}/{data.total_count} sự kiện. Chưa
-                  thể tính do lịch sử chưa đầy đủ.
+                  {tUi("uiAudit.text_2a039e56cb")} {data.loaded_count}/
+                  {data.total_count} {tUi("uiAudit.text_6c0f233318")}{" "}
                 </p>
               </div>
               <button onClick={() => void result.refetch()}>
-                Tải lại phần còn thiếu
+                {tUi("uiAudit.text_4e21fb52a0")}{" "}
               </button>
             </div>
           )}
@@ -541,30 +563,30 @@ export default function GoodsTraceReport() {
           <div className="goods-trace-kpis">
             {[
               [
-                "Sự kiện",
+                tUi("goodsTraceAudit.events"),
                 result.isError
                   ? empty
                   : `${profileEvents.length}${!complete && data ? ` / ${data.total_count}` : ""}`,
-                "Tổng số sự kiện trong khoảng thời gian.",
+                tUi("goodsTraceAudit.eventCountHint"),
               ],
               [
-                "Mã liên quan",
+                tUi("goodsTraceAudit.relatedCodes"),
                 result.isError ? empty : codes,
-                "Số mã hàng có sự kiện trong kết quả.",
+                tUi("goodsTraceAudit.relatedCodesHint"),
               ],
               [
-                "Tác động tồn",
+                tUi("goodsTraceAudit.stockImpact"),
                 result.isError ? empty : stockCount,
-                "Số sự kiện làm thay đổi tồn kho.",
+                tUi("goodsTraceAudit.stockImpactHint"),
               ],
               [
-                "Ảnh hưởng thuần",
+                tUi("goodsTraceAudit.netImpact"),
                 complete && !result.isError ? delta(net) : empty,
                 complete
                   ? net == null
-                    ? "Chưa xác định biến động theo mã; xem sổ kho nguồn trong chi tiết."
-                    : "Chênh lệch tồn kho sau cùng trong kỳ."
-                  : "Chưa thể tính do lịch sử chưa đầy đủ.",
+                    ? tUi("goodsTraceAudit.unknownCodeMovement")
+                    : tUi("goodsTraceAudit.netImpactHint")
+                  : tUi("goodsTraceAudit.incompleteHistory"),
               ],
             ].map(([label, value, description], i) => (
               <Panel key={String(label)}>
@@ -595,8 +617,10 @@ export default function GoodsTraceReport() {
                     ["box", "tray"].includes(
                       activeProfile.code_type.toLowerCase(),
                     )
-                      ? "Dấu vết vị trí"
-                      : `Lịch sử truy vết (${rows.length} sự kiện)`}
+                      ? tUi("goodsTraceAudit.locationHistory")
+                      : tUi("goodsTraceAudit.historyTitle", {
+                          count: rows.length,
+                        })}
                   </h2>
                   <label className="goods-trace-toggle">
                     <input
@@ -607,19 +631,19 @@ export default function GoodsTraceReport() {
                         setPage(1);
                       }}
                     />
-                    Chỉ sự kiện tác động tồn
+                    {tUi("uiAudit.text_2051b8acd9")}{" "}
                   </label>
                 </div>
                 {activeProfile && (
                   <div
                     className="goods-trace-tabs"
                     role="tablist"
-                    aria-label="Hồ sơ mã"
+                    aria-label={tUi("uiAudit.text_0ec742814e")}
                   >
                     {[
-                      ["timeline", "Dòng thời gian"],
-                      ["documents", "Chứng từ liên quan"],
-                      ["packing", "Vị trí & đóng gói"],
+                      ["timeline", tUi("goodsTraceAudit.timeline")],
+                      ["documents", tUi("goodsTraceAudit.relatedDocuments")],
+                      ["packing", tUi("goodsTraceAudit.locationPacking")],
                     ].map(([value, label]) => (
                       <button
                         role="tab"
@@ -637,15 +661,17 @@ export default function GoodsTraceReport() {
                     <span className="goods-trace-symbol">
                       <WarningOutlined />
                     </span>
-                    <h2>Chưa thể tải lịch sử truy vết</h2>
-                    <p>Bộ lọc của bạn được giữ nguyên. Vui lòng thử lại.</p>
+                    <h2>{tUi("uiAudit.text_d05006dd97")}</h2>
+                    <p>{tUi("uiAudit.text_12a85f5ae7")}</p>
                     <button
                       className="goods-trace-primary"
                       onClick={() => void result.refetch()}
                     >
-                      Thử lại
+                      {tUi("dashboardAudit.retry")}{" "}
                     </button>
-                    <button onClick={reset}>Đặt lại bộ lọc</button>
+                    <button onClick={reset}>
+                      {tUi("updatedUi.text_49ced19e7f1d")}
+                    </button>
                   </div>
                 ) : !rows.length ? (
                   <div className="goods-trace-empty">
@@ -654,15 +680,15 @@ export default function GoodsTraceReport() {
                     </span>
                     <h2>
                       {data?.resolved === false
-                        ? "Không tìm thấy mã trong phạm vi được phép"
+                        ? tUi("goodsTraceAudit.codeNotFound")
                         : data?.resolved === true
-                          ? "Chưa có sự kiện trong khoảng thời gian đã chọn"
-                          : "Chưa có sự kiện phù hợp"}
+                          ? tUi("goodsTraceAudit.noPeriodEvents")
+                          : tUi("goodsTraceAudit.noMatchingEvents")}
                     </h2>
                     <p>
                       {data?.resolved === false
-                        ? "Kiểm tra ký tự hoặc thay đổi loại mã."
-                        : "Không có sự kiện phù hợp với bộ lọc hiện tại. Lịch sử trong kỳ không thay thế trạng thái hiện tại."}
+                        ? tUi("goodsTraceAudit.checkCode")
+                        : tUi("goodsTraceAudit.noMatchingEventsHint")}
                     </p>
                     <button
                       className="goods-trace-primary"
@@ -673,8 +699,8 @@ export default function GoodsTraceReport() {
                       }
                     >
                       {data?.resolved === false
-                        ? "Nhập lại mã"
-                        : "Mở rộng thời gian"}
+                        ? tUi("goodsTraceAudit.reenterCode")
+                        : tUi("goodsTraceAudit.expandPeriod")}
                     </button>
                     {data?.entities[0] && (
                       <button
@@ -683,7 +709,7 @@ export default function GoodsTraceReport() {
                           setTab("timeline");
                         }}
                       >
-                        Mở hồ sơ mã
+                        {tUi("uiAudit.text_6464f3cfee")}{" "}
                       </button>
                     )}
                   </div>
@@ -691,10 +717,16 @@ export default function GoodsTraceReport() {
                   <>
                     <Facts
                       rows={[
-                        ["Mã cha", text(activeProfile.parent_code)],
-                        ["Loại mã cha", text(activeProfile.parent_type)],
                         [
-                          "Vị trí hiện tại",
+                          tUi("goodsTraceAudit.parentCode"),
+                          text(activeProfile.parent_code),
+                        ],
+                        [
+                          tUi("goodsTraceAudit.parentCodeType"),
+                          text(activeProfile.parent_type),
+                        ],
+                        [
+                          tUi("goodsTraceAudit.currentLocation"),
                           text(activeProfile.current_location),
                         ],
                       ]}
@@ -712,10 +744,10 @@ export default function GoodsTraceReport() {
                         </div>
                       ))
                     ) : (
-                      <p>Chưa có thông tin quan hệ đóng gói.</p>
+                      <p>{tUi("uiAudit.text_7706e42b7e")}</p>
                     )}
                     <p className="goods-trace-note">
-                      Xếp khay chỉ thay đổi vị trí, không tự tạo nhập/xuất tồn.
+                      {tUi("uiAudit.text_0bf4fd5247")}{" "}
                     </p>
                   </>
                 ) : activeProfile && tab === "documents" ? (
@@ -758,12 +790,14 @@ export default function GoodsTraceReport() {
                         </colgroup>
                         <thead>
                           <tr>
-                            <th>Thời điểm ↓</th>
-                            <th>Mã hàng – SKU</th>
-                            <th>Sự kiện – Chứng từ</th>
-                            <th>Vị trí</th>
-                            <th>Δ tồn</th>
-                            <th aria-label="Mở chi tiết" />
+                            <th>{tUi("uiAudit.text_5832331aa5")}</th>
+                            <th>{tUi("uiAudit.text_2dcb4a61ef")}</th>
+                            <th>{tUi("uiAudit.text_5a2201ba98")}</th>
+                            <th>
+                              {tUi("inventory.balance.colSuggestedLocation")}
+                            </th>
+                            <th>{tUi("uiAudit.text_f96e5063a1")}</th>
+                            <th aria-label={tUi("uiAudit.text_8bcb230922")} />
                           </tr>
                         </thead>
                         <tbody>
@@ -809,7 +843,10 @@ export default function GoodsTraceReport() {
                               <td>
                                 {text(e.location_before)} →{" "}
                                 {text(e.location_after)}
-                                <small>Số lượng: {number(e.quantity)}</small>
+                                <small>
+                                  {tUi("uiAudit.text_0433ae9901")}{" "}
+                                  {number(e.quantity)}
+                                </small>
                               </td>
                               <td
                                 className={
@@ -825,7 +862,10 @@ export default function GoodsTraceReport() {
                               <td>
                                 <button
                                   className="goods-trace-arrow"
-                                  aria-label={`Chi tiết sự kiện ${e.code} ${e.event_label}`}
+                                  aria-label={tUi(
+                                    "goodsTraceAudit.eventDetailsAria",
+                                    { code: e.code, event: e.event_label },
+                                  )}
                                   onClick={() => setSelected(e)}
                                 >
                                   →
@@ -838,16 +878,17 @@ export default function GoodsTraceReport() {
                     </div>
                     <footer className="goods-trace-pagination">
                       <div>
-                        Hiển thị {(page - 1) * pageSize + 1}–
+                        {tUi("dashboardAudit.showing")}{" "}
+                        {(page - 1) * pageSize + 1}–
                         {Math.min(page * pageSize, rows.length)} / {rows.length}{" "}
-                        sự kiện{" "}
+                        {tUi("uiAudit.text_d167eae269")}{" "}
                         <UiSelect
-                          aria-label="Số dòng mỗi trang"
+                          aria-label={tUi("dashboardAudit.pageSize")}
                           value={pageSize}
                           minWidth={FILTER_WIDTH.pageSize}
                           options={[10, 25, 50].map((n) => ({
                             value: n,
-                            label: `${n} / trang`,
+                            label: tUi("goodsTraceAudit.pageSize", { size: n }),
                           }))}
                           onChange={(value) => {
                             setPageSize(Number(value));
@@ -857,7 +898,7 @@ export default function GoodsTraceReport() {
                       </div>
                       <div>
                         <button
-                          aria-label="Trang trước"
+                          aria-label={tUi("packingLabelReport.previousPage")}
                           disabled={page === 1}
                           onClick={() => setPage((p) => p - 1)}
                         >
@@ -865,7 +906,7 @@ export default function GoodsTraceReport() {
                         </button>
                         <span>{page}</span>
                         <button
-                          aria-label="Trang sau"
+                          aria-label={tUi("goodsTraceAudit.nextPage")}
                           disabled={page * pageSize >= rows.length}
                           onClick={() => setPage((p) => p + 1)}
                         >
@@ -884,8 +925,8 @@ export default function GoodsTraceReport() {
                   ["box", "tray"].includes(
                     activeProfile.code_type.toLowerCase(),
                   )
-                    ? "Quan hệ BOX – TRAY"
-                    : "Đọc đúng dấu vết"
+                    ? tUi("goodsTraceAudit.boxTrayRelations")
+                    : tUi("goodsTraceAudit.readingHistory")
                 }
               >
                 {activeProfile &&
@@ -894,8 +935,9 @@ export default function GoodsTraceReport() {
                 ) ? (
                   <>
                     <p className="goods-trace-note">
-                      Đang xem {activeProfile.code_type.toUpperCase()} được
-                      chọn; quan hệ trong phạm vi dữ liệu được phép.
+                      {tUi("uiAudit.text_22e44ee558")}{" "}
+                      {activeProfile.code_type.toUpperCase()}{" "}
+                      {tUi("uiAudit.text_74c012f92e")}{" "}
                     </p>
                     {relations.map((r, i) => (
                       <div className="goods-trace-relation" key={i}>
@@ -909,35 +951,31 @@ export default function GoodsTraceReport() {
                       </div>
                     ))}
                     {!relations.length && (
-                      <p>Chưa có thông tin quan hệ đóng gói.</p>
+                      <p>{tUi("uiAudit.text_7706e42b7e")}</p>
                     )}
                   </>
                 ) : (
                   <>
                     <Facts
                       rows={[
-                        ["Sự kiện tác động tồn", stockCount],
+                        [tUi("goodsTraceAudit.stockEvents"), stockCount],
                         [
-                          "Sự kiện không đổi tồn",
+                          tUi("goodsTraceAudit.nonStockEvents"),
                           profileEvents.length - stockCount,
                         ],
-                        ["Mã liên quan", codes],
+                        [tUi("goodsTraceAudit.relatedCodes"), codes],
                       ]}
                     />
                     <p className="goods-trace-note">
-                      In nhãn, xếp khay và tiếp nhận bảo hành không tự làm thay
-                      đổi tồn kho. Lịch sử trong kỳ không thay thế số dư đầu kỳ.
+                      {tUi("uiAudit.text_bbafb09655")}{" "}
                     </p>
                     {data?.resolved === false && (
-                      <p>
-                        Nhập serial, mã BOX, TRAY hoặc chứng từ; chọn loại mã và
-                        khoảng ngày để thu hẹp kết quả.
-                      </p>
+                      <p>{tUi("uiAudit.text_78351a6c7a")} </p>
                     )}
                   </>
                 )}
               </Panel>
-              <Panel title="Thông tin truy vấn">{queryInfo}</Panel>
+              <Panel title={tUi("uiAudit.text_8de8564851")}>{queryInfo}</Panel>
             </aside>
           </div>
         </>
@@ -952,15 +990,15 @@ export default function GoodsTraceReport() {
         {selected && (
           <div className="goods-trace-report">
             <div className="goods-trace-section-heading">
-              <h2>Chi tiết sự kiện</h2>
+              <h2>{tUi("uiAudit.text_764eeb6c55")}</h2>
               <button
-                aria-label="Đóng chi tiết sự kiện"
+                aria-label={tUi("uiAudit.text_18b9dbf700")}
                 onClick={() => setSelected(null)}
               >
                 ×
               </button>
             </div>
-            <Panel title="Thông tin mã hàng / thiết bị">
+            <Panel title={tUi("uiAudit.text_28dfc7cb81")}>
               <h2>
                 {text(selected.code)} / {text(selected.sku_code)}
               </h2>
@@ -972,43 +1010,63 @@ export default function GoodsTraceReport() {
               <h3>{selected.event_label}</h3>
               <div className="goods-trace-current">
                 <div>
-                  <small>Tồn trước → Tồn sau</small>
+                  <small>{tUi("uiAudit.text_b20c8a1783")}</small>
                   <strong>
                     {number(selected.qty_before)} → {number(selected.qty_after)}
                   </strong>
                 </div>
                 <div>
-                  <small>Biến động</small>
+                  <small>{tUi("inventory.detail.movementsTab")}</small>
                   <strong>{delta(selected.qty_delta)}</strong>
                 </div>
               </div>
               <p className="goods-trace-note">
-                Số dư và biến động theo mã đang xem; số liệu chưa xác định hiển
-                thị —. Biến động sổ kho nguồn là số lượng theo SKU.
+                {tUi("uiAudit.text_0f0235e90c")}{" "}
               </p>
               <Facts
                 rows={[
-                  ["Thời điểm nghiệp vụ", time(selected.occurred_at)],
-                  ["Thời điểm ghi nhận", time(selected.recorded_at)],
-                  ["Thời điểm dữ liệu", time(data?.data_as_of ?? "")],
-                  ["Người ghi sổ", text(selected.actor)],
-                  ["Kho", text(selected.warehouse_code)],
-                  ["Vị trí trước", text(selected.location_before)],
-                  ["Vị trí sau", text(selected.location_after)],
+                  [
+                    tUi("goodsTraceAudit.businessTime"),
+                    time(selected.occurred_at),
+                  ],
+                  [
+                    tUi("goodsTraceAudit.recordedAt"),
+                    time(selected.recorded_at),
+                  ],
+                  [
+                    tUi("goodsTraceAudit.dataAsOf"),
+                    time(data?.data_as_of ?? ""),
+                  ],
+                  [tUi("goodsTraceAudit.postedBy"), text(selected.actor)],
+                  [
+                    tUi("goodsTraceAudit.warehouse"),
+                    text(selected.warehouse_code),
+                  ],
+                  [
+                    tUi("goodsTraceAudit.locationBefore"),
+                    text(selected.location_before),
+                  ],
+                  [
+                    tUi("goodsTraceAudit.locationAfter"),
+                    text(selected.location_after),
+                  ],
                 ]}
               />
             </Panel>
-            <Panel title="Nguồn chứng từ">
+            <Panel title={tUi("uiAudit.text_843900338f")}>
               <h3>{text(selected.source_no)}</h3>
               <Facts
                 rows={[
                   [
-                    "Tổng số lượng trên phiếu",
+                    tUi("goodsTraceAudit.documentQuantity"),
                     number(selected.source_quantity),
                   ],
-                  ["Số lượng mã đang xem", number(selected.entity_quantity)],
                   [
-                    "Biến động sổ kho nguồn (SKU)",
+                    tUi("goodsTraceAudit.codeQuantity"),
+                    number(selected.entity_quantity),
+                  ],
+                  [
+                    tUi("goodsTraceAudit.sourceLedgerMovement"),
                     delta(selected.source_qty_delta),
                   ],
                 ]}
@@ -1018,10 +1076,10 @@ export default function GoodsTraceReport() {
                 className="goods-trace-primary"
                 onClick={() => openSource(selected)}
               >
-                Mở chứng từ nguồn
+                {tUi("uiAudit.text_533327bb2f")}{" "}
               </button>
             </Panel>
-            <Panel title="Chứng từ liên quan">
+            <Panel title={tUi("uiAudit.text_e905e60169")}>
               {selected.related_documents.length ? (
                 selected.related_documents.map((d) => (
                   <button
@@ -1040,7 +1098,7 @@ export default function GoodsTraceReport() {
                   </button>
                 ))
               ) : (
-                <p>Chưa có chứng từ liên quan.</p>
+                <p>{tUi("uiAudit.text_8c6aea7580")}</p>
               )}
             </Panel>
           </div>
@@ -1084,9 +1142,9 @@ export default function GoodsTraceReport() {
           >
             <div className="goods-trace-report">
               <div className="goods-trace-section-heading">
-                <h2>Thông tin chứng từ nguồn</h2>
+                <h2>{tUi("uiAudit.text_375353f3a4")}</h2>
                 <button
-                  aria-label="Đóng thông tin nguồn"
+                  aria-label={tUi("uiAudit.text_4125f99c97")}
                   onClick={() => setSourceTrace(null)}
                 >
                   ×
@@ -1095,18 +1153,33 @@ export default function GoodsTraceReport() {
               <Panel title={sourceTrace.source_no}>
                 <Facts
                   rows={[
-                    ["Loại chứng từ", sourceLabel(sourceTrace.source_type)],
-                    ["Sự kiện", sourceTrace.event_label],
-                    ["Thời điểm", time(sourceTrace.occurred_at)],
-                    ["Người thực hiện", text(sourceTrace.actor)],
-                    ["Số lượng nguồn", number(sourceTrace.source_quantity)],
-                    ["Mã hàng", text(sourceTrace.code)],
-                    ["Vị trí trước", text(sourceTrace.location_before)],
-                    ["Vị trí sau", text(sourceTrace.location_after)],
+                    [
+                      tUi("goodsTraceAudit.documentType"),
+                      sourceLabel(sourceTrace.source_type),
+                    ],
+                    [tUi("goodsTraceAudit.events"), sourceTrace.event_label],
+                    [
+                      tUi("goodsTraceAudit.eventTime"),
+                      time(sourceTrace.occurred_at),
+                    ],
+                    [tUi("goodsTraceAudit.actor"), text(sourceTrace.actor)],
+                    [
+                      tUi("goodsTraceAudit.sourceQuantity"),
+                      number(sourceTrace.source_quantity),
+                    ],
+                    [tUi("goodsTraceAudit.itemCode"), text(sourceTrace.code)],
+                    [
+                      tUi("goodsTraceAudit.locationBefore"),
+                      text(sourceTrace.location_before),
+                    ],
+                    [
+                      tUi("goodsTraceAudit.locationAfter"),
+                      text(sourceTrace.location_after),
+                    ],
                   ]}
                 />
                 <p className="goods-trace-note">
-                  Thông tin nguồn được ghi nhận trong lịch sử truy vết.
+                  {tUi("uiAudit.text_fd3d37e8c1")}{" "}
                 </p>
                 {goodsTraceSourcePath(
                   sourceTrace.source_type,
@@ -1121,7 +1194,7 @@ export default function GoodsTraceReport() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Mở chứng từ nguồn ↗
+                      {tUi("uiAudit.text_8e66a42b0f")}{" "}
                     </a>
                   </p>
                 )}
@@ -1137,18 +1210,20 @@ export default function GoodsTraceReport() {
         >
           <div className="goods-trace-report">
             <div className="goods-trace-section-heading">
-              <h2 id="goods-trace-export-title">Xuất báo cáo truy vết</h2>
+              <h2 id="goods-trace-export-title">
+                {tUi("uiAudit.text_0dc0205800")}
+              </h2>
               <button
                 className="modal-close"
-                aria-label="Đóng xuất báo cáo"
+                aria-label={tUi("uiAudit.text_7996ac5301")}
                 onClick={() => setExportOpen(false)}
               >
                 ×
               </button>
             </div>
-            <p>Giữ nguyên bộ lọc và phạm vi truy vết.</p>
+            <p>{tUi("uiAudit.text_8072b40a51")}</p>
             <fieldset>
-              <legend>Phạm vi xuất</legend>
+              <legend>{tUi("uiAudit.text_e6a526455b")}</legend>
               <label>
                 <input
                   type="radio"
@@ -1156,7 +1231,8 @@ export default function GoodsTraceReport() {
                   checked={!exportStock}
                   onChange={() => setExportStock(false)}
                 />
-                Toàn bộ kết quả đang hiển thị ({rows.length} sự kiện)
+                {tUi("uiAudit.text_984d3447fc")}
+                {rows.length} {tUi("uiAudit.text_a0dee7f4d3")}{" "}
               </label>
               <label>
                 <input
@@ -1165,18 +1241,19 @@ export default function GoodsTraceReport() {
                   checked={exportStock}
                   onChange={() => setExportStock(true)}
                 />
-                Chỉ sự kiện tác động tồn ({rows.filter(isStockEvent).length} sự
-                kiện)
+                {tUi("uiAudit.text_4c7841feb8")}
+                {rows.filter(isStockEvent).length}{" "}
+                {tUi("uiAudit.text_a0dee7f4d3")}{" "}
               </label>
             </fieldset>
             <div className="goods-trace-export-grid">
-              <Panel title="Thông tin truy vấn">{queryInfo}</Panel>
-              <Panel title="Nội dung xuất">
+              <Panel title={tUi("uiAudit.text_8de8564851")}>{queryInfo}</Panel>
+              <Panel title={tUi("uiAudit.text_b2306f86eb")}>
                 {(
                   [
-                    ["events", "Danh sách sự kiện"],
-                    ["documents", "Liên kết chứng từ"],
-                    ["relations", "Quan hệ BOX – TRAY"],
+                    ["events", tUi("goodsTraceAudit.eventList")],
+                    ["documents", tUi("goodsTraceAudit.documentLinks")],
+                    ["relations", tUi("goodsTraceAudit.boxTrayRelations")],
                   ] as const
                 ).map(([key, label]) => (
                   <label key={key}>
@@ -1192,16 +1269,19 @@ export default function GoodsTraceReport() {
                 ))}
               </Panel>
             </div>
-            <Panel title="Tóm tắt kết quả xuất">
+            <Panel title={tUi("uiAudit.text_7c313faa2c")}>
               <Facts
                 rows={[
                   [
-                    "Sự kiện",
+                    tUi("goodsTraceAudit.events"),
                     rows.filter((e) => !exportStock || isStockEvent(e)).length,
                   ],
-                  ["Tác động tồn", rows.filter(isStockEvent).length],
                   [
-                    "Ảnh hưởng thuần",
+                    tUi("goodsTraceAudit.stockImpact"),
+                    rows.filter(isStockEvent).length,
+                  ],
+                  [
+                    tUi("goodsTraceAudit.netImpact"),
                     complete
                       ? delta(
                           netDelta(
@@ -1214,24 +1294,24 @@ export default function GoodsTraceReport() {
               />
             </Panel>
             <p className="goods-trace-note">
-              Chỉ xuất dữ liệu trong phạm vi quyền truy cập và bộ lọc hiện tại.
+              {tUi("uiAudit.text_6821e27f32")}{" "}
             </p>
             <label>
-              Tên file
+              {tUi("uiAudit.text_464dd74f34")}{" "}
               <input
-                aria-label="Tên file"
+                aria-label={tUi("uiAudit.text_464dd74f34")}
                 value={filename}
                 onChange={(e) => setFilename(e.target.value)}
               />
             </label>
-            <p>Định dạng: Excel (.xlsx)</p>
+            <p>{tUi("uiAudit.text_b60107ae24")}</p>
             {exportError && <p role="alert">{exportError}</p>}
             <footer>
               <button
                 className="goods-trace-cancel"
                 onClick={() => setExportOpen(false)}
               >
-                Hủy
+                {tUi("packingLabelReport.cancel")}{" "}
               </button>
               <button
                 className="goods-trace-primary"
@@ -1244,7 +1324,9 @@ export default function GoodsTraceReport() {
                 }
                 onClick={() => void exportFile()}
               >
-                {exporting ? "Đang xuất…" : "Xuất Excel"}
+                {exporting
+                  ? tUi("goodsTraceAudit.exporting")
+                  : tUi("goodsTraceAudit.exportExcel")}
               </button>
             </footer>
           </div>

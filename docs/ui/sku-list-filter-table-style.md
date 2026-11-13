@@ -44,6 +44,7 @@ Chỉ áp dụng màu và khoảng cách trên cho phần danh sách. Mỗi tab 
 
 - Chân bảng có viền trên `1px solid --ops-line` và đệm `14px 16px`.
 - Thông tin `Hiển thị ...` và ô chọn số dòng/trang nằm trong cùng một nhóm bên trái, cách nhau `14px`; các nút chuyển trang nằm bên phải.
+- Ô chọn số dòng hiển thị **`N / trang`** ngay trong ô (ví dụ `10 / trang`, tiếng Anh `10 / page`) như Danh sách SKU; không đặt thêm nhãn `Số dòng/trang` bên ngoài và không chỉ hiển thị số trần. Dùng `UiSelect` và bản dịch `shared.table.perPage`; giữ tên truy cập qua `aria-label` (`shared.table.rowsPerPageAria`). Áp dụng cả bảng báo cáo, giữ nguyên các mức số dòng và hành vi đổi trang của từng màn.
 - Nhóm bên trái được phép xuống dòng khi hẹp; điều hướng vẫn tự dồn về phải.
 
 ### Đồng bộ dữ liệu nghiệp vụ

@@ -1,3 +1,4 @@
+import { tStatic } from "@/shared/i18n/useT";
 import { z } from "zod";
 import { http } from "@/shared/api/http";
 import { requiredApiVersion } from "@/shared/api/api-read-values";
@@ -60,7 +61,7 @@ function readSupplier(value: unknown): Supplier {
   if (!result.success)
     throw new WmsContractError(
       "SUPPLIER_RESPONSE_INVALID",
-      "Dữ liệu nhà cung cấp chưa đầy đủ. Vui lòng tải lại để kiểm tra.",
+      tStatic("dashboardAudit.supplierInvalid"),
     );
   return result.data;
 }
@@ -76,7 +77,7 @@ export async function listSuppliers(
   if (!result.success)
     throw new WmsContractError(
       "SUPPLIER_PAGE_INVALID",
-      "Dữ liệu danh sách nhà cung cấp chưa đầy đủ. Vui lòng thử lại.",
+      tStatic("dashboardAudit.supplierPageInvalid"),
     );
   const { data, meta } = result.data;
   return {

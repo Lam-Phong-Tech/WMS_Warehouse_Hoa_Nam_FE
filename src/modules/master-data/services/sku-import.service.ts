@@ -4,8 +4,11 @@ import { http } from "@/shared/api/http";
 import { ApiEnvelopeError } from "@/shared/types/api-response";
 import { WmsContractError } from "@/shared/api/wms-contract";
 import {
-  nullableApiNumber, requiredApiBoolean, requiredApiIdentity,
-  requiredApiNumber, requiredApiRows,
+  nullableApiNumber,
+  requiredApiBoolean,
+  requiredApiIdentity,
+  requiredApiNumber,
+  requiredApiRows,
 } from "@/shared/api/api-read-values";
 import { sha256OfFile } from "@/shared/utils/file-digest";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -50,8 +53,11 @@ function errorCodeOf(error: unknown): string {
     const code = (nested as RawRecord).code;
     if (typeof code === "string" && code !== "") return code;
   }
-  return typeof body.error_code === "string" ? body.error_code
-    : typeof body.code === "string" ? body.code : "";
+  return typeof body.error_code === "string"
+    ? body.error_code
+    : typeof body.code === "string"
+      ? body.code
+      : "";
 }
 function text(value: unknown, fallback = ""): string {
   return value === undefined || value === null ? fallback : String(value);
@@ -61,7 +67,7 @@ function count(value: unknown, field: string): number {
   if (!Number.isSafeInteger(result) || result < 0) {
     throw new WmsContractError(
       "WMS_FE_INVALID_IMPORT_RESULT",
-      `Số liệu nhập SKU không hợp lệ (${field}). Vui lòng kiểm tra lại kết quả từ máy chủ.`,
+      tStatic("dashboardAudit.skuImportInvalid", { field }),
     );
   }
   return result;
@@ -150,26 +156,46 @@ export function normalizeSkuImportConstraints(
   };
 }
 export interface SkuImportRowError {
-  row: number; code: string; field: string; message: string; value: unknown;
+  row: number;
+  code: string;
+  field: string;
+  message: string;
+  value: unknown;
 }
 export interface SkuImportResult {
-  templateVersion: string; transactionMode: string;
-  dryRun: boolean; committed: boolean; partialWrite: boolean; duplicate: boolean;
+  templateVersion: string;
+  transactionMode: string;
+  dryRun: boolean;
+  committed: boolean;
+  partialWrite: boolean;
+  duplicate: boolean;
   duplicateOfImportReportId: string | null;
-  updateExisting: boolean; optionsFingerprint: string | null;
+  updateExisting: boolean;
+  optionsFingerprint: string | null;
   constraints: SkuImportConstraints | null;
-  fileSha256: string; headerMap: Record<string, number>;
-  totalRows: number; validRows: number; errorRows: number;
-  insertedRows: number; updatedRows: number;
-  wouldInsertRows: number; wouldUpdateRows: number; skippedRows: number;
-  rowErrors: SkuImportRowError[]; importReportId: string | null;
-  errorFileAvailable: boolean; errorFileExpiresAt: string | null;
+  fileSha256: string;
+  headerMap: Record<string, number>;
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  insertedRows: number;
+  updatedRows: number;
+  wouldInsertRows: number;
+  wouldUpdateRows: number;
+  skippedRows: number;
+  rowErrors: SkuImportRowError[];
+  importReportId: string | null;
+  errorFileAvailable: boolean;
+  errorFileExpiresAt: string | null;
 }
 function normalizeRowError(raw: unknown): SkuImportRowError {
   const row = (raw ?? {}) as RawRecord;
   return {
-    row: count(row.row, "row"), code: text(row.code), field: text(row.field),
-    message: text(row.message), value: row.value,
+    row: count(row.row, "row"),
+    code: text(row.code),
+    field: text(row.field),
+    message: text(row.message),
+    value: row.value,
   };
 }
 export function normalizeSkuImportResult(payload: RawRecord): SkuImportResult {
@@ -351,9 +377,7 @@ export class SkuImportOutcomeUnknownError extends Error {
   readonly cause: unknown;
   readonly importReportId: string | null;
   constructor(cause: unknown, importReportId: string | null = null) {
-    super(
-      "Chưa xác định được kết quả nhập SKU. Yêu cầu đã gửi; hãy kiểm tra lịch sử nhập trước khi thực hiện lại.",
-    );
+    super(tStatic("dashboardAudit.skuImportUnknown"));
     this.name = "SkuImportOutcomeUnknownError";
     this.cause = cause;
     this.importReportId = importReportId;
@@ -374,18 +398,26 @@ function pendingReport(key: string): string | null | undefined {
   try {
     const stored = window.sessionStorage.getItem(pendingPrefix + key);
     if (stored !== null) return stored || null;
-  } catch { /* In-memory protection remains active when storage is unavailable. */ }
+  } catch {
+    /* In-memory protection remains active when storage is unavailable. */
+  }
   return undefined;
 }
 function markUnknown(key: string, reportId: string | null) {
   unknownImports.set(key, reportId);
-  try { window.sessionStorage.setItem(pendingPrefix + key, reportId ?? ""); }
-  catch { /* Keep in-memory evidence. */ }
+  try {
+    window.sessionStorage.setItem(pendingPrefix + key, reportId ?? "");
+  } catch {
+    /* Keep in-memory evidence. */
+  }
 }
 function clearUnknown(key: string) {
   unknownImports.delete(key);
-  try { window.sessionStorage.removeItem(pendingPrefix + key); }
-  catch { /* No effect on server state. */ }
+  try {
+    window.sessionStorage.removeItem(pendingPrefix + key);
+  } catch {
+    /* No effect on server state. */
+  }
 }
 export async function importSkuExcel(
   file: File,
@@ -543,15 +575,31 @@ export async function downloadSkuImportTemplate(): Promise<{
   return http.downloadFile(API_ENDPOINTS.SKU_IMPORT_TEMPLATE);
 }
 export interface SkuImportReportListParams {
-  page?: number; per_page?: number; mode?: "DRY_RUN" | "COMMIT";
-  status?: "VALID" | "REJECTED" | "COMMITTED"; file_sha256?: string;
+  page?: number;
+  per_page?: number;
+  mode?: "DRY_RUN" | "COMMIT";
+  status?: "VALID" | "REJECTED" | "COMMITTED";
+  file_sha256?: string;
 }
 export interface SkuImportReportRecord {
-  id: string; importType: string; mode: string; status: string;
-  fileName: string | null; fileSha256: string; templateVersion: string | null;
-  totalRows: number; validRows: number; errorRows: number; insertedRows: number; updatedRows: number;
-  rowErrors: SkuImportRowError[]; errorFileAvailable: boolean; errorFileExpiresAt: string | null;
-  duplicateOfReplay: boolean; optionsFingerprint: string | null; createdAt: string | null;
+  id: string;
+  importType: string;
+  mode: string;
+  status: string;
+  fileName: string | null;
+  fileSha256: string;
+  templateVersion: string | null;
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  insertedRows: number;
+  updatedRows: number;
+  rowErrors: SkuImportRowError[];
+  errorFileAvailable: boolean;
+  errorFileExpiresAt: string | null;
+  duplicateOfReplay: boolean;
+  optionsFingerprint: string | null;
+  createdAt: string | null;
 }
 export function normalizeSkuImportReport(
   raw: RawRecord,

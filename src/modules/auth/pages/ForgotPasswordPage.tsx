@@ -1,3 +1,4 @@
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -95,6 +96,42 @@ export function ForgotPasswordPage() {
     resolver: zodResolver(passwordSchema),
     defaultValues: { newPassword: "", newPasswordConfirmation: "" },
   });
+  useEffect(() => {
+    // Revalidate only errors already shown; retain server messages from their raw source.
+    for (const field of ["email"] as const) {
+      const error = emailForm.getFieldState(field).error;
+      if (error?.type === "server" && failure?.fields.email)
+        emailForm.setError(field, {
+          type: "server",
+          message: localizeMessage(failure.fields.email),
+        });
+      else if (error && error.type !== "server") void emailForm.trigger(field);
+    }
+    for (const field of ["otp"] as const) {
+      const error = otpForm.getFieldState(field).error;
+      if (error?.type === "server" && failure?.fields.otp)
+        otpForm.setError(field, {
+          type: "server",
+          message: localizeMessage(failure.fields.otp),
+        });
+      else if (error && error.type !== "server") void otpForm.trigger(field);
+    }
+    for (const [field, serverField] of [
+      ["newPassword", "new_password"],
+      ["newPasswordConfirmation", "new_password_confirmation"],
+    ] as const) {
+      const error = passwordForm.getFieldState(field).error;
+      const message = failure?.fields[serverField];
+      if (error?.type === "server" && message)
+        passwordForm.setError(field, {
+          type: "server",
+          message: localizeMessage(message),
+        });
+      else if (error && error.type !== "server")
+        void passwordForm.trigger(field);
+    }
+  }, [t, failure, emailForm, otpForm, passwordForm]);
+
   const isBusy =
     forgotPassword.isPending || verifyOtp.isPending || resetPassword.isPending;
   const emailValue = useWatch({ control: emailForm.control, name: "email" });
@@ -148,13 +185,14 @@ export function ForgotPasswordPage() {
     }
     if (recoveryError.kind === "otp") setOtpFailures((count) => count + 1);
     const fields = recoveryError.fields;
-    if (fields.email) emailForm.setError("email", { message: fields.email });
-    if (fields.otp) otpForm.setError("otp", { message: fields.otp });
+    if (fields.email) emailForm.setError("email", { type: "server", message: localizeMessage(fields.email) });
+    if (fields.otp) otpForm.setError("otp", { type: "server", message: localizeMessage(fields.otp) });
     if (fields.new_password)
-      passwordForm.setError("newPassword", { message: fields.new_password });
+      passwordForm.setError("newPassword", { type: "server", message: localizeMessage(fields.new_password) });
     if (fields.new_password_confirmation)
       passwordForm.setError("newPasswordConfirmation", {
-        message: fields.new_password_confirmation,
+        type: "server",
+        message: localizeMessage(fields.new_password_confirmation),
       });
   };
   const release = () => {

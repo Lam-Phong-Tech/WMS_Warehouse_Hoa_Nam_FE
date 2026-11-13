@@ -34,7 +34,7 @@ import {
   type StockReconcileRow,
 } from "./stock-reconcile-api";
 import "./stock-reconcile-report.css";
-import { tStatic as tUi, useT } from "@/shared/i18n/useT";
+import { useT } from "@/shared/i18n/useT";
 
 type DateRange = { from: string; to: string };
 type Filters = DateRange & {
@@ -241,6 +241,7 @@ function CollapseButton({
   expanded: boolean;
   onClick: () => void;
 }) {
+  const tUi = useT();
   return (
     <button
       type="button"
@@ -335,6 +336,7 @@ function KpiCard({
 }
 
 function SkeletonReport() {
+  const tUi = useT();
   return (
     <div className="rpt02-loading" role="status" aria-live="polite">
       <span className="rpt02-sr-only">
@@ -428,6 +430,7 @@ function EmptyState({
 }
 
 function MovementChart({ points }: { points: FlowDailyPoint[] }) {
+  const tUi = useT();
   const chartRef = useRef<HTMLDivElement>(null);
   const [measuredWidth, setMeasuredWidth] = useState(760);
   const [measuredHeight, setMeasuredHeight] = useState(224);
@@ -666,6 +669,7 @@ function MovementChart({ points }: { points: FlowDailyPoint[] }) {
 }
 
 export default function StockReconcileReport() {
+  const tUi = useT();
   const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
@@ -954,9 +958,9 @@ export default function StockReconcileReport() {
               <ReportFilterCombobox
                 id="rpt02-kind"
                 value={draft.kind}
-                ariaLabel="Chọn nhóm hàng / SKU"
+                ariaLabel={tUi("uiAudit.text_050a399a29")}
                 icon="package-search"
-                searchPlaceholder="Tìm nhóm hàng..."
+                searchPlaceholder={tUi("uiAudit.text_3be07ca277")}
                 options={[
                   {
                     value: "",
@@ -979,9 +983,9 @@ export default function StockReconcileReport() {
               <ReportFilterCombobox
                 id="rpt02-status"
                 value={draft.reconcile}
-                ariaLabel="Chọn trạng thái đối soát"
+                ariaLabel={tUi("uiAudit.text_e88f159c49")}
                 icon="file-clock"
-                searchPlaceholder="Tìm trạng thái..."
+                searchPlaceholder={tUi("uiAudit.text_4c99ba2b46")}
                 options={[
                   {
                     value: "",
@@ -1028,9 +1032,9 @@ export default function StockReconcileReport() {
                       value1: String(dayjs(applied.to).format("DD/MM/YYYY")),
                     })
               }
-              primaryLabel="Thử lại"
+              primaryLabel={tUi("dashboardAudit.retry")}
               onPrimary={refresh}
-              secondaryLabel="Về Tổng quan"
+              secondaryLabel={tUi("updatedUi.text_2864c6d3d5ee")}
               onSecondary={home}
               tone="danger"
             />
@@ -1038,9 +1042,9 @@ export default function StockReconcileReport() {
             <EmptyState
               icon="inbox"
               title={tUi("updatedUi.text_4aac0d04366a")}
-              copy="Chưa phát sinh giao dịch tồn kho phù hợp với bộ lọc đã chọn."
+              copy={tUi("uiAudit.text_6601302aa5")}
               code={`${dayjs(applied.from).format("DD/MM/YYYY")} – ${dayjs(applied.to).format("DD/MM/YYYY")}`}
-              primaryLabel="Đổi khoảng thời gian"
+              primaryLabel={tUi("uiAudit.text_1a38fb74a6")}
               onPrimary={() => {
                 const input = document.querySelector<HTMLElement>(
                   ".rpt02-date-range button, .rpt02-date-range input",
@@ -1048,7 +1052,7 @@ export default function StockReconcileReport() {
                 input?.focus();
                 input?.click();
               }}
-              secondaryLabel="Đặt lại bộ lọc"
+              secondaryLabel={tUi("updatedUi.text_49ced19e7f1d")}
               onSecondary={resetFilters}
             />
           ) : (
@@ -1423,7 +1427,7 @@ export default function StockReconcileReport() {
                                   ?.click()
                               }
                             >
-                              Đổi khoảng thời gian
+                              {tUi("uiAudit.text_1a38fb74a6")}{" "}
                             </button>
                           </div>
                         </div>
@@ -1600,7 +1604,10 @@ export default function StockReconcileReport() {
                                             <RowActionButton
                                               kind="view"
                                               className="rpt02-evidence-link"
-                                              aria-label={`Xem bằng chứng ${row.skuCode}`}
+                                              aria-label={tUi(
+                                                "uiAudit.viewEvidence",
+                                                { sku: row.skuCode },
+                                              )}
                                               onClick={() => {
                                                 setDetailView(
                                                   state === "code"

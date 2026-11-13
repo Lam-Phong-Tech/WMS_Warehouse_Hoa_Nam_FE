@@ -6,6 +6,9 @@ import { MESSAGES_UPDATED_VI } from "./messages.updated.vi";
 import { MESSAGES_NFC_VI } from "./messages.nfc.vi";
 import { DASHBOARD_SNAPSHOT_VI } from "./messages.dashboard-snapshot";
 import { PACKING_LABEL_REPORT_VI } from "./messages.packing-label-report";
+import { UI_AUDIT_VI } from "./messages.ui-audit";
+import { DASHBOARD_AUDIT_VI } from "./messages.dashboard-audit";
+import { GOODS_TRACE_AUDIT_VI } from "./messages.goods-trace-audit";
 /**
  * BẢNG CHUỖI GIAO DIỆN — nguồn duy nhất cho mọi text người dùng nhìn thấy.
  *
@@ -21,6 +24,9 @@ import { PACKING_LABEL_REPORT_VI } from "./messages.packing-label-report";
  */
 
 export const MESSAGES_VI = {
+  uiAudit: UI_AUDIT_VI,
+  dashboardAudit: DASHBOARD_AUDIT_VI,
+  goodsTraceAudit: GOODS_TRACE_AUDIT_VI,
   dashboardSnapshot: DASHBOARD_SNAPSHOT_VI,
   packingLabelReport: PACKING_LABEL_REPORT_VI,
   reportExport: REPORT_EXPORT_VI,

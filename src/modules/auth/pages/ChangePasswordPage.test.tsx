@@ -1,5 +1,15 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { renderWithProviders } from "@/test/test-utils";
 import { createMockAxiosError } from "@/shared/api/api-error";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -28,6 +38,8 @@ function fillForm(values: {
 }
 
 describe("ChangePasswordPage", () => {
+  beforeAll(ensureEnglishMessages);
+  afterEach(() => act(() => useLanguageStore.getState().setLanguage("vi")));
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({
@@ -44,6 +56,25 @@ describe("ChangePasswordPage", () => {
       isSuperAdmin: false,
       currentContext: null,
     });
+  });
+
+  it("updates already visible client validation when the language changes", async () => {
+    renderWithProviders(<ChangePasswordPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Đổi mật khẩu" }));
+    expect(
+      await screen.findByText("Vui lòng nhập mật khẩu hiện tại"),
+    ).toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("en"));
+    expect(
+      await screen.findByText("Please enter your current password"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Vui lòng nhập mật khẩu hiện tại"),
+    ).not.toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(
+      await screen.findByText("Vui lòng nhập mật khẩu hiện tại"),
+    ).toBeInTheDocument();
   });
 
   it("keeps new password inputs at 64 characters", () => {
@@ -90,5 +121,14 @@ describe("ChangePasswordPage", () => {
         document.getElementById(id)?.textContent?.includes(message),
       );
     expect(helperId).toBeDefined();
+    act(() => useLanguageStore.getState().setLanguage("en"));
+    expect(
+      await screen.findByText(
+        "Password confirmation does not match",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(message)).not.toBeInTheDocument();
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(await screen.findByText(message)).toBeInTheDocument();
   });
 });

@@ -269,6 +269,7 @@ function MetricCard({
 }
 
 function StatusPill({ row }: { row: UiRow }) {
+  const tUi = useT();
   const palette =
     row.status === "complete"
       ? { bg: "var(--ops-success-soft)", fg: "var(--ops-success)" }
@@ -318,6 +319,7 @@ function StatusPill({ row }: { row: UiRow }) {
 }
 
 function EmptyState({ noResult }: { noResult: boolean }) {
+  const tUi = useT();
   return (
     <Box
       sx={{
@@ -361,6 +363,7 @@ function FailurePanel({
   offline: boolean;
   retry: () => void;
 }) {
+  const tUi = useT();
   return (
     <Box
       sx={{
@@ -410,6 +413,7 @@ function FailurePanel({
 }
 
 export default function WarrantyComponentsReport() {
+  const tUi = useT();
   const t = useT();
   const presets = useMemo(() => reportRangePresets(t), [t]);
   const [range, setRange] = useState<[Dayjs, Dayjs]>([
@@ -787,7 +791,7 @@ export default function WarrantyComponentsReport() {
             <MetricCard
               label={tUi("updatedUi.text_2d173f0e4679")}
               value={fmt(rows.length)}
-              hint="Phiếu trong kỳ"
+              hint={tUi("uiAudit.text_1e8d793841")}
               tone="primary"
               icon={<FileTextOutlined />}
               loading={loading}
@@ -1289,28 +1293,28 @@ export default function WarrantyComponentsReport() {
                           </td>
                           <td className="warranty-case-cell">
                             <Box sx={{ minWidth: 0 }}>
-                                <Box
-                                  title={row.caseNo}
-                                  sx={{
-                                    color: "var(--ops-heading)",
-                                    fontSize: 15,
-                                    fontWeight: 600,
-                                    lineHeight: "22px",
-                                    overflowWrap: "anywhere",
-                                  }}
-                                >
-                                  {row.caseNo}
-                                </Box>
-                                <Box
-                                  title={row.serial}
-                                  sx={{
-                                    mt: 0.08,
-                                    color: "var(--ops-muted)",
-                                    fontSize: 12,
-                                  }}
-                                >
-                                  {row.serial}
-                                </Box>
+                              <Box
+                                title={row.caseNo}
+                                sx={{
+                                  color: "var(--ops-heading)",
+                                  fontSize: 15,
+                                  fontWeight: 600,
+                                  lineHeight: "22px",
+                                  overflowWrap: "anywhere",
+                                }}
+                              >
+                                {row.caseNo}
+                              </Box>
+                              <Box
+                                title={row.serial}
+                                sx={{
+                                  mt: 0.08,
+                                  color: "var(--ops-muted)",
+                                  fontSize: 12,
+                                }}
+                              >
+                                {row.serial}
+                              </Box>
                             </Box>
                           </td>
                           <td className="warranty-sku-cell">
@@ -1430,14 +1434,13 @@ export default function WarrantyComponentsReport() {
                     fontSize: 14,
                   }}
                 >
-                  Số dòng/trang
                   <UiSelect
                     aria-label={tUi("shared.table.rowsPerPageAria")}
                     minWidth={FILTER_WIDTH.pageSize}
                     value={pagination.perPage}
                     options={[5, ...TABLE_PAGE_SIZE_OPTIONS].map((size) => ({
                       value: size,
-                      label: String(size),
+                      label: tUi("shared.table.perPage", { size }),
                     }))}
                     onChange={(value) => pagination.setPerPage(Number(value))}
                   />

@@ -1,3 +1,4 @@
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { tStatic } from "@/shared/i18n/useT";
 
 /**
@@ -99,7 +100,8 @@ function formatFieldErrors(
   if (!errors || Object.keys(errors).length === 0) return undefined;
   const messages = Object.values(errors)
     .map((message) => (Array.isArray(message) ? message[0] : String(message)))
-    .filter(looksLikeDisplayMessage);
+    .filter(looksLikeDisplayMessage)
+    .map(localizeMessage);
   return messages.length > 0 ? messages.join(" ") : undefined;
 }
 
@@ -371,7 +373,9 @@ export function getMutationErrorMessage(error: unknown): string {
     const err = error as Record<string, unknown>;
     const response = err.response as Record<string, unknown> | undefined;
     const data = response?.data as ApiErrorResponse | undefined;
-    return data?.message ?? tStatic("shared.apiError.noPermission");
+    return data?.message
+      ? localizeMessage(data.message)
+      : getApiErrorMessage(error, tStatic("shared.apiError.noPermission"));
   }
   return getApiErrorMessage(error);
 }
@@ -408,7 +412,7 @@ export function getApiErrorMessage(
       // nó mang thông tin mà chi tiết theo trường không có.
       return isGenericValidationMessage(data.message) || !data.message
         ? fieldErrors
-        : `${data.message} ${fieldErrors}`;
+        : `${localizeMessage(data.message)} ${fieldErrors}`;
     }
 
     // BE (ApiError::abort / ApiConventionMiddleware) luôn gửi kèm cả `message`
@@ -416,7 +420,7 @@ export function getApiErrorMessage(
     // dùng để so sánh bằng code, không phải để hiển thị). Phải ưu tiên message
     // trước, nếu không người dùng sẽ luôn thấy mã lỗi thô thay vì câu giải
     // thích — vì error_code hầu như luôn có mặt trên mọi response lỗi.
-    if (data.message) return data.message;
+    if (data.message) return localizeMessage(data.message);
 
     // Không fallback về `error_code` (vd "VALIDATION_ERROR") — đó là mã kỹ
     // thuật để so sánh bằng code, không phải câu dành cho người dùng cuối.
@@ -469,7 +473,7 @@ export function getApiErrorMessage(
   ) {
     const msg = (error as { message: string }).message;
     if (msg !== "Bad Request" && msg !== "Internal Server Error") {
-      return msg;
+      return localizeMessage(msg);
     }
   }
 
@@ -525,7 +529,9 @@ export function extractFieldErrors(
   const result: Record<string, string> = {};
   for (const [field, msgs] of Object.entries(fieldErrors)) {
     const camelField = FIELD_MAP[field] ?? snakeToCamel(field);
-    result[camelField] = Array.isArray(msgs) ? msgs[0] : String(msgs);
+    result[camelField] = localizeMessage(
+      Array.isArray(msgs) ? msgs[0] : String(msgs),
+    );
   }
   return Object.keys(result).length > 0 ? result : null;
 }
@@ -543,7 +549,9 @@ export function extractFieldErrorsRaw(
   if (!fieldErrors) return null;
   const result: Record<string, string> = {};
   for (const [field, msgs] of Object.entries(fieldErrors)) {
-    result[field] = Array.isArray(msgs) ? msgs[0] : String(msgs);
+    result[field] = localizeMessage(
+      Array.isArray(msgs) ? msgs[0] : String(msgs),
+    );
   }
   return Object.keys(result).length > 0 ? result : null;
 }
@@ -642,4 +650,15 @@ export function normalizeError(error: unknown): NormalizedError {
 /** request_id để tra log / báo cho BE khi debug lỗi (đọc cả root-level và `meta.request_id`). */
 export function getErrorRequestId(error: unknown): string | undefined {
   return getRequestId(getResponseData(error));
+}
+
+/** Human-readable details only; normalizeError preserves the original transport metadata. */
+export function getApiErrorDetails(error: unknown): string[] {
+  const errors = getFieldErrors(getResponseData(error));
+  return errors
+    ? Object.values(errors)
+        .flatMap((value) => (Array.isArray(value) ? value : [String(value)]))
+        .filter(looksLikeDisplayMessage)
+        .map(localizeMessage)
+    : [];
 }

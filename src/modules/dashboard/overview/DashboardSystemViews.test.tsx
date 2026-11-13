@@ -180,12 +180,8 @@ describe("DashboardSystemViews — định mức tồn", () => {
       within(within(table).getAllByRole("row")[1]).getAllByRole("cell")[0],
     ).toHaveTextContent("11");
     expect(within(table).queryByText("SKU-01")).not.toBeInTheDocument();
-    fireEvent.mouseDown(
-      screen.getByLabelText("Số dòng mỗi trang"),
-    );
-    fireEvent.click(
-      screen.getByRole("option", { name: "20 / trang" }),
-    );
+    fireEvent.mouseDown(screen.getByLabelText("Số dòng mỗi trang"));
+    fireEvent.click(screen.getByRole("option", { name: "20 / trang" }));
     expect(screen.getByText("Hiển thị 1–20 / 25 SKU")).toBeInTheDocument();
     expect(within(table).getAllByRole("row")).toHaveLength(21);
   });
@@ -287,5 +283,53 @@ describe("DashboardSystemViews — định mức tồn", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Không tải được số liệu",
     );
+  });
+});
+
+describe("dashboard system view English localization", () => {
+  it("switches threshold filters, details and hints while mounted and preserves SKU data", async () => {
+    mockedSource.mockReturnValue(source() as never);
+    render(<DashboardSystemViews view="thresholds" onNavigate={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "SP-001" }));
+    await act(async () => {
+      useLanguageStore.getState().setLanguage("en");
+      await ensureEnglishMessages();
+    });
+    expect(
+      screen.getByPlaceholderText("Search SKU code or name"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Filter stock threshold status"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Stock threshold details" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Below minimum by 2")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Check demand and stock before transferring or replenishing.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Máy bơm Hoa Nam").length).toBeGreaterThan(0);
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(
+      screen.getByPlaceholderText("Tìm mã hoặc tên SKU"),
+    ).toBeInTheDocument();
+  });
+
+  it("localizes stale and failure notices with their retry controls", async () => {
+    mockedSource.mockReturnValue(source(new Error("offline")) as never);
+    render(<DashboardSystemViews view="work" onNavigate={vi.fn()} />);
+    await act(async () => {
+      useLanguageStore.getState().setLanguage("en");
+      await ensureEnglishMessages();
+    });
+    expect(
+      screen.getByRole("heading", { name: "Work to resolve" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Displayed data may be out of date. The latest refresh did not finish.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
   });
 });

@@ -1,3 +1,6 @@
+import { UI_AUDIT_EN } from "./messages.ui-audit";
+import { DASHBOARD_AUDIT_EN } from "./messages.dashboard-audit";
+import { GOODS_TRACE_AUDIT_EN } from "./messages.goods-trace-audit";
 import { NOTIFICATION_CONTENT_EN } from "./messages.notification-content";
 import { REPORT_EXPORT_EN } from "./messages.report-export";
 import { PERSONAL_EN } from "./messages.personal";
@@ -19,6 +22,22 @@ import type { MessageTree } from "./messages";
  * KHOÁ vẫn đỏ typecheck; thiếu khoá vẫn hợp lệ và t() rơi về tiếng Việt.
  */
 export const MESSAGES_EN: MessageTree = {
+  dashboardAudit: DASHBOARD_AUDIT_EN,
+  goodsTraceAudit: GOODS_TRACE_AUDIT_EN,
+  uiAudit: UI_AUDIT_EN,
+  rpt08: {
+    detail: {
+      department: "Department",
+      createdDate: "Created date",
+      movement: "Movement",
+      movements: "{count} movements",
+      originalDocument: "Original document",
+      linesTitle: "Line items",
+      linesCount: "{count} line items",
+      viewInboundDocument: "View receipt details",
+      viewOutboundDocument: "View issue note details",
+    },
+  },
   dashboardSnapshot: DASHBOARD_SNAPSHOT_EN,
   packingLabelReport: PACKING_LABEL_REPORT_EN,
   reportExport: REPORT_EXPORT_EN,
@@ -162,6 +181,7 @@ export const MESSAGES_EN: MessageTree = {
       inbound: "Inbound",
       outbound: "Outbound",
       stock: "Stock",
+      reversal: "Reversal",
       chartAria: "Inbound outbound stock chart",
       chartPointAria:
         "{date}: Inbound {inbound}, Outbound {outbound}, Stock {stock}",
@@ -618,7 +638,8 @@ export const MESSAGES_EN: MessageTree = {
     draft: {
       retryAttachments: "Retry uploads & scan goods",
       continueScanning: "Continue scanning",
-      attachmentsReceiptCreated: "Receipt {code} has been created. Retry or remove failed files to continue scanning. Closing discards files that have not uploaded.",
+      attachmentsReceiptCreated:
+        "Receipt {code} has been created. Retry or remove failed files to continue scanning. Closing discards files that have not uploaded.",
       errDocumentDate: "Choose a document date.",
       errDocumentDateFuture: "The document date cannot be in the future.",
       errWarehouse: "Choose a receiving warehouse.",
@@ -643,7 +664,8 @@ export const MESSAGES_EN: MessageTree = {
       supplierLoadError: "Unable to load suppliers.",
       supplierRetry: "Retry",
       sourceRef: "External document number",
-      sourceRefPlaceholder: "Delivery note, invoice or purchase order number (optional)",
+      sourceRefPlaceholder:
+        "Delivery note, invoice or purchase order number (optional)",
       note: "Note",
     },
     camera: {
@@ -835,6 +857,29 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   outbound: {
+    edit: {
+      title: "Edit issue note details",
+      action: "Edit details",
+      save: "Save details",
+      saved: "Issue note details updated.",
+      saveError: "Could not save issue note details.",
+      onlyDraft: "Only draft issue notes can be edited.",
+      staleNotice:
+        "Someone else updated this note. Reload the latest data to continue. Unsaved changes will be discarded.",
+      reload: "Reload data",
+      linesLocked:
+        "SKUs and quantities are fixed by the requisition. To change the items, cancel this note and create a new one.",
+      linesTitle: "Line items (read-only)",
+      colSku: "SKU",
+      colName: "Product name",
+      colQty: "Qty",
+      saving: "Saving...",
+      fieldNote: "Note",
+      errRecipient: "Enter the recipient or destination.",
+      errPhone:
+        "The phone number must contain exactly 10 digits and start with 0.",
+      errRequestDate: "The request date is invalid or in the future.",
+    },
     list: {
       colDocument: "Issue note",
       colRequestNo: "Request code",
@@ -887,6 +932,14 @@ export const MESSAGES_EN: MessageTree = {
       ownerLine: "Person in charge: ______",
     },
     intake: {
+      attachmentsHint:
+        "JPG/PNG/WEBP images or PDF, up to 15 MB per file. Files upload after the issue note is created. If a batch creates multiple notes, documents attach to the first note.",
+      attachmentsCreated:
+        "The issue note has been created. Some documents could not be uploaded. Retry or remove the failed files. Closing this window discards files that have not uploaded.",
+      attachmentsRetry: "Retry document upload",
+      attachmentsUploading: "Uploading documents...",
+      attachmentsNeedDocument:
+        "Could not identify the newly created issue note to attach documents.",
       title: "Goods manifest (issue request)",
       rowLabel: "row {row}",
       genericError: "This row is invalid. Please review it and try again.",
@@ -993,7 +1046,7 @@ export const MESSAGES_EN: MessageTree = {
       previewTab: "Preview result",
       previewEmptyTitle: "Nothing to preview yet",
       previewEmptyBody:
-        "Fill in the requisition (manually or from Excel), then click \"Preview result\" in the footer — validation will appear here.",
+        'Fill in the requisition (manually or from Excel), then click "Preview result" in the footer — validation will appear here.',
       backToForm: "Back to the requisition",
       uploadErrorTitle: "Could not validate the Excel file",
       previewTotal: "Total: {count}",
@@ -1205,6 +1258,8 @@ export const MESSAGES_EN: MessageTree = {
       empty: "No component issue note matches the current filters",
     },
     intake: {
+      errWarehouseScan:
+        "Please select the warranty receiving warehouse before scanning a code.",
       title: "Receive for warranty",
       warehouse: "Warranty intake warehouse",
       warehousePlaceholder: "Select an intake warehouse",
@@ -1306,6 +1361,9 @@ export const MESSAGES_EN: MessageTree = {
       defectDescription: "Description",
     },
     componentIssue: {
+      createdAt: "Created date",
+      postedAt: "Posted at",
+      colScannedAt: "Scanned at",
       errSku: "Choose a component.",
       errQty: "Enter a quantity.",
       errAvailabilityUnknown:
@@ -1370,6 +1428,17 @@ export const MESSAGES_EN: MessageTree = {
       scanDialogTitle: "Scan component / box",
     },
     detail: {
+      errReturnReceiver: "Please enter the recipient name.",
+      errTreatmentResult: "Please enter the treatment result.",
+      errHandoverDate: "Please select the handover date.",
+      errHandoverDateFuture: "The handover date cannot be after today.",
+      errHandoverChecked:
+        "Confirm that the handover has been checked and signed for.",
+      errHandoverNote: "Please enter a handover note.",
+      handoverReceiver: "Handover recipient",
+      handoverDate: "Handover date",
+      handoverConfirm: "Confirm handover",
+      handoverChecked: "Handover checked and signed for",
       viewImageAria: "View image {name}",
       errStatus: "Choose a new status.",
       errCheckResult:
@@ -2102,18 +2171,27 @@ export const MESSAGES_EN: MessageTree = {
       errorFileDownloadFailed: "Could not download the error file",
       errFileType:
         "Only {list} files are accepted. Please choose another file.",
-      errFileSize:
-        "File too large. Maximum {max} MB",
-      errMissingCodeColumn: "The SKU code column is missing. Download the template and add this column.",
-      errMissingNameColumn: "The SKU name column is missing. Download the template and add this column.",
-      errInvalidWorkbook: "The Excel file is invalid or damaged. Use the template and choose the file again.",
-      errRepeatedColumn: "Column “{column}” is repeated. Remove the duplicate column and check again.",
-      errUnsupportedColumn: "Column “{column}” is not supported. Use the columns in the template.",
-      errRowsLimit: "The file exceeds {max} data rows. Split the file and choose it again.",
-      errPhysicalRowsLimit: "The sheet exceeds {max} rows, including blank rows. Remove extra blank rows and choose it again.",
-      errResultIncomplete: "The server returned an incomplete file check result. Import is blocked. Please try again.",
-      errRowsLimitUnknown: "The file has too many rows. Remove extra blank rows or split the file.",
-      errConstraintsFailed: "The file limits could not be loaded. Please try again before checking the file.",
+      errFileSize: "File too large. Maximum {max} MB",
+      errMissingCodeColumn:
+        "The SKU code column is missing. Download the template and add this column.",
+      errMissingNameColumn:
+        "The SKU name column is missing. Download the template and add this column.",
+      errInvalidWorkbook:
+        "The Excel file is invalid or damaged. Use the template and choose the file again.",
+      errRepeatedColumn:
+        "Column “{column}” is repeated. Remove the duplicate column and check again.",
+      errUnsupportedColumn:
+        "Column “{column}” is not supported. Use the columns in the template.",
+      errRowsLimit:
+        "The file exceeds {max} data rows. Split the file and choose it again.",
+      errPhysicalRowsLimit:
+        "The sheet exceeds {max} rows, including blank rows. Remove extra blank rows and choose it again.",
+      errResultIncomplete:
+        "The server returned an incomplete file check result. Import is blocked. Please try again.",
+      errRowsLimitUnknown:
+        "The file has too many rows. Remove extra blank rows or split the file.",
+      errConstraintsFailed:
+        "The file limits could not be loaded. Please try again before checking the file.",
       errReadFile:
         "The file content could not be read. It may have been moved, renamed or edited after you chose it. Please choose the file again.",
       errChecksumMismatch:
@@ -2305,6 +2383,7 @@ export const MESSAGES_EN: MessageTree = {
       unset: "Not configured",
     },
     inventoryFlow: {
+      outboundSearchPlaceholder: "Document no., requisition no., recipient...",
       sortInboundNewest: "Sort inbound date: newest first",
       sortInboundOldest: "Sort inbound date: oldest first",
       opening: "Opening",
@@ -2404,8 +2483,6 @@ export const MESSAGES_EN: MessageTree = {
       departmentAll: "All departments",
       departmentAria: "Department",
       searchPlaceholder: "Document no. / SKU / recipient",
-      outboundSearchPlaceholder:
-        "Outbound no., request no., recipient...",
       searchAria: "Search document no., SKU or recipient",
       reversalReadError:
         "Could not read the reversal document list ( {error} ) — the table below only shows receipt/issue notes.",
@@ -4500,8 +4577,8 @@ export const MESSAGES_EN: MessageTree = {
     colIp: "IP address",
     colResult: "Result",
     colDescription: "Description",
-    searchPlaceholder: "Search by description, object...",
-    searchAria: "Search the system audit log",
+    searchPlaceholder: "Search by actor or action...",
+    searchAria: "Search actor or action",
     moduleFilterAria: "Filter module",
     moduleFilterPlaceholder: "Module: All",
     actionFilterAria: "Filter action",
@@ -5111,6 +5188,10 @@ export const MESSAGES_EN: MessageTree = {
       switchError: "Unable to switch warehouse scope, please try again.",
     },
     validation: {
+      newPasswordRequired: "Please enter your new password",
+      newPasswordTooLong: "New password must not exceed 64 characters",
+      passwordWhitespace: "Password must not contain whitespace",
+      passwordContainsUsername: "New password must not contain your username",
       emailInvalid: "Invalid email",
       passwordRequired: "Please enter your password",
       emailRequired: "Please enter your email",
@@ -5119,7 +5200,7 @@ export const MESSAGES_EN: MessageTree = {
       newPasswordMin: "New password must be at least 8 characters",
       passwordNoEdgeSpaces: "Password must not have leading or trailing spaces",
       passwordStrength:
-        "Password must contain at least 1 uppercase letter, 1 lowercase letter and 1 special character",
+        "Password must contain uppercase and lowercase letters, a number and a special character",
       confirmPasswordRequired: "Please confirm the password",
       confirmPasswordMismatch: "Password confirmation does not match",
       currentPasswordRequired: "Please enter your current password",
@@ -5526,8 +5607,10 @@ export const MESSAGES_EN: MessageTree = {
       tabHistory: "Putaway history",
       searchPendingPlaceholder: "Search box / SKU...",
       searchPendingAria: "Search boxes or SKUs awaiting putaway",
-      searchHistoryPlaceholder: "Search box / tray / operator...",
-      searchHistoryAria: "Search the putaway history",
+      searchHistoryPlaceholder: "Search box / tray / SKU / operator...",
+      searchHistoryAria: "Search box, tray, SKU or operator in putaway history",
+      historyActorFilterAria: "Filter putaway history by actor",
+      historyActorFilterPlaceholder: "Actor: All",
       pageSizeAria: "Rows per page",
       pageSizeOption: "{size} / page",
       emptyPending: "No component boxes awaiting putaway",
@@ -5588,8 +5671,7 @@ export const MESSAGES_EN: MessageTree = {
       emptyDescription:
         "Try removing the filter or changing the search keyword.",
       noTraysTitle: "No trays yet",
-      noTraysDescription:
-        "Tray status will appear here once trays exist.",
+      noTraysDescription: "Tray status will appear here once trays exist.",
       zoneCount: "{zone} · {count} trays",
       zoneTrayCount: "{count} trays",
       zonesCount: "{count} zones",

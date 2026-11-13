@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { businessToday } from "@/shared/utils/date-time";
 import { parseDateTime, BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
 import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
@@ -47,7 +48,6 @@ import {
   OverviewCard,
   ProductCard,
 } from "./widgets";
-import { tStatic as tUi } from "@/shared/i18n/useT";
 
 function currentSevenDayRange(): [Dayjs, Dayjs] {
   const end = businessToday().startOf("day");
@@ -55,6 +55,7 @@ function currentSevenDayRange(): [Dayjs, Dayjs] {
 }
 
 export default function IoHistoryReport() {
+  const tUi = useT();
   useDateTimePreferences();
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const initialRange = useMemo<[Dayjs, Dayjs]>(
@@ -107,7 +108,7 @@ export default function IoHistoryReport() {
       { value: "", label: tUi("dashboard.operations.filterAll") },
       ...actors.map((actor) => ({ value: actor, label: actor })),
     ];
-  }, [allRows]);
+  }, [allRows, tUi]);
 
   const reportRows = useMemo(() => {
     return allRows.filter((row) => {
@@ -293,10 +294,7 @@ export default function IoHistoryReport() {
   return (
     <main
       id="rpt08-history-report"
-      className={
-        "rpt08-report" +
-        (initialLoading ? " is-loading" : "")
-      }
+      className={"rpt08-report" + (initialLoading ? " is-loading" : "")}
       data-mvp-screen="RPT-08"
     >
       <header className="rpt08-page-header">
@@ -344,7 +342,7 @@ export default function IoHistoryReport() {
               message={tUi("updatedUi.text_0d15f428b113", {
                 value0: String(displayAsOf(source.snapshot.dataAsOf)),
               })}
-              primaryLabel="Thử cập nhật"
+              primaryLabel={tUi("updatedUi.text_34472c3056e5")}
               onPrimary={refresh}
               onClose={() => setStaleDismissed(true)}
             />
@@ -355,7 +353,7 @@ export default function IoHistoryReport() {
               tone="error"
               title={tUi("updatedUi.text_43dc1de9c0f5")}
               message={tUi("updatedUi.text_420c6ee4be7e")}
-              primaryLabel="Thử lại"
+              primaryLabel={tUi("dashboardAudit.retry")}
               onPrimary={() => void exportReport()}
               onClose={() => setExportState("idle")}
             />
@@ -366,7 +364,7 @@ export default function IoHistoryReport() {
               tone="warning"
               title={tUi("updatedUi.text_59cf4eaf5714")}
               message={tUi("updatedUi.text_b2fc9bf6624e")}
-              primaryLabel="Đã hiểu"
+              primaryLabel={tUi("nfc.understood")}
               onPrimary={() => setExportState("idle")}
             />
           ) : null}

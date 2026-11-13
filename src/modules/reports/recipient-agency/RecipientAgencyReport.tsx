@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { businessToday } from "@/shared/utils/date-time";
 import { TABLE_PAGE_SIZE_OPTIONS } from "@/shared/constants/table-pagination";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
@@ -156,6 +157,7 @@ function MetricCard({
   unknown?: boolean;
   warning?: boolean;
 }) {
+  const tUi = useT();
   return (
     <section
       className={
@@ -191,6 +193,7 @@ function PanelEmpty({
   compact?: boolean;
   partial?: boolean;
 }) {
+  const tUi = useT();
   return (
     <div className={"rpt07-panel-empty" + (compact ? " is-compact" : "")}>
       <div className="rpt07-panel-empty__icon">
@@ -221,6 +224,7 @@ function Pagination({
   disabled?: boolean;
   onChange: (page: number) => void;
 }) {
+  const tUi = useT();
   if (totalPages <= 1) {
     return (
       <div
@@ -291,6 +295,7 @@ function DateRangeControl({
   disabled: boolean;
   onChange: (range: [Dayjs, Dayjs]) => void;
 }) {
+  const tUi = useT();
   return (
     <ReportDateRangePicker
       autoApplyOnComplete
@@ -305,6 +310,7 @@ function DateRangeControl({
 }
 
 export default function RecipientAgencyReport() {
+  const tUi = useT();
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const initialRange = useMemo<[Dayjs, Dayjs]>(
     () => currentSevenDayRange(),
@@ -809,7 +815,7 @@ export default function RecipientAgencyReport() {
             <MetricCard
               label={tUi("updatedUi.text_b825b57a8a53")}
               value={formatNumber(documentTotals.total)}
-              hint="Tất cả phiếu trong kỳ"
+              hint={tUi("uiAudit.text_c05d31b039")}
               icon={<FileTextOutlined />}
               tone="primary"
               loading={initialLoading}
@@ -818,7 +824,7 @@ export default function RecipientAgencyReport() {
             <MetricCard
               label={tUi("updatedUi.text_623dac20f796")}
               value={formatNumber(dealers.length)}
-              hint="Có phát sinh xuất trong kỳ"
+              hint={tUi("uiAudit.text_d5cf720286")}
               icon={<TeamOutlined />}
               tone="info"
               loading={initialLoading}
@@ -1029,7 +1035,7 @@ export default function RecipientAgencyReport() {
                     className="rpt07-search-clear"
                     onClick={() => setSearch("")}
                   >
-                    Xóa lọc
+                    {tUi("dashboardAudit.clearFilters")}{" "}
                   </button>
                 ) : null}
               </div>
@@ -1202,7 +1208,9 @@ export default function RecipientAgencyReport() {
                               <RowActionButton
                                 kind="view"
                                 type="button"
-                                aria-label={`Xem chi tiết ${row.name}`}
+                                aria-label={tUi("uiAudit.viewDetails", {
+                                  name: row.name,
+                                })}
                                 onClick={() => setDetailRow(row)}
                               >
                                 Xem
@@ -1237,14 +1245,13 @@ export default function RecipientAgencyReport() {
                   </span>
                 )}
                 <label className="rpt07-page-size">
-                  Số dòng/trang
                   <UiSelect
-                    aria-label="Số dòng mỗi trang"
+                    aria-label={tUi("shared.table.rowsPerPageAria")}
                     value={pageSize}
                     minWidth={FILTER_WIDTH.pageSize}
                     options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
                       value: size,
-                      label: String(size),
+                      label: tUi("shared.table.perPage", { size }),
                     }))}
                     onChange={(value) => {
                       setPageSize(Number(value));

@@ -142,7 +142,7 @@ export function LoginPage() {
   const powRetriedRef = useRef(false);
   const rememberedIdentifier = readRememberedIdentifier();
   const loginSchema = useMemo(() => buildLoginSchema(t, copy), [t, copy]);
-  const { control, getValues, handleSubmit, reset, setValue } =
+  const { control, getValues, handleSubmit, reset, setValue, getFieldState, trigger } =
     useForm<LoginFormValues>({
       resolver: zodResolver(loginSchema),
       defaultValues: {
@@ -151,6 +151,14 @@ export function LoginPage() {
         remember: rememberedIdentifier !== "",
       },
     });
+
+  useEffect(() => {
+    const invalidFields = (["identifier", "password"] as const).filter(
+      (field) => Boolean(getFieldState(field).error),
+    );
+    if (invalidFields.length) void trigger(invalidFields);
+  }, [t, getFieldState, trigger]);
+
 
   useEffect(() => {
     if (throttle?.until == null) return;

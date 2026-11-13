@@ -439,6 +439,34 @@ describe("InventoryPage (INV-01 hub)", () => {
     });
   });
 
+  it("applies the dashboard mismatch filter on the first read and allows clearing it", async () => {
+    renderWithProviders(<InventoryPage />, [
+      "/inventory?reconciliation_status=MISMATCH",
+    ]);
+    expect(useInventoryBalances).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ reconciliation_status: "MISMATCH", page: 1 }),
+    );
+    const selector = screen.getByRole("combobox", { name: "Lọc đối soát" });
+    expect(selector).toHaveTextContent("Có chênh lệch");
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(selector).toHaveTextContent("Đối soát: Tất cả");
+    expect(useInventoryBalances).toHaveBeenLastCalledWith(
+      expect.objectContaining({ reconciliation_status: undefined, page: 1 }),
+    );
+  });
+
+  it.each(["", "?reconciliation_status=INVALID"])(
+    "keeps unfiltered inventory reads for a normal or invalid entry %s",
+    (query) => {
+      renderWithProviders(<InventoryPage />, [`/inventory${query}`]);
+      expect(useInventoryBalances).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ reconciliation_status: undefined }),
+      );
+    },
+  );
+
   it("filters reconciliation across pages and lets All clear the selection without duplicate options", async () => {
     mockQueries({ balancesTotal: 30 });
     renderWithProviders(<InventoryPage />);

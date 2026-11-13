@@ -35,4 +35,13 @@ export const UI_TEXT_ZH: Record<string, string> = {
   "Missing: Brand, Category, Model": "缺少：品牌、类别、型号",
   "Information: Pending details": "信息：待完善",
   "SKU list table": "SKU 列表表格",
+  "Show or hide catalog groups": "显示或隐藏目录分组",
+  "Clear filters": "清除筛选条件",
+  "Enter your email": "输入您的电子邮箱",
+  "Please enter your email.": "请输入您的电子邮箱。",
+  "The email or password is incorrect": "电子邮箱或密码不正确",
+  "Unable to sign in": "无法登录",
+  "The sign-in details are invalid. Please check your email and password.":
+    "登录信息无效，请检查您的电子邮箱和密码。",
+  "Save new password": "保存新密码",
 };

@@ -977,6 +977,17 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     ).toBe(kpiBefore);
   });
 
+  it("opens the reconciliation priority action with mismatches selected", async () => {
+    mockedGet.mockImplementation((url: string) => routeResponses(url));
+    renderDashboard("/dashboard?screen=MAP-01");
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Sự cố đối soát tồn/ }),
+    );
+    expect(screen.getByTestId("current-location").textContent).toBe(
+      "/inventory?reconciliation_status=MISMATCH",
+    );
+  });
+
   it("opens the warranty priority action with the overdue filter enabled", async () => {
     mockedGet.mockImplementation((url: string) => routeResponses(url));
     renderDashboard("/dashboard?screen=MAP-01");

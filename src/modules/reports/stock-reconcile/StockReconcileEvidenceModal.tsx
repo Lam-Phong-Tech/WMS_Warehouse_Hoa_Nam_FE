@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { Box, UiDialog, UiStatusBadge } from "@/shared/ui";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
@@ -37,13 +38,14 @@ export function StockReconcileEvidenceModal({
   checks,
   onClose,
 }: StockReconcileEvidence & { onClose: () => void }) {
+  const tUi = useT();
   useDateTimePreferences();
   const movements = useSkuMovements(skuCode);
   return (
     <UiDialog
       open
       onClose={onClose}
-      title={`Bằng chứng đối soát · ${skuCode}`}
+      title={tUi("uiAudit.evidenceTitle", { sku: skuCode })}
       maxWidth="lg"
       fullWidth
       className="rpt02-evidence-dialog"
@@ -53,7 +55,7 @@ export function StockReconcileEvidenceModal({
           className="rpt02-button rpt02-button--ghost"
           onClick={onClose}
         >
-          Đóng
+          {tUi("nfc.close")}{" "}
         </button>
       }
     >
@@ -64,7 +66,7 @@ export function StockReconcileEvidenceModal({
             <strong>{skuCode}</strong>
           </div>
           <div>
-            <span>Tên hàng</span>
+            <span>{tUi("inventory.balance.colName")}</span>
             <strong>{skuName || "—"}</strong>
           </div>
           <div>
@@ -74,15 +76,15 @@ export function StockReconcileEvidenceModal({
         </div>
         <div className="rpt02-evidence__metrics">
           <div>
-            <span>Tồn theo sổ cái</span>
+            <span>{tUi("inventory.balance.colLedger")}</span>
             <strong>{quantity(closing)}</strong>
           </div>
           <div>
-            <span>Tồn ghi nhận</span>
+            <span>{tUi("reports.stockReconcileReport.colRecordedStock")}</span>
             <strong>{quantity(actual)}</strong>
           </div>
           <div>
-            <span>Chênh lệch</span>
+            <span>{tUi("dashboardAudit.delta")}</span>
             <strong className={delta === 0 ? "" : "is-alert"}>
               {delta > 0 ? "+" : ""}
               {quantity(delta)}
@@ -90,7 +92,7 @@ export function StockReconcileEvidenceModal({
           </div>
         </div>
         <section>
-          <h3>Phép kiểm đối soát</h3>
+          <h3>{tUi("uiAudit.text_079e43a75d")}</h3>
           {checks.length ? (
             <div className="rpt02-evidence__checks">
               {checks.map((check) => (
@@ -102,36 +104,35 @@ export function StockReconcileEvidenceModal({
               ))}
             </div>
           ) : (
-            <p>Chưa có phép kiểm chi tiết từ dữ liệu hiện tại.</p>
+            <p>{tUi("uiAudit.text_f168cec0bc")}</p>
           )}
           {checks.some(
             (check) => check.includes("serial") || check.includes("container"),
           ) ? (
             <p className="rpt02-evidence__note">
-              API hiện chỉ trả kết quả kiểm tra tổng hợp; chưa có danh sách mã
-              chênh lệch để hiển thị từng serial hoặc BOX.
+              {tUi("uiAudit.text_70ca059cd1")}{" "}
             </p>
           ) : null}
         </section>
         <section>
-          <h3>Phát sinh theo SKU</h3>
+          <h3>{tUi("uiAudit.text_152f20960f")}</h3>
           <p className="rpt02-evidence__formula">
             {quantity(opening)} + {quantity(inbound)} −{" "}
             {quantity(productOutbound)} − {quantity(componentOutbound)} +{" "}
             {quantity(reversal)} = {quantity(closing)}
           </p>
           {movements.loading ? (
-            <p role="status">Đang tải phát sinh…</p>
+            <p role="status">{tUi("uiAudit.text_35fa0c67fe")}</p>
           ) : movements.events.length ? (
             <div className="rpt02-evidence__table-wrap">
               <table className="report-table">
                 <thead>
                   <tr>
-                    <th>Mã phát sinh</th>
-                    <th>Thời gian</th>
-                    <th>Loại</th>
+                    <th>{tUi("uiAudit.text_e70daaa5e7")}</th>
+                    <th>{tUi("packingLabelReport.time")}</th>
+                    <th>{tUi("dashboardSnapshot.type")}</th>
                     <th>Kho</th>
-                    <th className="num">Thay đổi</th>
+                    <th className="num">{tUi("uiAudit.text_2d141c1485")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -151,7 +152,7 @@ export function StockReconcileEvidenceModal({
               </table>
             </div>
           ) : (
-            <p>Không có phát sinh được trả về trong 90 ngày gần đây.</p>
+            <p>{tUi("uiAudit.text_3f558b179d")}</p>
           )}
         </section>
       </Box>

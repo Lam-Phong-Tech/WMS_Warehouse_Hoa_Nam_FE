@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { UiAlert, UiConfirmDialog, UiDrawer, UiTextField } from "@/shared/ui";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
@@ -25,7 +25,38 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
     newPasswordConfirmation: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [error, setError] = useState("");
+  const [serverError, setServerError] = useState<unknown>(null);
+  const resolvedServerError = useMemo(
+    () =>
+      serverError
+        ? resolveFormErrors(serverError, [
+            "currentPassword",
+            "newPassword",
+            "newPasswordConfirmation",
+          ])
+        : null,
+    // t changes when the active dictionary/locale changes; resolveFormErrors reads that locale.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [serverError, t],
+  );
+  const displayErrors = useMemo(() => {
+    const current: Record<string, string> = {};
+    const validation = buildChangePasswordSchema(
+      t,
+      user ?? undefined,
+    ).safeParse(values);
+    if (!validation.success)
+      validation.error.issues.forEach((issue) => {
+        current[String(issue.path[0])] ??= issue.message;
+      });
+    const localized = resolvedServerError?.fieldErrors ?? current;
+    return Object.fromEntries(
+      Object.entries(errors).map(([field, message]) => [
+        field,
+        message ? (localized[field] ?? message) : "",
+      ]),
+    );
+  }, [errors, resolvedServerError, t, user, values]);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [discard, setDiscard] = useState(false);
   // Existing hook clears auth/cache and requires re-login: changing the password revokes every family.
@@ -55,7 +86,7 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
 
-    setError("");
+    setServerError(null);
     const result = buildChangePasswordSchema(t, user ?? undefined).safeParse(
       values,
     );
@@ -81,9 +112,9 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
         "newPasswordConfirmation",
       ]);
       setErrors(resolved.fieldErrors);
+      setServerError(cause);
       // Field-level server errors already appear under their inputs; only show
       // the banner when the server returned a message that has no matching field.
-      setError(resolved.message ?? "");
     }
   };
   const fields = [
@@ -161,8 +192,8 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
               autoComplete={autoComplete}
               value={values[key]}
               disabled={mutation.isPending}
-              error={Boolean(errors[key])}
-              helperText={errors[key]}
+              error={Boolean(displayErrors[key])}
+              helperText={displayErrors[key]}
               onChange={(event) => {
                 setValues((current) => ({
                   ...current,
@@ -194,7 +225,9 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
             />
           ))}
           <UiAlert tone="info">{t("auth.personal.passwordRelogin")}</UiAlert>
-          {error ? <UiAlert tone="error">{error}</UiAlert> : null}
+          {resolvedServerError?.message ? (
+            <UiAlert tone="error">{resolvedServerError.message}</UiAlert>
+          ) : null}
         </form>
       </UiDrawer>
       <UiConfirmDialog

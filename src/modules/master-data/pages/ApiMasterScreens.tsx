@@ -370,7 +370,9 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   // Tablet (768–979px, vùng drawer theo token BREAKPOINTS): đưa ô "Loại hàng" và
   // ô "Thông tin" vào panel "Bộ lọc" để hàng tìm kiếm chỉ còn search + Trạng thái.
   // Desktop (≥980px) và mobile (<768px) giữ nguyên bố cục hiện có.
-  const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 979.98px)");
+  const isTablet = useMediaQuery(
+    "(min-width: 768px) and (max-width: 979.98px)",
+  );
   const informationInPanel = sidebarPinned || isTablet;
   const typeInPanel = isTablet;
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
@@ -586,9 +588,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             if (!current) return current;
             const currentId = current.sku_id ?? current.id ?? "";
             return (
-              freshRows.find(
-                (row) => (row.sku_id ?? row.id) === currentId,
-              ) ?? null
+              freshRows.find((row) => (row.sku_id ?? row.id) === currentId) ??
+              null
             );
           });
           setPublishErrorStale(true);
@@ -904,7 +905,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       options={[
         {
           value: "PENDING",
-          label: copy("Thông tin: Chờ hoàn thiện", "Information: Pending details"),
+          label: copy(
+            "Thông tin: Chờ hoàn thiện",
+            "Information: Pending details",
+          ),
         },
         {
           value: "COMPLETE",
@@ -1391,7 +1395,11 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 {pagination.total ? (pagination.current - 1) * perPage + 1 : 0}–
                 {Math.min(pagination.current * perPage, pagination.total)} /{" "}
                 {pagination.total.toLocaleString(
-                  language === "vi" ? "vi-VN" : "en-US",
+                  language === "vi"
+                    ? "vi-VN"
+                    : language === "zh"
+                      ? "zh-CN"
+                      : "en-US",
                 )}{" "}
                 SKU
               </span>
@@ -2450,10 +2458,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   sortedRows.map((record) => (
                     <tr
                       key={record.agency_id}
-                      {...rowActivationProps(
-                        () => openEdit(record),
-                        canManage,
-                      )}
+                      {...rowActivationProps(() => openEdit(record), canManage)}
                     >
                       <td className="stt-col">
                         {mvpRowNumber(page, perPage, originalIndexOf(record))}
@@ -2547,7 +2552,11 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 {pagination.total ? (pagination.current - 1) * perPage + 1 : 0}–
                 {Math.min(pagination.current * perPage, pagination.total)} /{" "}
                 {pagination.total.toLocaleString(
-                  language === "vi" ? "vi-VN" : "en-US",
+                  language === "vi"
+                    ? "vi-VN"
+                    : language === "zh"
+                      ? "zh-CN"
+                      : "en-US",
                 )}{" "}
                 {t("masterData.recipient.itemLabel")}
               </span>

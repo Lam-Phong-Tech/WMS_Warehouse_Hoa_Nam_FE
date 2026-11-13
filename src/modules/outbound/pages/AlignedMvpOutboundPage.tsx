@@ -334,7 +334,7 @@ export default function AlignedMvpOutboundPage() {
       <div
         className="hn-outbound-content-tabs"
         role="tablist"
-        aria-label="Xuất kho"
+        aria-label={t("iam.permissionModule.outbound")}
       >
         <button
           type="button"

@@ -6,6 +6,7 @@ import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import {
   getApiErrorMessage,
+  getApiErrorDetails,
   getErrorRequestId,
   isNoPermissionError,
   normalizeError,
@@ -87,13 +88,10 @@ export function ApiErrorAlert({
     );
   }
 
-  const { errors } = normalizeError(error);
   const message = fallback
     ? getApiErrorMessage(error, fallback)
     : normalizeError(error).message;
-  const fieldMessages = errors
-    ? Object.values(errors).flatMap((v) => (Array.isArray(v) ? v : [v]))
-    : [];
+  const fieldMessages = getApiErrorDetails(error);
 
   // Test hook nằm trên phần tử bọc do FE tự kiểm soát; `role="alert"` do MUI
   // Alert tự phát (mặc định) — không lặp ở wrapper để tránh 2 alert lồng nhau.

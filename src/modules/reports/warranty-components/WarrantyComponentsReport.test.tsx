@@ -217,6 +217,20 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     expect(within(filters).queryByText("Kho")).not.toBeInTheDocument();
   });
 
+  it("chọn số dòng theo mẫu SKU, không lặp nhãn ngoài ô", async () => {
+    const user = userEvent.setup();
+    renderReport();
+    await caseTable();
+    const selector = screen.getByRole("combobox", {
+      name: "Số dòng mỗi trang",
+    });
+    expect(selector).toHaveTextContent("5 / trang");
+    expect(screen.queryByText("Số dòng/trang")).not.toBeInTheDocument();
+    await user.click(selector);
+    await user.click(screen.getByRole("option", { name: "20 / trang" }));
+    expect(selector).toHaveTextContent("20 / trang");
+  });
+
   it("lịch tự áp dụng và không hiện nút Áp dụng", async () => {
     const user = userEvent.setup();
     renderReport();

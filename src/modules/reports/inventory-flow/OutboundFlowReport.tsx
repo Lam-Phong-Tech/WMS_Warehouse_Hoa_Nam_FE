@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n/useT";
 import { businessToday } from "@/shared/utils/date-time";
 import { ReportExportAction } from "@/modules/reports/components/ReportExportAction";
 import { reportExportSections } from "@/modules/reports/components/report-export-sections";
@@ -162,6 +163,7 @@ function CollapseButton({
   controls: string;
   onClick: () => void;
 }) {
+  const tUi = useT();
   return (
     <button
       type="button"
@@ -209,6 +211,7 @@ function FilterCombobox({
   ariaLabel: string;
   disabled?: boolean;
 }) {
+  const tUi = useT();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -398,6 +401,7 @@ function KpiCard({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const tUi = useT();
   const contentId = `outbound-kpi-${tone}-content`;
   return (
     <article
@@ -449,6 +453,7 @@ function KpiSkeleton() {
 }
 
 export default function OutboundFlowReport() {
+  const tUi = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const exporter = useReportExport();
   const [summaryOpen, setSummaryOpen] = useState(true);
@@ -594,7 +599,7 @@ export default function OutboundFlowReport() {
         label: recipient,
       })),
     ],
-    [recipientOptions],
+    [recipientOptions, tUi],
   );
 
   const statusFilterOptions = useMemo<FilterOption[]>(
@@ -605,7 +610,7 @@ export default function OutboundFlowReport() {
         label: outboundStatusLabel(status),
       })),
     ],
-    [statusOptions],
+    [statusOptions, tUi],
   );
 
   const filteredDocuments = useMemo(
@@ -949,7 +954,7 @@ export default function OutboundFlowReport() {
 
       <section
         className="outbound-top-filters"
-        aria-label="Bộ lọc báo cáo xuất kho"
+        aria-label={tUi("uiAudit.text_18889984b1")}
       >
         <div
           className="outbound-top-filters__date"
@@ -986,8 +991,8 @@ export default function OutboundFlowReport() {
           }}
           options={recipientFilterOptions}
           icon="user-round"
-          searchPlaceholder="Tìm người nhận..."
-          ariaLabel="Chọn người nhận"
+          searchPlaceholder={tUi("uiAudit.text_3af2aaa986")}
+          ariaLabel={tUi("uiAudit.text_eff219d93a")}
           disabled={uiUpdating}
         />
         <FilterCombobox
@@ -1000,8 +1005,8 @@ export default function OutboundFlowReport() {
           }}
           options={statusFilterOptions}
           icon="file-clock"
-          searchPlaceholder="Tìm trạng thái..."
-          ariaLabel="Chọn trạng thái phiếu xuất"
+          searchPlaceholder={tUi("uiAudit.text_4c99ba2b46")}
+          ariaLabel={tUi("uiAudit.text_900fb31970")}
           disabled={uiUpdating}
         />
       </section>
@@ -1115,7 +1120,7 @@ export default function OutboundFlowReport() {
                   icon="package-plus"
                   title={tUi("updatedUi.text_71beef8c0375")}
                   value={issuedQuantity}
-                  note="Trong kỳ đã chọn"
+                  note={tUi("uiAudit.text_539d7ae245")}
                   empty={reportEmpty}
                   expanded={kpiOpen.cyan}
                   onToggle={() => toggleKpi("cyan")}
@@ -1145,7 +1150,7 @@ export default function OutboundFlowReport() {
                   icon="warehouse"
                   title={tUi("outbound.list.colRecipient")}
                   value={recipientCount}
-                  note="Có phát sinh xuất"
+                  note={tUi("uiAudit.text_f5213a2bcb")}
                   empty={reportEmpty}
                   expanded={kpiOpen.violet}
                   onToggle={() => toggleKpi("violet")}
@@ -1379,7 +1384,7 @@ export default function OutboundFlowReport() {
             <div
               className="outbound-reference-filters outbound-table-filters"
               role="region"
-              aria-label="Bộ lọc danh sách phiếu xuất"
+              aria-label={tUi("uiAudit.text_2b2b1475a1")}
             >
               <label className="outbound-table-search">
                 <Icon name="search" />
@@ -1419,8 +1424,8 @@ export default function OutboundFlowReport() {
                   label: `${tUi("dashboard.composition.colStatus")}: ${option.label}`,
                 }))}
                 icon="file-clock"
-                searchPlaceholder="Tìm trạng thái..."
-                ariaLabel="Lọc trạng thái"
+                searchPlaceholder={tUi("uiAudit.text_4c99ba2b46")}
+                ariaLabel={tUi("uiAudit.text_fa369313d3")}
                 disabled={uiUpdating}
               />
               <FilterCombobox
@@ -1436,8 +1441,8 @@ export default function OutboundFlowReport() {
                   label: `${tUi("outbound.list.colRecipient")}: ${option.label}`,
                 }))}
                 icon="user-round"
-                searchPlaceholder="Tìm người nhận..."
-                ariaLabel="Lọc người nhận"
+                searchPlaceholder={tUi("uiAudit.text_3af2aaa986")}
+                ariaLabel={tUi("reports.recipientAgency.recipientAria")}
                 disabled={uiUpdating}
               />
               {query || appliedRecipient || appliedStatus ? (
@@ -1454,7 +1459,7 @@ export default function OutboundFlowReport() {
                     setPage(1);
                   }}
                 >
-                  Xóa lọc
+                  {tUi("dashboardAudit.clearFilters")}{" "}
                 </button>
               ) : null}
             </div>
@@ -1574,7 +1579,11 @@ export default function OutboundFlowReport() {
                           <td
                             data-label={tUi("dashboard.composition.colStatus")}
                           >
-                            <span className="outbound-status" data-tone={tone} title={outboundStatusLabel(document.status)}>
+                            <span
+                              className="outbound-status"
+                              data-tone={tone}
+                              title={outboundStatusLabel(document.status)}
+                            >
                               {outboundStatusLabel(document.status)}
                             </span>
                           </td>

@@ -903,7 +903,11 @@ export function PvProductCatalogPage() {
                   <strong>
                     {statReady
                       ? stat.value.toLocaleString(
-                          language === "vi" ? "vi-VN" : "en-US",
+                          language === "vi"
+                            ? "vi-VN"
+                            : language === "zh"
+                              ? "zh-CN"
+                              : "en-US",
                         )
                       : "—"}
                   </strong>
@@ -1156,7 +1160,11 @@ export function PvProductCatalogPage() {
                 : `${visibleRows.length} ${copy("kết quả trong trang", "matches on this page")}`}{" "}
               /{" "}
               {pagination.total.toLocaleString(
-                language === "vi" ? "vi-VN" : "en-US",
+                language === "vi"
+                  ? "vi-VN"
+                  : language === "zh"
+                    ? "zh-CN"
+                    : "en-US",
               )}{" "}
               {copy("sản phẩm", "products")}
             </span>

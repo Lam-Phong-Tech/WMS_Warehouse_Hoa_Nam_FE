@@ -424,7 +424,7 @@ export default function DashboardPage() {
         detail: t("dashboard.issue.mismatchDetail"),
         technical: "Distinct incident",
         count: source.inventory_mismatch,
-        route: ROUTES.INVENTORY,
+        route: `${ROUTES.INVENTORY}?reconciliation_status=MISMATCH`,
       },
       ...(canViewWarranty
         ? [

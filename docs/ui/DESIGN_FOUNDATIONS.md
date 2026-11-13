@@ -1,8 +1,8 @@
 ---
 title: Hoa Nam WMS — Chuẩn giao diện Web thống nhất
 status: active
-version: 2.4
-updated: 2026-11-05
+version: 2.5
+updated: 2026-11-13
 owner: Frontend
 applies_to: Web Admin (desktop, tablet, mobile)
 ---
@@ -62,6 +62,41 @@ Tiêu đề trang/vùng/drawer và nhãn đầu bảng dùng `--ops-heading` (`-
 - `npm run ui:tokens` cấm hai màu light cũ `#d2edf7`/`#dff0f7` ngoài thư mục token **kể cả khi baseline cũ còn cho phép hex trong file**. Chạy thêm `node scripts/check-ui-tokens.mjs --self-test` khi thay guard. Không tăng baseline để bỏ qua lỗi mới.
 
 Lỗi gốc đã ghi nhận: bảng/hover dùng màu light cố định trong khi chữ đổi sang dark; tiêu đề dùng màu phụ; divider quá nhạt; MUI Drawer elevation thêm gradient trắng. Khi gặp lỗi tương tự, kiểm tra token và cascade tại component dùng chung trước, rồi sửa các override cùng mẫu trong module. Phạm vi kiểm chứng từng màn phải được báo riêng, không suy ra toàn bộ hệ thống đã đạt chỉ từ bộ hồi quy SKU.
+
+### Hover thống nhất ở giao diện tối — ngày 13/11/2026
+
+**Một quy tắc chung cho tương tác trung tính:** hover dùng nền đặc `var(--ops-pale)` (**`#223D50`**) và chữ/icon tương tác `var(--ops-heading)` (**`#DAECF6`**). Alias tương đương là `--wms-bg-subtle` và `--wms-text-strong`. Đây là màu Operations đang có, không tạo thêm palette riêng hoặc dùng bảng màu Vuexy nền tím làm chuẩn cho màn Operations. Màu chỉ được khai báo trong token; CSS màn hình và `sx` phải tham chiếu biến semantic.
+
+Mục tiêu: di chuột chỉ làm vùng tương tác sáng lên nhẹ trong cùng tông xanh tối, không xuất hiện mảng trắng, không làm mất chữ/icon, không thay đổi kích thước hoặc gây giật bố cục. Cặp chữ chính/nền hover trên có tương phản khoảng **9.4:1**. Nội dung phụ, liên kết và badge phải được kiểm tra riêng trên nền hover; con số này không đại diện cho mọi phần tử con.
+
+| Thành phần | Quy tắc hover/focus ở dark mode |
+| ---------- | ------------------------------ |
+| Nút phụ, nút text trung tính, nút icon, nút đóng, hành động xem chi tiết | Nền `--ops-pale`, chữ/icon `--ops-heading`; icon kế thừa `currentColor`. Chỉ áp dụng khi nút tương tác được. |
+| Menu tài khoản, ngôn ngữ, giao diện, Select/Autocomplete/combobox, kết quả tìm kiếm | Cùng cặp màu trên cho hover, focus bàn phím, selected và selected+hover. Dùng dấu ✓, `aria-selected`/`aria-checked` để giữ dấu hiệu chọn; không chuyển chữ sang primary. |
+| Hàng bảng, danh sách, card có thể bấm | Nền hover `--ops-pale`; giữ màu chữ semantic và badge nghiệp vụ. Ô có nền riêng, cột sticky và ô hành động phải cùng nền với hàng, không để lại ô trắng. Không thêm hover giả lên card chỉ để hiển thị thông tin. |
+| Tab, phân trang, điều hướng chưa chọn | Dùng cặp hover trung tính. Tab/trang/menu đang chọn giữ dấu hiệu active hiện hành (indicator, nền primary hoặc marker) khi hover; hover không được xóa trạng thái chọn. |
+| Input, ô tìm kiếm, bộ lọc | Giữ nền surface tối hiện hành; hover làm rõ viền bằng token semantic. Focus dùng focus ring; không đổi cả ô sang nền trắng hoặc giả trạng thái đã chọn. |
+| Liên kết và mã bấm được trong bảng | Giữ quy cách mã ở mục Thang chữ: chữ `--ops-link` trên nền tối, không thêm gạch chân hay đổi độ đậm/kích thước. Nếu có vùng bấm riêng, nền hover dùng `--ops-pale`; đo tương phản trên nền hàng thực tế. |
+
+**Ngoại lệ mang ý nghĩa hành động:** nút chính đang có nền primary dùng `--ops-primary-hover` + `--ops-on-primary`; hành động xóa/hủy/đăng xuất giữ cặp màu danger semantic đủ tương phản. Không ép mọi nút thành trung tính làm mất phân cấp hoặc ý nghĩa nghiệp vụ. Disabled/loading không nhận hiệu ứng hover làm người dùng tưởng có thể bấm; selected+hover và danger+hover phải được kiểm tra như trạng thái riêng.
+
+**Hành vi chung:** chuyển màu nền/chữ/viền theo `--wms-motion-fast` (140ms) và `--wms-ease-standard`; không nâng card, phóng to nút hoặc thêm bóng trắng khi hover. Tôn trọng `prefers-reduced-motion`. `:focus-visible` dùng cùng cặp màu trung tính và giữ focus ring hiện hành, không xóa outline mà không thay thế. Với hover thuần trang trí, chỉ kích hoạt trên thiết bị hỗ trợ hover; trên cảm ứng không dựa vào hover để lộ hành động hoặc thông tin cần thiết.
+
+**Thực thi dùng chung:** cấu hình trong theme adapter MUI/AntD và component chung trước, sau đó thay override tại module. Popup/portal gắn ở `body` phải đọc token từ `:root[data-theme="dark"]`, không phụ thuộc việc nằm trong `.hn-system-shell`. Không thêm một selector toàn cục `*:hover` hoặc `button:hover !important`: cách này ghi đè cả primary, danger, disabled và trạng thái đã chọn. Không dùng nền `white`, `#fff`, màu xám sáng cố định, overlay trắng đậm hoặc công thức pha riêng theo từng màn cho hover trung tính. Không dùng `--ops-primary` làm màu chữ menu trung tính trên nền `--ops-pale`.
+
+**Những khác biệt đã thấy khi đọc mã nguồn (chưa phải kết luận render):**
+
+- Quét tĩnh ngày 13/11/2026 trên toàn bộ `src/**/*.css`: **103 file CSS, 473 lần xuất hiện `:hover`** (app 21, module 408, shared 9, styles 31, index 4). Đây là số lần xuất hiện trong mã, không phải số component hay số lỗi; chưa bao gồm đầy đủ hover viết trong TS/TSX, mặc định thư viện và computed style runtime.
+- `src/modules/reports/io-history/rpt08/base.css`: `summary:hover` của menu kho dùng nền light cố định `#f9fdff`; cần chuyển về token và kiểm tra cả trạng thái `[open]` khi triển khai.
+- `src/modules/dashboard/dashboard-overview.css` và `src/app/layouts/system-shell.css`: có hover pha `--map-white` với nền trong suốt. Có thể là lớp phủ nhẹ có chủ đích, không được kết luận thành lỗi nền trắng chỉ từ tìm kiếm; cần đo màu sau pha và kiểm tra dark override/cascade.
+- `src/modules/reports/components/report-filter-combobox.css`: option hover dùng `--ops-primary`; selected+hover chuyển sang nền primary, khác hợp đồng menu trung tính.
+- `src/modules/putaway/pages/putaway-queue.css`: menu chọn có chữ primary khi selected+hover; hover hàng dùng nhiều tỷ lệ pha màu khác nhau.
+- `src/modules/inventory/pages/inventory-page.css` và `src/modules/master-data/components/agency-list.css`: hover hàng pha pale/surface 55%, khác nền đặc thống nhất; kiểm tra cả ô sticky/ô hành động khi chuyển đổi.
+- `src/app/layouts/system-shell.css`: sidebar có quy tắc hover và active riêng; khi chuẩn hóa cần giữ marker/gradient active, đối chiếu cả drawer điều hướng mobile.
+
+**Điều kiện nghiệm thu:** kiểm tra computed style trong trình duyệt ở light và dark cho normal → hover → focus-visible → selected → selected+hover → disabled, gồm dropdown mở bằng portal, ô sticky, nút nằm trong hàng đang hover và drawer/dialog. Chữ thường ≥4.5:1, icon tương tác ≥3:1. Chạy `npm run test:ui-contrast` và `npm run ui:foundation` khi triển khai; bổ sung ca còn thiếu thay vì xem kết quả SKU/topbar là bằng chứng cho mọi module.
+
+Phạm vi rà soát phải bao gồm shell/topbar/sidebar; dashboard; nhập/xuất/đảo phiếu; tồn kho/xếp khay/sơ đồ; danh mục; bảo hành; báo cáo; tài khoản/phân quyền/cài đặt; thông báo/audit; các popup, drawer, dialog và component chung. Ghi riêng từng màn/trạng thái đã kiểm chứng. **Mục này xác lập chuẩn cần áp dụng; chưa chứng minh toàn bộ giao diện hiện hành đã được sửa hoặc kiểm thử trực quan.**
 
 ### Thang chữ
 
@@ -151,6 +186,8 @@ Khi khung hẹp, dùng `ResponsiveDataTable` chuyển card **hoặc** đặt chi
 
 ### Phân trang
 
+Ô chọn số dòng theo mẫu SKU: hiển thị `N / trang` trong ô (tiếng Anh `N / page`), không có nhãn `Số dòng/trang` bên ngoài. Dùng `UiSelect`, bản dịch `shared.table.perPage` và tên truy cập `shared.table.rowsPerPageAria`; giữ các mức số dòng và hành vi phân trang riêng của từng màn. Quy cách đầy đủ nằm trong tài liệu SKU ở ưu tiên 2.
+
 Chân bảng có viền trên `1px solid --ops-line`, padding `14px 16px`. Nhóm `Hiển thị ...` và chọn số dòng/trang ở bên trái, gap `14px`; nút chuyển trang ở bên phải. Khi hẹp, nhóm trái được xuống dòng và điều hướng vẫn nằm về phía phải. Giữ điều kiện lọc/sắp xếp khi vào chi tiết rồi quay lại nếu luồng hiện hành hỗ trợ.
 
 ## 6. Drawer bên phải, dialog và bố cục chi tiết
@@ -199,9 +236,11 @@ Nút/chữ **Hủy** dùng `--wms-error-text` (đỏ) ở cả light và dark, k
 
 ## 8. Trạng thái màn hình và nội dung
 
+**Ngôn ngữ giao diện và lỗi (13/11/2026):** dịch cả placeholder tìm trong dropdown, mô tả KPI, tooltip/`aria-label`, loading/empty state, lỗi dưới trường, banner và toast. Component dùng `useT`; option/nhãn có `useMemo` phải cập nhật theo hàm dịch. Không đóng băng bản dịch ở hằng module hoặc spread bảng nhãn song ngữ ra hằng; `tStatic` chỉ dùng khi tạo thông điệp tại thời điểm xử lý ngoài React. Schema form nhận hàm dịch hiện hành; khi đổi ngôn ngữ, cập nhật lỗi đã hiện mà giữ giá trị nhập, không tự làm lộ lỗi ở trường chưa tương tác. Lỗi API đi qua `getApiErrorMessage`/`resolveFormErrors`; chi tiết của alert dùng `getApiErrorDetails`, không render thẳng metadata trong `normalizeError.errors`. Mẫu dịch lỗi phải có phần chữ cố định, không dùng mẫu chỉ chứa biến như `{title}` để khớp mọi câu. Giữ nguyên tên, mã và nội dung người dùng; thông điệp máy chủ chưa có mẫu dịch phải được ghi nhận để bổ sung, không thay bằng câu chung làm mất chi tiết. Chạy hồi quy catalog tiếng Anh/Trung để chặn khóa thiếu và biến nội suy lệch. Phạm vi rà soát/giới hạn được ghi trong [audit tiếng Anh](./audits/2026-11-13-english-localization.md).
+
 Loading giữ khung ổn định; rỗng đưa bước tiếp theo; không có kết quả lọc thì gợi ý chỉnh điều kiện đang chọn; lỗi API có cách thử lại; thiếu quyền giải thích rõ; dữ liệu một phần ghi rõ phần còn thiếu. Không dùng toast ba giây để thay cho lỗi cần người dùng sửa hoặc lỗi làm chặn tác vụ. Không hiển thị số `0` giả khi query còn tải.
 
-Nhãn giao diện dịch qua i18n. **Không đưa tên cột SQL/API thô ra UI**: ví dụ `sku_code` → `Mã SKU`, `required_qty` → `Số lượng yêu cầu`, `recipient_name` → `Người nhận`. Tên cột kỹ thuật chỉ nằm trong hướng dẫn định dạng file nâng cao hoặc tài liệu tích hợp. Ngày hiển thị theo `dd/MM/yyyy` khi phù hợp nghiệp vụ; số theo locale người dùng. Kiểm tra nhãn tiếng Việt/Anh dài trước khi chốt độ rộng.
+Nhãn giao diện dịch qua i18n. **Không đưa tên cột SQL/API thô ra UI**: ví dụ `sku_code` → `Mã SKU`, `required_qty` → `Số lượng yêu cầu`, `recipient_name` → `Người nhận`. Tên cột kỹ thuật chỉ nằm trong hướng dẫn định dạng file nâng cao hoặc tài liệu tích hợp. Ngày hiển thị theo `dd/MM/yyyy` khi phù hợp nghiệp vụ; số theo locale người dùng. Kiểm tra nhãn tiếng Việt/Anh/Trung trước khi chốt độ rộng. Bản tiếng Trung phải được kiểm tra trên cây message **sau khi ghép supplement**, đủ khóa và biến nội suy như bản Việt; thêm test để chặn chữ Việt/Anh bị giữ lại ngoài tên ngôn ngữ gốc, mã kỹ thuật và dữ liệu. Kiểm tra cả nhãn nghiệp vụ, breadcrumb, lỗi form/API và thông báo, không chỉ khóa trong từ điển. Phạm vi kiểm chứng nằm trong [audit tiếng Trung](./audits/2026-11-13-chinese-localization.md).
 
 ## 9. Thông báo nổi toàn cục — theo HTML người dùng cung cấp
 

@@ -1,3 +1,4 @@
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { useEffect, useRef, useState } from "react";
 import { UiButton, UiPagination, UiSelect, FILTER_WIDTH } from "@/shared/ui";
 import { ActionIconButton, RowActionButton } from "@/shared/components/actions";
@@ -13,10 +14,15 @@ type Props = {
   rows: DashboardThresholdRow[];
   onNavigate: (route: string) => void;
 };
-const stateLabel = (state: DashboardThresholdRow["state"]) =>
-  state === "low" ? "Dưới min" : state === "high" ? "Trên max" : "Trong ngưỡng";
+const stateLabel = (state: DashboardThresholdRow["state"], t: TranslateFn) =>
+  state === "low"
+    ? t("dashboardAudit.low")
+    : state === "high"
+      ? t("dashboardAudit.high")
+      : t("dashboardAudit.within");
 
 export function ThresholdSkuList({ rows, onNavigate }: Props) {
+  const t = useT();
   const [filter, setFilter] = useState<Filter>("alerts");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -70,30 +76,30 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
         className="threshold-list"
         aria-labelledby="threshold-list-title"
       >
-        <h2 id="threshold-list-title">Danh sách SKU</h2>
+        <h2 id="threshold-list-title">{t("dashboardAudit.skuList")}</h2>
         <div className="threshold-filters">
           <SearchInput
             className="threshold-search"
             width="100%"
             value={search}
-            placeholder="Tìm mã hoặc tên SKU"
+            placeholder={t("dashboardAudit.search")}
             onChange={(value) => {
               setSearch(value);
               resetPage();
             }}
           />
           <select
-            aria-label="Lọc trạng thái định mức"
+            aria-label={t("dashboardAudit.filterStatus")}
             value={filter}
             onChange={(event) => {
               setFilter(event.target.value as Filter);
               resetPage();
             }}
           >
-            <option value="alerts">Trạng thái: Đang cảnh báo</option>
-            <option value="low">Trạng thái: Dưới min</option>
-            <option value="high">Trạng thái: Trên max</option>
-            <option value="all">Trạng thái: Tất cả đã cấu hình</option>
+            <option value="alerts">{t("dashboardAudit.filterAlerts")}</option>
+            <option value="low">{t("dashboardAudit.filterLow")}</option>
+            <option value="high">{t("dashboardAudit.filterHigh")}</option>
+            <option value="all">{t("dashboardAudit.filterAll")}</option>
           </select>
           {(search || filter !== "alerts") && (
             <UiButton
@@ -104,7 +110,7 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
                 resetPage();
               }}
             >
-              Xóa lọc
+              {t("dashboardAudit.clearFilters")}
             </UiButton>
           )}
         </div>
@@ -114,7 +120,7 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
             rowKey={(row) => row.sku}
             onRowClick={(row) => open(row.sku, null)}
             mobileBreakpoint="lg"
-            emptyText="Không có SKU trong bộ lọc này."
+            emptyText={t("dashboardAudit.noSkus")}
             headerCellStyle={{
               backgroundColor: "var(--ops-table-header)",
               backgroundImage: "none",
@@ -152,14 +158,14 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
               },
               {
                 key: "name",
-                header: "Tên",
+                header: t("dashboardAudit.name"),
                 width: "20%",
                 truncate: 0,
                 render: (row) => row.name || "—",
               },
               {
                 key: "available",
-                header: "Khả dụng",
+                header: t("dashboardAudit.available"),
                 width: "12%",
                 align: "right",
                 truncate: 0,
@@ -183,24 +189,24 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
               },
               {
                 key: "state",
-                header: "Trạng thái",
+                header: t("dashboardAudit.status"),
                 width: "15%",
                 truncate: 0,
                 render: (row) => (
                   <span className="threshold-status" data-state={row.state}>
-                    {stateLabel(row.state)}
+                    {stateLabel(row.state, t)}
                   </span>
                 ),
               },
               {
                 key: "action",
-                header: "Thao tác",
+                header: t("dashboardAudit.actions"),
                 isAction: true,
                 width: "8%",
                 render: (row) => (
                   <RowActionButton
                     kind="view"
-                    label={`Xem định mức ${row.sku}`}
+                    label={t("dashboardAudit.viewThreshold", { sku: row.sku })}
                     onClick={(event) => open(row.sku, event.currentTarget)}
                   />
                 ),
@@ -210,17 +216,17 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
           <div className="threshold-pagination">
             <div className="threshold-pagination-info">
               <span aria-live="polite">
-                Hiển thị {filtered.length ? start + 1 : 0}–
+                {t("dashboardAudit.showing")} {filtered.length ? start + 1 : 0}–
                 {Math.min(start + pageSize, filtered.length)} /{" "}
                 {fmt(filtered.length)} SKU
               </span>
               <UiSelect
                 value={pageSize}
-                aria-label="Số dòng mỗi trang"
+                aria-label={t("dashboardAudit.pageSize")}
                 minWidth={FILTER_WIDTH.pageSize}
                 options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
                   value: size,
-                  label: `${size} / trang`,
+                  label: t("dashboardAudit.perPage", { size }),
                 }))}
                 onChange={(value) => {
                   setPageSize(Number(value));
@@ -248,11 +254,11 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
         >
           <header>
             <h2 id="threshold-detail-title" tabIndex={-1} ref={detailHeading}>
-              Chi tiết định mức
+              {t("dashboardAudit.thresholdDetails")}
             </h2>
             <ActionIconButton
               kind="close"
-              label="Đóng chi tiết định mức"
+              label={t("dashboardAudit.closeDetails")}
               onClick={close}
             />
           </header>
@@ -262,46 +268,58 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
           )}
           <dl>
             <div>
-              <dt>Loại hàng</dt>
+              <dt>{t("dashboardAudit.itemKind")}</dt>
               <dd>
                 {selected.kind === "PRODUCT"
-                  ? "Sản phẩm"
+                  ? t("dashboardAudit.product")
                   : selected.kind === "COMPONENT"
-                    ? "Linh kiện"
+                    ? t("dashboardAudit.component")
                     : "—"}
               </dd>
             </div>
             <div>
-              <dt>Tồn khả dụng</dt>
+              <dt>{t("dashboardAudit.availableStock")}</dt>
               <dd>{fmt(selected.available)}</dd>
             </div>
             <div>
-              <dt>Định mức min</dt>
-              <dd>{selected.min === null ? "Chưa đặt" : fmt(selected.min)}</dd>
+              <dt>{t("dashboardAudit.minThreshold")}</dt>
+              <dd>
+                {selected.min === null
+                  ? t("dashboardAudit.notSet")
+                  : fmt(selected.min)}
+              </dd>
             </div>
             <div>
-              <dt>Định mức max</dt>
-              <dd>{selected.max === null ? "Chưa đặt" : fmt(selected.max)}</dd>
+              <dt>{t("dashboardAudit.maxThreshold")}</dt>
+              <dd>
+                {selected.max === null
+                  ? t("dashboardAudit.notSet")
+                  : fmt(selected.max)}
+              </dd>
             </div>
             <div>
-              <dt>Mức cần kiểm tra</dt>
+              <dt>{t("dashboardAudit.reviewLevel")}</dt>
               <dd>
                 {selected.state === "low"
-                  ? `Thiếu ${fmt((selected.min ?? 0) - selected.available)}`
+                  ? t("dashboardAudit.shortfall", {
+                      quantity: fmt((selected.min ?? 0) - selected.available),
+                    })
                   : selected.state === "high"
-                    ? `Vượt ${fmt(selected.available - (selected.max ?? 0))}`
-                    : "Trong ngưỡng"}
+                    ? t("dashboardAudit.excess", {
+                        quantity: fmt(selected.available - (selected.max ?? 0)),
+                      })
+                    : t("dashboardAudit.within")}
               </dd>
             </div>
           </dl>
           <p className="threshold-detail-note">
-            Kiểm tra nhu cầu và số tồn trước khi điều chuyển hoặc nhập thêm.
+            {t("dashboardAudit.thresholdNote")}
           </p>
           <UiButton
             appearance="filled"
             onClick={() => onNavigate("/inventory")}
           >
-            Xem tồn kho
+            {t("dashboardAudit.viewInventory")}
           </UiButton>
         </section>
       )}

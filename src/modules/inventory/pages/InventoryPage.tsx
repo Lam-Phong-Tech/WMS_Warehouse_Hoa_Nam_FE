@@ -167,9 +167,22 @@ export default function InventoryPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [stockStatus, setStockStatus] = useState<InventoryStockStatus | "">("");
-  const [reconciliationStatus, setReconciliationStatus] = useState<
-    InventoryReconciliationStatus | ""
-  >("");
+  const reconciliationParam = searchParams.get("reconciliation_status");
+  const reconciliationStatus: InventoryReconciliationStatus | "" =
+    reconciliationParam === "MATCH" || reconciliationParam === "MISMATCH"
+      ? reconciliationParam
+      : "";
+  const setReconciliationStatus = (value: InventoryReconciliationStatus | "") => {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value) next.set("reconciliation_status", value);
+        else next.delete("reconciliation_status");
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const [skuType, setSkuType] = useState<"PRODUCT" | "COMPONENT" | "">("");
   const [movementSearch, setMovementSearch] = useState("");
   const [movementType, setMovementType] = useState("");

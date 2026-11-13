@@ -6,8 +6,12 @@ import {
   within,
   waitFor,
   cleanup,
+  act,
 } from "@testing-library/react";
 import GoodsTraceReport from "./GoodsTraceReport";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 const workbook = vi.hoisted(() => ({
   saveStyledReportWorkbook: vi.fn().mockResolvedValue(undefined),
   book_new: vi.fn(() => ({})),
@@ -57,12 +61,110 @@ const base = {
 describe("GoodsTraceReport", () => {
   afterEach(cleanup);
   beforeEach(() => {
+    act(() => useLanguageStore.setState({ language: "vi" }));
     query.isError = false;
     query.isFetching = false;
     query.isPending = false;
     query.allowed = true;
     vi.clearAllMocks();
   });
+  afterEach(() => {
+    act(() => useLanguageStore.setState({ language: "vi" }));
+  });
+  it("updates expression labels and source options when the language changes while preserving business data", async () => {
+    query.data = {
+      ...base,
+      resolved: true,
+      events: [
+        {
+          id: "translated-event",
+          code: "MÃ-01",
+          event_label: "Xuất kho của Nguyễn",
+          event_type: "ISSUE",
+          occurred_at: "2026-11-05T10:00:00",
+          source_type: "ISSUE_DOCUMENT",
+          source_no: "PX-001",
+          source_id: "out1",
+          qty_delta: -1,
+          quantity: 1,
+          actor: "Nguyễn Văn An",
+          related_documents: [],
+        },
+      ],
+    };
+    render(<GoodsTraceReport />);
+    expect(
+      screen.getByRole("option", { name: /Phiếu xuất kho/ }),
+    ).toBeInTheDocument();
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    expect(
+      screen.getByRole("option", { name: /Issue note/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: /Phiếu xuất kho/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /Code type:.*All/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Trace history (1 events)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Total events during the selected period."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Rows per page" }),
+    ).toHaveTextContent("10 / page");
+    expect(
+      screen.getByRole("button", {
+        name: "Event details MÃ-01 Xuất kho của Nguyễn",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /Nguyễn Văn An/ }),
+    ).toBeInTheDocument();
+    await act(async () => {
+      await ensureChineseMessages();
+      useLanguageStore.getState().setLanguage("zh");
+    });
+    expect(screen.getByText("追溯历史（1 条事件）")).toBeInTheDocument();
+    expect(screen.getByText("期间内事件总数。")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("combobox", { name: "编码类型" })).getByRole(
+        "option",
+        { name: /全部/ },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "每页行数" }),
+    ).toHaveTextContent("每页 10 条");
+    expect(
+      screen.getByRole("button", {
+        name: "事件详情 MÃ-01 Xuất kho của Nguyễn",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: /Nguyễn Văn An/ }),
+    ).toBeInTheDocument();
+  });
+  it.each([
+    [false, "Code not found within your permitted scope"],
+    [true, "No events during the selected period"],
+    [undefined, "No matching events"],
+  ])(
+    "localizes the empty state when resolution is %s",
+    async (resolved, title) => {
+      query.data = { ...base, resolved };
+      await act(async () => {
+        await ensureEnglishMessages();
+        useLanguageStore.setState({ language: "en" });
+      });
+      render(<GoodsTraceReport />);
+      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+      expect(screen.getByText("Query information")).toBeInTheDocument();
+    },
+  );
   it("does not treat unknown code as a recognized empty history", () => {
     query.data = base;
     render(<GoodsTraceReport />);
