@@ -453,7 +453,6 @@ export default function TrayOverviewPage() {
                 tabIndex={0}
                 aria-label={t("putaway.overview.mapViewportAria")}
               >
-                <div className="hn-tray-floor" aria-hidden="true" />
                 <div
                   className="hn-tray-scene-zoom"
                   style={{ width: `${sceneWidth}px` }}

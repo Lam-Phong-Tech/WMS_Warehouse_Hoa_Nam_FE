@@ -251,20 +251,8 @@
   outline: none;
   border-bottom: 1px solid var(--ops-line);
   scrollbar-width: thin;
-}
-.hn-tray-scene-zoom {
-  position: relative;
-  z-index: 1;
-  margin-inline: auto;
-}
-.hn-tray-viewport:focus-visible {
-  outline: 2px solid var(--ops-link);
-  outline-offset: -2px;
-}
-
-.hn-tray-floor {
-  position: absolute;
-  inset: 0;
+  /* Nền sàn kho đặt trên chính khung nhìn thay vì một lớp absolute theo
+     scrollport: lúc cuộn ngang (tablet), nền vẫn phủ trọn vùng nhìn thấy. */
   background:
     radial-gradient(
       circle at 50% 18%,
@@ -287,7 +275,15 @@
       var(--tray-floor) 42%,
       var(--tray-floor-dark) 100%
     );
-  color: var(--ops-text);
+}
+.hn-tray-scene-zoom {
+  position: relative;
+  z-index: 1;
+  margin-inline: auto;
+}
+.hn-tray-viewport:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: -2px;
 }
 
 .hn-tray-zoom {
