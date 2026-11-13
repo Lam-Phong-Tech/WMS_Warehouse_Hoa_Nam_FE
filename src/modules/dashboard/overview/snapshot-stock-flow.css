@@ -35,8 +35,8 @@
 .hn-stock-flow__bar { fill: var(--stock-flow-in); }
 .hn-stock-flow__bar.is-out { fill: var(--stock-flow-out); }
 /* Cột tồn kho: xanh lá (--ops-success), khác tông hẳn đường kẻ tồn để đọc nhanh;
-   giữ độ nhạt để không át bar nhập/xuất. */
-.hn-stock-flow__bar.is-stock { fill: var(--stock-flow-stock); fill-opacity: 0.42; }
+   giữ độ nhạt vừa đủ (0.6) để không át bar nhập/xuất. */
+.hn-stock-flow__bar.is-stock { fill: var(--stock-flow-stock); fill-opacity: 0.6; }
 .hn-stock-flow__line { fill: none; stroke: var(--stock-flow-stock); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
 .hn-stock-flow__point { fill: #fff; stroke: var(--stock-flow-stock); stroke-width: 1.75; }
 /* Đường kẻ đổi màu theo metric đang chọn trên legend. */
