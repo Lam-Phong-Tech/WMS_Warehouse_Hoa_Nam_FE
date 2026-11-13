@@ -330,7 +330,7 @@ export function ForgotPasswordPage() {
             </UiButton>
             <Box role="note" sx={{ display: "flex", alignItems: "center", gap: "18px", minHeight: 80,
               padding: "17px 22px", borderRadius: "9px", color: "var(--auth-ink, #071c57)", backgroundColor: "var(--auth-note, #ebf6ff)", fontSize: 17 }}>
-              <Box aria-hidden="true" sx={{ color: "#0069f5", fontSize: 29, lineHeight: 1 }}>✉</Box>
+              <Box aria-hidden="true" sx={{ color: "var(--auth-link)", fontSize: 29, lineHeight: 1 }}>✉</Box>
               {t("auth.forgotPassword.emailNotice")}
             </Box>
           </Box>
@@ -350,7 +350,7 @@ export function ForgotPasswordPage() {
                 </Box>
                 <Box sx={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: { xs: "6px", sm: "12px" } }}>
                   {Array.from({ length: 6 }, (_, index) => <Box key={index} className="otp-digit" aria-hidden="true"
-                    sx={{ display: "grid", placeItems: "center", height: { xs: 54, sm: 72 }, border: `1px solid ${fieldState.error || failure?.kind === "otp" ? "#f32637" : !isExpired && field.value.length === index ? "#0069f5" : "var(--auth-border, #c9dfff)"}`,
+                    sx={{ display: "grid", placeItems: "center", height: { xs: 54, sm: 72 }, border: `1px solid ${fieldState.error || failure?.kind === "otp" ? "#f32637" : !isExpired && field.value.length === index ? "var(--auth-link)" : "var(--auth-border, #c9dfff)"}`,
                       borderRadius: "9px", backgroundColor: "var(--auth-field, #f9fcff)", fontSize: { xs: 22, sm: 27 } }}>
                     {field.value[index] ?? ""}
                   </Box>)}

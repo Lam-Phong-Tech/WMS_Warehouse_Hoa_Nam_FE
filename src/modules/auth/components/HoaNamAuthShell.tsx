@@ -21,7 +21,6 @@ interface HoaNamAuthShellProps {
   children: ReactNode;
 }
 
-const blue = "#0069f5";
 const ink = "#071c57";
 const muted = "#657db3";
 
@@ -78,7 +77,7 @@ export function HoaNamAuthShell({
         "--auth-note": isDark ? "#18385d" : "#ebf6ff",
         "--auth-page": isDark ? "#081a32" : "#f1fbff",
         "--auth-line": isDark ? "#385678" : "#bcd0e6",
-        "--auth-link": isDark ? "#88b8ff" : blue,
+        "--auth-link": "var(--ops-link)",
         "--auth-error-bg": isDark ? "#492b3b" : "#fff1f3",
         "--auth-error-ink": isDark ? "#ffd2dc" : "#a33348",
         "--auth-alert-error-bg": isDark ? "#47283a" : "#fff0f1",
@@ -99,7 +98,6 @@ export function HoaNamAuthShell({
         color: "var(--auth-ink)",
         overflowX: "hidden",
         "& a": { color: "var(--auth-link)", textDecoration: "none" },
-        "& a:hover": { textDecoration: "underline" },
         "& label": {
           color: "var(--auth-ink)",
           fontWeight: 700,
@@ -115,9 +113,9 @@ export function HoaNamAuthShell({
           backgroundColor: "var(--auth-field)",
           color: "var(--auth-ink)",
           "& .MuiOutlinedInput-notchedOutline": { borderColor: "var(--auth-border)" },
-          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: blue },
+          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--ops-link)" },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: blue,
+            borderColor: "var(--ops-link)",
             borderWidth: "2px",
           },
           "&.Mui-error .MuiOutlinedInput-notchedOutline": {
@@ -138,13 +136,13 @@ export function HoaNamAuthShell({
         "& .MuiButton-contained": {
           minHeight: { xs: 56, sm: 74, xl: 64 },
           borderRadius: "9px",
-          backgroundColor: blue,
+          backgroundColor: "var(--ops-primary)",
           color: "white",
           boxShadow: "none",
           fontSize: { xs: 17, sm: 25, xl: 20 },
           fontWeight: 700,
           textTransform: "none",
-          "&:hover": { backgroundColor: "#0056df", boxShadow: "none" },
+          "&:hover": { backgroundColor: "var(--ops-primary-hover)", boxShadow: "none" },
           "&.Mui-disabled": { backgroundColor: isDark ? "#334969" : "#d4dfeb", color: "var(--auth-muted)" },
         },
         "& .hn-auth-note": {
@@ -246,7 +244,7 @@ export function HoaNamAuthShell({
             display: "flex",
             alignItems: "center",
             gap: "15px",
-            color: { xs: "white", xl: isDark ? "#a9c9ff" : blue },
+            color: { xs: "white", xl: "var(--ops-link)" },
             backgroundColor: { sm: "#052b4e", xl: "transparent" },
             borderRadius: { sm: "14px", xl: 0 },
             padding: { sm: "9px 14px", xl: 0 },
@@ -371,33 +369,30 @@ export function HoaNamAuthShell({
             </Box>
           )}
 
-          {(recoveryStep || showRecoveryBack) && (
-            <>
-              {!hideRecoveryBack && (
-                <Link
-                  to="/login"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 14,
-                    fontSize: 17,
-                    marginBottom: 30,
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{ fontSize: 27, lineHeight: 1 }}
-                  >
-                    ←
-                  </span>
-                  {t("auth.forgotPassword.backToLogin")}
-                </Link>
-              )}
-              {recoveryStep && <Box sx={{ color: "var(--auth-link)", fontSize: { xs: 16, sm: 18 }, marginBottom: "7px" }}>
-                {recoveryStep}
-              </Box>}
-            </>
-          )}
+          {recoveryStep ? (
+            <Box sx={{ color: "var(--auth-link)", fontSize: { xs: 16, sm: 18 }, marginBottom: "30px" }}>
+              {recoveryStep}
+            </Box>
+          ) : showRecoveryBack && !hideRecoveryBack ? (
+            <Link
+              to="/login"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 14,
+                fontSize: 17,
+                marginBottom: 30,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{ fontSize: 27, lineHeight: 1 }}
+              >
+                ←
+              </span>
+              {t("auth.forgotPassword.backToLogin")}
+            </Link>
+          ) : null}
           {showHeading ? (
             <>
               <Box
@@ -419,7 +414,7 @@ export function HoaNamAuthShell({
                   mb: {
                     xs: "24px",
                     sm: "46px",
-                    xl: recoveryStep ? "75px" : "30px",
+                    xl: "30px",
                   },
                   color: "var(--auth-muted)",
                   fontSize: { xs: 16, sm: 23, xl: 19 },
