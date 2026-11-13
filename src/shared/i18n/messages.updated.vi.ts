@@ -289,7 +289,7 @@ export const MESSAGES_UPDATED_VI = {
   text_7ccd0847f18c:
     "Chưa tải được đầy đủ số liệu theo dõi. Bấm đồng bộ để thử lại.",
   text_7e49f04ad717: "Tổng hợp phiếu xuất trong kỳ",
-  text_7ebd6aabc34b: "Đại lý & Nơi nhận",
+  text_7ebd6aabc34b: "Danh mục Đại lý & Nơi nhận",
   text_7f30733ab451: "Cần xử lý để hoàn tất xuất kho",
   text_7f401d2e3891: "Hồ sơ",
   text_80df50920cc8: "Tổng quan ghi sổ",

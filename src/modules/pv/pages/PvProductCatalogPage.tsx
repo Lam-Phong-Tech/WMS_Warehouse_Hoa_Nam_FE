@@ -350,9 +350,13 @@ function PvCatalogCard({
           className="pv-catalog-card-name"
           title={profile.display_name}
           sx={{
+            minWidth: 0,
             fontWeight: 700,
             fontSize: 14,
             lineHeight: 1.35,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
             color: S.textHigh,
           }}
         >

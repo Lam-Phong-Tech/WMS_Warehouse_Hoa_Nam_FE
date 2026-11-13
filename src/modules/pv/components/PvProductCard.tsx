@@ -1,6 +1,7 @@
 import { Box, UiStatusBadge } from "@/shared/ui";
 import { RADIUS, SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import { useT } from "@/shared/i18n/useT";
+import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import type { PvProduct } from "@/modules/pv/types/pv.types";
 
 /**
@@ -69,8 +70,15 @@ export function PvProductCard({ product }: { product: PvProduct }) {
       </Box>
 
       <Box sx={{ padding: "12px", display: "grid", gap: "6px", flex: 1 }}>
-        <Box sx={{ fontWeight: 700, fontSize: 14, lineHeight: 1.35 }}>
-          {product.display_name}
+        <Box
+          sx={{
+            fontWeight: 700,
+            fontSize: 14,
+            lineHeight: 1.35,
+            minWidth: 0,
+          }}
+        >
+          <TruncatedText lines={1}>{product.display_name}</TruncatedText>
         </Box>
         <Box sx={{ fontSize: 12, color: S.textMedium }}>
           {t("pv.card.code", { code: product.sku_code })}

@@ -294,7 +294,7 @@ export const MESSAGES_UPDATED_EN = {
   text_7ccd0847f18c:
     "Complete monitoring data could not be loaded. Select Synchronize to try again.",
   text_7e49f04ad717: "Summary of outbound documents in the period",
-  text_7ebd6aabc34b: "Agencies & Recipients",
+  text_7ebd6aabc34b: "Agencies & Recipients Catalog",
   text_7f30733ab451: "Action is required to complete the stock issue",
   text_7f401d2e3891: "Case",
   text_80df50920cc8: "Posting overview",

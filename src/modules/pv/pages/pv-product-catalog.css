@@ -643,15 +643,9 @@
   box-shadow: none;
   min-width: 0;
 }
-/* Tên dài/viết liền không được đẩy track grid rộng ra ngoài thẻ và che nút sửa. */
+/* Tên cắt 1 dòng + "…" ngay trên chính ô (title hiện đủ khi rê chuột). */
 .pv-catalog-card-name {
   min-width: 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  word-break: break-word;
 }
 .pv-catalog-card-footer {
   min-width: 0;
