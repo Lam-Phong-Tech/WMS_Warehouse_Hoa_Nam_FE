@@ -1065,6 +1065,9 @@
 .hn-inbound-list-card {
   padding: 0;
   overflow: hidden;
+  /* Chặn bảng 850px tràn lan scrollable-overflow ra ngoài card lên `main`
+     (cuộn ngang cả trang trên tablet); bảng vẫn cuộn ngang trong card. */
+  contain: paint;
 }
 .hn-inbound-error {
   margin: 16px;
