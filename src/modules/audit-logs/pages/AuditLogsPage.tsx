@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { CloseCircleOutlined, FilterOutlined } from "@/shared/components/icons";
 import { useT } from "@/shared/i18n/useT";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Dayjs } from "dayjs";
 import { pastDateBounds } from "@/shared/validation/date-rules";
 import {
@@ -113,6 +113,22 @@ export function AuditLogsPage() {
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
+  // Người dùng gõ "Cập nhật" (nhãn VI) hoặc "update" (mã) — gom mọi hành động có
+  // mã hoặc nhãn (ngôn ngữ hiện tại) chứa từ khóa để BE OR-thêm vào điều kiện
+  // tìm kiếm (param actions[]), nhờ vậy ô tìm kiếm khớp đúng "hành động".
+  const matchedActionCodes = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return undefined;
+    const codes = Object.entries(AUDIT_ACTION_LABELS)
+      .filter(
+        ([code, label]) =>
+          code.toLowerCase().includes(keyword) ||
+          String(label).toLowerCase().includes(keyword),
+      )
+      .map(([code]) => code);
+    return codes.length ? codes : undefined;
+  }, [search]);
+
   const { data, isLoading, isError, error, refetch } = useAuditLogs(
     {
       page,
@@ -120,6 +136,7 @@ export function AuditLogsPage() {
       sort_by: sortBy,
       sort_order: sortOrder,
       q: search || undefined,
+      actions: matchedActionCodes,
       module: module || undefined,
       action: action || undefined,
       user_id: userId || undefined,
@@ -244,6 +261,7 @@ export function AuditLogsPage() {
           <UiVuexyDateRangePicker
             popupClassName="hn-settings-menu"
             showFieldPrefixes={false}
+            allowClear={false}
             value={range}
             aria-label={t("audit.rangeAria")}
             maxDate={maxSelectableDate}

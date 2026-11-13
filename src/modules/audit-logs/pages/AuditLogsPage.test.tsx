@@ -87,7 +87,7 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     expect(await screen.findByText("Tài khoản người dùng")).toBeInTheDocument();
 
     // Toolbar cùng chuẩn WarrantyPage/InventoryPage.
-    expect(screen.getByLabelText("Tìm nhật ký hệ thống")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tìm theo người thực hiện hoặc hành động")).toBeInTheDocument();
     expect(screen.getByLabelText("Lọc phân hệ")).toBeInTheDocument();
     expect(screen.getByLabelText("Lọc hành động")).toBeInTheDocument();
     expect(screen.getByLabelText("Số dòng mỗi trang")).toBeInTheDocument();
@@ -237,7 +237,7 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     renderWithProviders(<AuditLogsPage />);
     await screen.findByText("Tài khoản người dùng");
     expect(screen.queryByLabelText("Lọc kết quả")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Tìm nhật ký hệ thống"), {
+    fireEvent.change(screen.getByLabelText("Tìm theo người thực hiện hoặc hành động"), {
       target: { value: "stock_document" },
     });
     await waitFor(() =>

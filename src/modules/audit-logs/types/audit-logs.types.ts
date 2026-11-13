@@ -91,7 +91,9 @@ export interface AuditLogFilters {
   action?: AuditAction;
   /** actor_id — UUID string, không phải số. */
   user_id?: string;
-  /** Tìm theo mô tả/lý do (BE: `q`). */
+  /** Mã hành động khớp nhãn tìm kiếm (OR với q). */
+  actions?: string[];
+  /** Tìm theo mô tả/lý do, hành động (nhãn/mã) hoặc người thực hiện (BE: `q`). */
   q?: string;
   /** Lọc created_at >= (Y-m-d hoặc Y-m-d H:i:s). */
   date_from?: string;

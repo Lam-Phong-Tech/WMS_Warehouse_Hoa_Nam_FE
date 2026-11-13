@@ -60,6 +60,8 @@ export const auditLogService = {
     if (filters.module) params.append("module", filters.module);
     if (filters.action) params.append("action", filters.action);
     if (filters.user_id) params.append("user_id", filters.user_id);
+    if (filters.actions?.length)
+      for (const action of filters.actions) params.append("actions[]", action);
     if (filters.q) params.append("q", filters.q);
     if (filters.date_from) params.append("date_from", filters.date_from);
     if (filters.date_to) params.append("date_to", filters.date_to);
