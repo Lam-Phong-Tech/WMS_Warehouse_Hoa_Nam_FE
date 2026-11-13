@@ -83,7 +83,8 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
   gap: 12px;
-  padding: 4px 24px 20px;
+  /* Khoảng cách từ mép trên của panel đến hàng bộ lọc (trước đây 4px, dính sát border). */
+  padding: 20px 24px 20px;
   align-items: center;
 }
 .hn-iam-user-filters:has(> button) {
