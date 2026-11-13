@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useT } from "@/shared/i18n/useT";
 import {
+  FILTER_WIDTH,
   UiAlert,
   UiAutocomplete,
   UiIcon,
   UiStatusBadge,
+  UiSelect,
+  UiPagination,
   UiTabs,
   UiTextField,
 } from "@/shared/ui";
@@ -49,6 +52,9 @@ export function IamEffectivePermissionsScreen({
   const [selectedSnapshot, setSelectedUser] = useState<IamUser | null>(null);
   const [tab, setTab] = useState("effective");
   const [permissionSearch, setPermissionSearch] = useState("");
+  const [page, setPage] = useState(1);
+  // Mặc định 6 dòng, có thể chọn 6/9/16/30 như bảng lịch sử đăng nhập.
+  const [pageSize, setPageSize] = useState(6);
   useEffect(() => {
     const timer = window.setTimeout(() => setKeyword(userSearch.trim()), 250);
     return () => window.clearTimeout(timer);
@@ -191,6 +197,18 @@ export function IamEffectivePermissionsScreen({
         .includes(permissionSearch.toLocaleLowerCase().trim()),
     )
     .sort((a, b) => a.permission_key.localeCompare(b.permission_key));
+  // Phân trang phía client: catalog đã tải đầy đủ nên chỉ slice theo trang hiện tại.
+  const totalRows = permissionRows.length;
+  const lastPage = Math.max(1, Math.ceil(totalRows / pageSize));
+  const safePage = Math.min(page, lastPage);
+  const pageStart = (safePage - 1) * pageSize;
+  const visibleRows = permissionRows.slice(pageStart, pageStart + pageSize);
+  const correctingPage = page > lastPage;
+  useEffect(() => {
+    if (!correctingPage) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Clamp the page when the filtered result shrinks.
+    setPage(lastPage);
+  }, [correctingPage, lastPage]);
   const sourceRows = [
     ...applicableRoles.map((role) => ({
       id: role.role_id,
@@ -377,7 +395,10 @@ export function IamEffectivePermissionsScreen({
                   }}
                   placeholder={t("iam.effectiveUi.permissionSearch")}
                   value={permissionSearch}
-                  onChange={(event) => setPermissionSearch(event.target.value)}
+                  onChange={(event) => {
+                    setPermissionSearch(event.target.value);
+                    setPage(1);
+                  }}
                 />
                 <div
                   className="hn-effective-table-wrap"
@@ -388,6 +409,7 @@ export function IamEffectivePermissionsScreen({
                   <table className="hn-effective-table">
                     <thead>
                       <tr>
+                        <th className="stt-col">{t("shared.table.rowNumber")}</th>
                         <th>{t("iam.effectiveUi.permission")}</th>
                         <th>{t("iam.user.colStatus")}</th>
                         <th>{t("iam.effectiveUi.source")}</th>
@@ -395,15 +417,16 @@ export function IamEffectivePermissionsScreen({
                       </tr>
                     </thead>
                     <tbody>
-                      {permissionRows.map((permission) => {
+                      {visibleRows.map((permission, index) => {
+                        const stt = pageStart + index + 1;
                         const entries = sources(permission.permission_key);
                         const unknown =
                           !entries.length && (loading || incomplete);
                         return (
                           <tr key={permission.permission_key}>
+                            <td className="stt-col">{stt}</td>
                             <td data-label={t("iam.effectiveUi.permission")}>
                               <strong>{permission.permission_name}</strong>
-                              <small>{permission.permission_key}</small>
                             </td>
                             <td data-label={t("iam.user.colStatus")}>
                               <UiStatusBadge
@@ -465,6 +488,37 @@ export function IamEffectivePermissionsScreen({
                     </p>
                   ) : null}
                 </div>
+                <div className="hn-effective-pagination">
+                  <div className="hn-effective-summary">
+                    <span>
+                      {t("inventory.rangeLabel", {
+                        from: totalRows ? pageStart + 1 : 0,
+                        to: Math.min(pageStart + pageSize, totalRows),
+                        total: totalRows,
+                      })}
+                    </span>
+                    <UiSelect
+                      aria-label={t("shared.table.rowsPerPageAria")}
+                      value={pageSize}
+                      minWidth={FILTER_WIDTH.pageSize}
+                      options={[6, 9, 16, 30].map((size) => ({
+                        value: size,
+                        label: t("shared.table.perPage", { size }),
+                      }))}
+                      onChange={(value) => {
+                        setPageSize(Number(value));
+                        setPage(1);
+                      }}
+                    />
+                  </div>
+                  <UiPagination
+                    page={safePage}
+                    pageSize={pageSize}
+                    total={totalRows}
+                    showTotal={false}
+                    onPageChange={setPage}
+                  />
+                </div>
               </>
             ) : (
               <div className="hn-effective-source-list">
@@ -478,7 +532,6 @@ export function IamEffectivePermissionsScreen({
                       {source.permissions.map((permission) => (
                         <li key={permission.permission_key}>
                           <strong>{permission.permission_name}</strong>
-                          <small>{permission.permission_key}</small>
                         </li>
                       ))}
                     </ul>
