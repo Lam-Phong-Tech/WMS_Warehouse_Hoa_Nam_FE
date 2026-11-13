@@ -62,3 +62,10 @@
   display: flex;
   align-items: center;
 }
+.hn-component-issue-scanbar .ant-input-suffix .MuiButton-root {
+  height: 28px;
+  min-height: 28px;
+  padding: 2px 8px;
+  font-size: 13px;
+  line-height: 20px;
+}
