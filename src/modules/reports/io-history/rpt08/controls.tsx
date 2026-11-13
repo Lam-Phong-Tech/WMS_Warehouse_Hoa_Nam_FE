@@ -59,11 +59,14 @@ export function HeaderActions({
   readonly,
   exportState,
   exportDisabled,
+  disabledReason,
   onExport,
 }: {
   readonly: boolean;
   exportState: ExportState;
   exportDisabled: boolean;
+  /** Lý do nút Xuất bị khóa khi cần hiển thị gần nút (chỉ dòng reversal). */
+  disabledReason?: string;
   onExport: () => void;
 }) {
   return (
@@ -73,11 +76,17 @@ export function HeaderActions({
           {tUi("masterData.common.viewOnly")}
         </span>
       ) : (
-        <ReportExportButton
-          disabled={exportDisabled}
-          loading={exportState === "exporting"}
-          onClick={onExport}
-        />
+        <>
+          <ReportExportButton
+            disabled={exportDisabled}
+            loading={exportState === "exporting"}
+            title={disabledReason}
+            onClick={onExport}
+          />
+          {exportDisabled && disabledReason ? (
+            <span className="rpt08-export-note">{disabledReason}</span>
+          ) : null}
+        </>
       )}
     </div>
   );
@@ -264,6 +273,7 @@ export function FilterCard({
               { value: "ALL", label: tUi("dashboard.operations.filterAll") },
               { value: "INBOUND", label: tUi("dashboard.snapshot.inbound") },
               { value: "OUTBOUND", label: tUi("dashboard.snapshot.outbound") },
+              { value: "REVERSAL", label: tUi("dashboard.snapshot.reversal") },
             ].map((option) => ({
               ...option,
               label: `${tUi("updatedUi.text_94c1cbc6d405")}: ${option.label}`,

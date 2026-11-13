@@ -28,7 +28,6 @@ function mountTable(page = 1, total = 42, extra = {}) {
       search=""
       empty={false}
       noResult={false}
-      range={{ from: "2026-09-17", to: "2026-09-23", type: "ALL", actor: "" }}
       onSearch={onSearch}
       onPageChange={onPageChange}
       onOpenRow={onOpenRow}

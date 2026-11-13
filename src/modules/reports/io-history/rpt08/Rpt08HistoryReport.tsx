@@ -155,7 +155,10 @@ export default function IoHistoryReport() {
   const outboundCount = reportRows.filter(
     (row) => row.type === "OUTBOUND",
   ).length;
-  const totalTransactions = inboundCount + outboundCount;
+  const reversalCount = reportRows.filter(
+    (row) => row.type === "REVERSAL",
+  ).length;
+  const totalTransactions = inboundCount + outboundCount + reversalCount;
 
   const productTotal = (type: HistoryRow["type"]): number | null => {
     const rows = reportRows.filter((row) => row.type === type);
@@ -164,10 +167,13 @@ export default function IoHistoryReport() {
   };
   const inboundProducts = productTotal("INBOUND");
   const outboundProducts = productTotal("OUTBOUND");
+  const reversalProducts = productTotal("REVERSAL");
   const totalProducts =
-    inboundProducts === null || outboundProducts === null
+    inboundProducts === null ||
+    outboundProducts === null ||
+    reversalProducts === null
       ? null
-      : inboundProducts + outboundProducts;
+      : inboundProducts + outboundProducts + reversalProducts;
 
   const daily = useMemo(
     () => buildDaily(reportRows, applied.from, applied.to),
@@ -177,7 +183,8 @@ export default function IoHistoryReport() {
     if (totalTransactions === 0) return null;
     return daily.reduce<DailyMovement | null>((best, current) => {
       if (!best) return current;
-      return current.inbound + current.outbound > best.inbound + best.outbound
+      return current.inbound + current.outbound + current.reversal >
+        best.inbound + best.outbound + best.reversal
         ? current
         : best;
     }, null);
@@ -197,6 +204,12 @@ export default function IoHistoryReport() {
     searchedRows.length === 0;
   const stale = !staleDismissed && Boolean(source.error) && liveRows.length > 0;
   const controlsBusy = initialLoading || refreshing;
+  // Phiếu đảo xuất chỉ có ở nguồn /reversal-documents; nút Xuất và BE
+  // document-history không sinh được reversal, nên chặn luôn với lý do đọc được.
+  const reversalOnly = applied.type === "REVERSAL";
+  const reversalUnavailableReason = reversalOnly
+    ? tUi("reportExport.reversalUnavailable")
+    : undefined;
   const exportDisabled =
     initialLoading ||
     refreshing ||
@@ -204,6 +217,7 @@ export default function IoHistoryReport() {
     reportEmpty ||
     readonly ||
     invalidRange ||
+    reversalOnly ||
     Boolean(source.error) ||
     exportState === "unknown" ||
     exportState === "exporting";
@@ -296,6 +310,7 @@ export default function IoHistoryReport() {
           readonly={readonly}
           exportState={exportState}
           exportDisabled={exportDisabled}
+          disabledReason={reversalUnavailableReason}
           onExport={() => setShowExport(true)}
         />
       </header>
@@ -361,12 +376,14 @@ export default function IoHistoryReport() {
               total={totalTransactions}
               inbound={inboundCount}
               outbound={outboundCount}
+              reversal={reversalCount}
               stale={stale}
             />
             <ProductCard
               total={totalProducts}
               inbound={inboundProducts}
               outbound={outboundProducts}
+              reversal={reversalProducts}
             />
           </div>
 
@@ -376,6 +393,7 @@ export default function IoHistoryReport() {
               total={totalTransactions}
               inbound={inboundCount}
               outbound={outboundCount}
+              reversal={reversalCount}
               peak={peak}
             />
           </div>
@@ -392,7 +410,6 @@ export default function IoHistoryReport() {
             }}
             empty={reportEmpty}
             noResult={noSearchResult}
-            range={applied}
             onSearch={setSearch}
             onPageChange={setPage}
             onOpenRow={setDetailRow}
@@ -437,6 +454,7 @@ export default function IoHistoryReport() {
             },
           ]}
           unavailable={exportDisabled}
+          unavailableReason={reversalUnavailableReason}
           onClose={() => setShowExport(false)}
           onExport={exportReport}
         />

@@ -189,6 +189,10 @@
   background: var(--ops-danger-soft);
   color: var(--ops-danger-text);
 }
+#rpt08-history-report .rpt08-type-pill.is-reversal {
+  background: color-mix(in srgb, #f1a20f 18%, var(--ops-surface));
+  color: #b97809;
+}
 #rpt08-history-report .rpt08-type-arrow {
   display: none;
   font-size: 12px;

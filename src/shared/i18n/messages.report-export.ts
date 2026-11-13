@@ -32,6 +32,8 @@ export const REPORT_EXPORT_VI = {
   failed: "Không thể xuất báo cáo. Vui lòng thử lại.",
   unavailable:
     "Dữ liệu chưa sẵn sàng để xuất. Vui lòng đợi hoặc đóng bảng và tải lại báo cáo.",
+  reversalUnavailable:
+    "Chưa hỗ trợ xuất phiếu đảo xuất. Hãy chọn “Tất cả”, “Nhập kho” hoặc “Xuất kho” để xuất báo cáo.",
   scopeMismatch:
     "Không xác định được phạm vi dữ liệu trong tệp. Hãy tải lại báo cáo và thử lại.",
   empty: "Không có dữ liệu trong phạm vi đã chọn.",
@@ -99,6 +101,8 @@ export const REPORT_EXPORT_EN = {
   failed: "Unable to export. Please try again.",
   unavailable:
     "Data is not ready to export. Please wait, or close this panel and refresh the report.",
+  reversalUnavailable:
+    "Reversal documents are not supported for export yet. Choose “All”, “Inbound” or “Outbound” to export.",
   scopeMismatch:
     "Unable to match the selected scope. Refresh the report and try again.",
   empty: "No data in the selected scope.",
@@ -155,4 +159,6 @@ export const REPORT_EXPORT_ZH = {
   records: "范围内记录",
   sheets: "已选工作表",
   dataSummary: "导出摘要",
+  reversalUnavailable:
+    "暂不支持导出冲销单据。请选择“全部”“入库”或“出库”后再导出。",
 };

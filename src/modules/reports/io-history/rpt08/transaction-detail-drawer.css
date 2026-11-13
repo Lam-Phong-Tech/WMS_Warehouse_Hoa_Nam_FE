@@ -80,6 +80,10 @@
   background: var(--ops-danger-soft);
   color: var(--ops-danger-text);
 }
+.rpt08-transaction-drawer .rpt08-type-pill.is-reversal {
+  background: color-mix(in srgb, #f1a20f 18%, var(--ops-surface));
+  color: #b97809;
+}
 @container rpt08-transaction (max-width: 480px) {
   .rpt08-transaction-fields {
     grid-template-columns: minmax(0, 1fr);

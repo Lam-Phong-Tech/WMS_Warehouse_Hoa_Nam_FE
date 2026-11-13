@@ -125,9 +125,6 @@
   color: var(--ops-text);
   font-size: 14px;
 }
-#rpt08-history-report .rpt08-table-card .rpt08-range-note {
-  color: var(--ops-muted);
-}
 #rpt08-history-report .rpt08-table-card .rpt08-pagination {
   margin-left: auto;
 }

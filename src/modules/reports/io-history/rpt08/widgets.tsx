@@ -8,13 +8,11 @@ import {
   InboxOutlined,
   SearchOutlined,
   StockOutlined,
-  ArrowLeftOutlined,
-  ArrowRightOutlined,
+  SwapOutlined,
 } from "@/shared/components/icons";
-import type { AppliedFilters, DailyMovement, HistoryRow } from "./model";
+import type { DailyMovement, HistoryRow } from "./model";
 import {
   PAGE_SIZE,
-  compactRange,
   displayDay,
   displayStamp,
   number,
@@ -28,23 +26,25 @@ export function OverviewCard({
   inbound,
   outbound,
   stale,
+  reversal,
 }: {
   total: number;
   inbound: number;
   outbound: number;
   stale: boolean;
+  reversal: number;
 }) {
   const inboundRate = total ? (inbound / total) * 100 : 0;
   const outboundRate = total ? (outbound / total) * 100 : 0;
+  const reversalRate = total ? (reversal / total) * 100 : 0;
 
   return (
     <section
       className="rpt08-card rpt08-overview-card"
       aria-label={tUi("updatedUi.text_97b7bfe0ab46")}
     >
-      <div className="rpt08-metric-icon rpt08-metric-icon--swap">
-        <ArrowLeftOutlined />
-        <ArrowRightOutlined />
+      <div className="rpt08-metric-icon">
+        <SwapOutlined />
       </div>
       <div className="rpt08-overview-card__total">
         <h2>{tUi("updatedUi.text_97b7bfe0ab46")}</h2>
@@ -66,6 +66,9 @@ export function OverviewCard({
               <span style={{ width: `${outboundRate}%` }}>
                 {percent(outboundRate)}
               </span>
+              <span className="is-reversal" style={{ width: `${reversalRate}%` }}>
+                {percent(reversalRate)}
+              </span>
             </>
           )}
         </div>
@@ -86,6 +89,14 @@ export function OverviewCard({
               {total ? <small> · {percent(outboundRate)}</small> : null}
             </span>
           </div>
+          <div>
+            <i className="is-reversal" />
+            <span>
+              {tUi("dashboard.snapshot.reversal") + " "}
+              <strong>{number(reversal)}</strong>
+              {total ? <small> · {percent(reversalRate)}</small> : null}
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -96,10 +107,12 @@ export function ProductCard({
   total,
   inbound,
   outbound,
+  reversal,
 }: {
   total: number | null;
   inbound: number | null;
   outbound: number | null;
+  reversal: number | null;
 }) {
   return (
     <section
@@ -116,15 +129,20 @@ export function ProductCard({
           <span>{tUi("updatedUi.text_9bfcaa70b19e")}</span>
         </div>
         <div className="rpt08-product-breakdown">
-          <span>
+          <span className="is-inbound">
             <i className="is-inbound" />
             <strong>{inbound === null ? "—" : number(inbound)}</strong>
             {" " + tUi("updatedUi.text_22652147af7d")}
           </span>
-          <span>
+          <span className="is-outbound">
             <i className="is-outbound" />
             <strong>{outbound === null ? "—" : number(outbound)}</strong>
             {" " + tUi("updatedUi.text_4f12e82f09c9")}
+          </span>
+          <span className="is-reversal">
+            <i className="is-reversal" />
+            <strong>{reversal === null ? "—" : number(reversal)}</strong>
+            {" " + tUi("dashboard.snapshot.reversal")}
           </span>
         </div>
       </div>
@@ -141,7 +159,7 @@ export function DailyChart({
 }) {
   const observedMax = Math.max(
     0,
-    ...daily.flatMap((day) => [day.inbound, day.outbound]),
+    ...daily.flatMap((day) => [day.inbound, day.outbound, day.reversal]),
   );
   const max = Math.max(60, Math.ceil(observedMax / 10) * 10);
   const ticks = [max, Math.round((max * 2) / 3), Math.round(max / 3), 0];
@@ -173,6 +191,10 @@ export function DailyChart({
           <span>
             <i className="is-outbound" />
             {" " + tUi("dashboard.snapshot.outbound")}
+          </span>
+          <span>
+            <i className="is-reversal" />
+            {" " + tUi("dashboard.snapshot.reversal")}
           </span>
           <span className="rpt08-chart-total">
             {tUi("reports.agencyComparison.colTotal") + " "}
@@ -227,6 +249,16 @@ export function DailyChart({
                   >
                     <b>{day.outbound}</b>
                   </span>
+                  <span
+                    className="is-reversal"
+                    style={
+                      {
+                        "--rpt08-bar-height": `${(day.reversal / max) * 100}%`,
+                      } as CSSProperties
+                    }
+                  >
+                    <b>{day.reversal}</b>
+                  </span>
                 </div>
                 <small>{day.label}</small>
               </div>
@@ -242,17 +274,23 @@ export function ActivityCard({
   total,
   inbound,
   outbound,
+  reversal,
   peak,
 }: {
   total: number;
   inbound: number;
   outbound: number;
+  reversal: number;
   peak: DailyMovement | null;
 }) {
   const inboundRate = total ? (inbound / total) * 100 : 0;
   const outboundRate = total ? (outbound / total) * 100 : 0;
+  const reversalRate = total ? (reversal / total) * 100 : 0;
   const donutStyle = total
-    ? ({ "--rpt08-inbound-rate": `${inboundRate}%` } as CSSProperties)
+    ? ({
+        "--rpt08-inbound-rate": `${inboundRate}%`,
+        "--rpt08-outbound-end": `${inboundRate + outboundRate}%`,
+      } as CSSProperties)
     : undefined;
 
   return (
@@ -289,6 +327,12 @@ export function ActivityCard({
           <span>{tUi("dashboard.snapshot.outbound")}</span>
           <b>{number(outbound)}</b>
         </div>
+        <div className="rpt08-donut-reversal">
+          <i className="is-reversal" aria-hidden="true" />
+          <span>{tUi("dashboard.snapshot.reversal")}</span>
+          <strong>{total ? `${Math.round(reversalRate)}%` : "—"}</strong>
+          <b>{number(reversal)}</b>
+        </div>
       </div>
 
       <div className="rpt08-peak">
@@ -303,14 +347,16 @@ export function ActivityCard({
             </div>
             <div className="rpt08-peak__value">
               <strong>
-                {number(peak.inbound + peak.outbound)}
+                {number(peak.inbound + peak.outbound + peak.reversal)}
                 {" " + tUi("updatedUi.text_74e542e35044")}
               </strong>
               <span>
                 {number(peak.inbound)}
                 {" " + tUi("updatedUi.text_9b7b237db59a") + " "}
                 {number(peak.outbound)}
-                {" " + tUi("updatedUi.text_3b16ad526464")}
+                {" " + tUi("updatedUi.text_3b16ad526464") + " "}
+                {number(peak.reversal)}
+                {" " + tUi("dashboard.snapshot.reversal")}
               </span>
             </div>
           </>
@@ -401,14 +447,22 @@ function Pagination({
 
 export function TypePill({ type }: { type: HistoryRow["type"] }) {
   const inbound = type === "INBOUND";
+  const reversal = type === "REVERSAL";
   return (
-    <span className={`rpt08-type-pill is-${inbound ? "inbound" : "outbound"}`}>
+    <span
+      className={
+        "rpt08-type-pill is-" +
+        (reversal ? "reversal" : inbound ? "inbound" : "outbound")
+      }
+    >
       <span className="rpt08-type-arrow" aria-hidden="true">
-        {inbound ? "↓" : "↑"}
+        {reversal ? "↩" : inbound ? "↓" : "↑"}
       </span>
-      {inbound
-        ? tUi("dashboard.snapshot.inbound")
-        : tUi("dashboard.snapshot.outbound")}
+      {reversal
+        ? tUi("dashboard.snapshot.reversal")
+        : inbound
+          ? tUi("dashboard.snapshot.inbound")
+          : tUi("dashboard.snapshot.outbound")}
     </span>
   );
 }
@@ -447,7 +501,6 @@ export function HistoryTable({
   onPageSizeChange,
   empty,
   noResult,
-  range,
   onSearch,
   onPageChange,
   onOpenRow,
@@ -461,7 +514,6 @@ export function HistoryTable({
   onPageSizeChange?: (size: number) => void;
   empty: boolean;
   noResult: boolean;
-  range: AppliedFilters;
   onSearch: (value: string) => void;
   onPageChange: (page: number) => void;
   onOpenRow: (row: HistoryRow) => void;
@@ -618,10 +670,6 @@ export function HistoryTable({
                 onChange={(value) => onPageSizeChange(Number(value))}
               />
             ) : null}
-            <span className="rpt08-range-note">
-              {tUi("updatedUi.text_098cc1b3c5b9")} ·{" "}
-              {compactRange(range.from, range.to)}
-            </span>
           </div>
           <Pagination
             page={page}

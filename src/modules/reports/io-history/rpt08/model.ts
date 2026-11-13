@@ -4,7 +4,7 @@ import type { IoDocType, IoHistoryRow } from "../io-history-api";
 import { ISO_DATE } from "../io-history-api";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
-export type TransactionFilter = "ALL" | "INBOUND" | "OUTBOUND";
+export type TransactionFilter = "ALL" | "INBOUND" | "OUTBOUND" | "REVERSAL";
 export type ExportState = "idle" | "exporting" | "failed" | "unknown";
 
 export type AppliedFilters = {
@@ -18,7 +18,7 @@ export type HistoryRow = {
   id: string;
   timestamp: string;
   documentNo: string;
-  type: Exclude<IoDocType, "REVERSAL">;
+  type: IoDocType;
   objectPrimary: string;
   objectSecondary: string;
   quantity: number | null;
@@ -31,6 +31,7 @@ export type DailyMovement = {
   label: string;
   inbound: number;
   outbound: number;
+  reversal: number;
 };
 
 export const PAGE_SIZE = 5;
@@ -62,17 +63,10 @@ export function displayAsOf(value: string): string {
     : tUi("updatedUi.text_b495069027b3");
 }
 
-export function compactRange(from: string, to: string): string {
-  const start = dayjs(from);
-  const end = dayjs(to);
-  if (!start.isValid() || !end.isValid()) return "—";
-  if (start.month() === end.month() && start.year() === end.year()) {
-    return `${start.format("DD")}–${end.format("DD/MM/YYYY")}`;
-  }
-  return `${start.format("DD/MM/YYYY")}–${end.format("DD/MM/YYYY")}`;
-}
-
 function parseObject(row: IoHistoryRow): [string, string] {
+  if (row.type === "REVERSAL") {
+    return [row.party || row.documentNo || "—", row.originalDocumentNo || "—"];
+  }
   const firstSku =
     row.skuLines.find((line) => line.trim() !== "")?.trim() ?? "";
   if (firstSku) {
@@ -92,7 +86,6 @@ function parseObject(row: IoHistoryRow): [string, string] {
 }
 
 export function mapLiveRow(row: IoHistoryRow): HistoryRow | null {
-  if (row.type === "REVERSAL") return null;
   const [objectPrimary, objectSecondary] = parseObject(row);
   return {
     id: row.id || row.documentNo,
@@ -126,8 +119,8 @@ export function buildDaily(
   to: string,
 ): DailyMovement[] {
   const keys = daysInRange(from, to);
-  const counts = new Map<string, { inbound: number; outbound: number }>();
-  for (const key of keys) counts.set(key, { inbound: 0, outbound: 0 });
+  const counts = new Map<string, { inbound: number; outbound: number; reversal: number }>();
+  for (const key of keys) counts.set(key, { inbound: 0, outbound: 0, reversal: 0 });
 
   for (const row of rows) {
     const key = parseDateTime(row.timestamp, BUSINESS_TIMEZONE).format(
@@ -136,7 +129,8 @@ export function buildDaily(
     const day = counts.get(key);
     if (!day) continue;
     if (row.type === "INBOUND") day.inbound += 1;
-    else day.outbound += 1;
+    else if (row.type === "OUTBOUND") day.outbound += 1;
+    else day.reversal += 1;
   }
 
   return keys.map((key) => ({
@@ -144,5 +138,6 @@ export function buildDaily(
     label: dayjs(key).format("DD/MM"),
     inbound: counts.get(key)?.inbound ?? 0,
     outbound: counts.get(key)?.outbound ?? 0,
+    reversal: counts.get(key)?.reversal ?? 0,
   }));
 }

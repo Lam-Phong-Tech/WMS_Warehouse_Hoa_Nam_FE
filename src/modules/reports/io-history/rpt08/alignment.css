@@ -61,6 +61,14 @@
   gap: 10px;
   max-width: 100%;
 }
+#rpt08-history-report .rpt08-export-note {
+  flex-basis: 100%;
+  max-width: 100%;
+  text-align: right;
+  color: var(--ops-muted);
+  font-size: 11px;
+  line-height: 15px;
+}
 #rpt08-history-report .rpt08-demo-chip {
   min-height: var(--ops-control-height);
   font-size: 13px;
