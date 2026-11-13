@@ -1217,9 +1217,9 @@ export const MESSAGES_EN: MessageTree = {
       maskedNotice:
         "Customer details (name/phone/address) are masked according to permission",
       searchPlaceholder:
-        "Scan or type case / device code / temp code / customer / phone / product...",
+        "Search case code / customer name / phone / device code / product...",
       searchPlaceholderNoPii:
-        "Scan or type case / device code / temp code / product...",
+        "Search case code / device code / temp code / product...",
       searchAria: "Search warranty cases",
       statusFilterAria: "Filter warranty status",
       statusFilterPlaceholder: "Status: All",

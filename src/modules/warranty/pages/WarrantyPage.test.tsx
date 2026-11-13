@@ -124,6 +124,33 @@ function grant(permissionCodes: string[]) {
 }
 
 describe("WarrantyPage (WAR-01 hub)", () => {
+  it("searches case codes, customer names and full phone numbers through the API", async () => {
+    grant(["warranty.manage", "warranty.pii.view"]);
+    renderWithProviders(<WarrantyPage />, ["/warranty"]);
+    await screen.findByText("BH-0001");
+    const input = screen.getByRole("textbox", { name: /Tìm hồ sơ bảo hành/ });
+    for (const keyword of [
+      "BH-0001",
+      "Nguyễn Hường",
+      "0912 345 678",
+      "+84912345678",
+    ]) {
+      fireEvent.change(input, { target: { value: `  ${keyword}  ` } });
+      await waitFor(() =>
+        expect(fetchWarrantyCases).toHaveBeenCalledWith(
+          expect.objectContaining({ search: keyword, page: 1 }),
+        ),
+      );
+    }
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(screen.queryByTestId("detail-modal")).not.toBeInTheDocument();
+    fireEvent.change(input, { target: { value: "" } });
+    await waitFor(() =>
+      expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: undefined, page: 1 }),
+      ),
+    );
+  });
   beforeEach(() => {
     vi.mocked(fetchWarrantyCases).mockReset();
     vi.mocked(fetchWarrantyCases).mockResolvedValue({
@@ -183,14 +210,14 @@ describe("WarrantyPage (WAR-01 hub)", () => {
       name: /Tìm hồ sơ bảo hành/,
     });
     const placeholder = searchInput.getAttribute("placeholder");
+    expect(placeholder).toMatch(/^Tìm mã hồ sơ/);
+    expect(placeholder).not.toMatch(/quét/i);
     expect(placeholder).toContain("sản phẩm");
     expect(placeholder).not.toContain("tên khách");
     // Dùng đúng icon kính lúp chuẩn của SearchInput và giữ toàn bộ gợi ý
     // trong title để hover vẫn đọc được khi placeholder bị cắt.
     expect(
-      searchInput
-        .closest(".MuiInputBase-root")
-        ?.querySelector(".fi-rr-search"),
+      searchInput.closest(".MuiInputBase-root")?.querySelector(".fi-rr-search"),
     ).not.toBeNull();
     expect(searchInput).toHaveAttribute("title", placeholder);
   });
@@ -204,6 +231,8 @@ describe("WarrantyPage (WAR-01 hub)", () => {
       .getByRole("textbox", { name: /Tìm hồ sơ bảo hành/ })
       .getAttribute("placeholder");
     expect(placeholder).toContain("tên khách");
+    expect(placeholder).toMatch(/^Tìm mã hồ sơ/);
+    expect(placeholder).not.toMatch(/quét/i);
     expect(placeholder).toContain("sản phẩm");
   });
 
@@ -243,29 +272,39 @@ describe("WarrantyPage (WAR-01 hub)", () => {
       expect.objectContaining({ overdue: true, page: 1 }),
     );
     expect(screen.getByRole("button", { name: "Bộ lọc" })).toHaveAttribute(
-      "aria-expanded", "true",
+      "aria-expanded",
+      "true",
     );
-    expect(screen.getByRole("combobox", { name: "Lọc hồ sơ quá hạn" }))
-      .toHaveTextContent("Hồ sơ: Quá hạn");
+    expect(
+      screen.getByRole("combobox", { name: "Lọc hồ sơ quá hạn" }),
+    ).toHaveTextContent("Hồ sơ: Quá hạn");
     fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
-    await waitFor(() => expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
-      expect.objectContaining({ overdue: undefined, page: 1 }),
-    ));
-    expect(screen.getByTestId("warranty-location")).not.toHaveTextContent("overdue");
+    await waitFor(() =>
+      expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+        expect.objectContaining({ overdue: undefined, page: 1 }),
+      ),
+    );
+    expect(screen.getByTestId("warranty-location")).not.toHaveTextContent(
+      "overdue",
+    );
     const overdueFilter = screen.getByRole("combobox", {
       name: "Lọc hồ sơ quá hạn",
     });
     fireEvent.mouseDown(overdueFilter);
     expect(screen.getAllByRole("option")).toHaveLength(2);
     fireEvent.click(screen.getByRole("option", { name: "Hồ sơ: Quá hạn" }));
-    await waitFor(() => expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
-      expect.objectContaining({ overdue: true, page: 1 }),
-    ));
+    await waitFor(() =>
+      expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+        expect.objectContaining({ overdue: true, page: 1 }),
+      ),
+    );
     fireEvent.mouseDown(overdueFilter);
     fireEvent.click(screen.getByRole("option", { name: "Hồ sơ: Tất cả" }));
-    await waitFor(() => expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
-      expect.objectContaining({ overdue: undefined, page: 1 }),
-    ));
+    await waitFor(() =>
+      expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+        expect.objectContaining({ overdue: undefined, page: 1 }),
+      ),
+    );
   });
 
   it("activates a fresh overdue view on navigation to an already mounted warranty list", async () => {
@@ -278,13 +317,18 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     );
     await screen.findByText("BH-0001");
     fireEvent.mouseDown(screen.getByLabelText("Lọc trạng thái bảo hành"));
-    fireEvent.click(await screen.findByRole("option", { name: /Đang kiểm tra/ }));
+    fireEvent.click(
+      await screen.findByRole("option", { name: /Đang kiểm tra/ }),
+    );
     fireEvent.click(screen.getByRole("link", { name: "Open overdue cases" }));
-    await waitFor(() => expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
-      expect.objectContaining({ overdue: true, status: undefined, page: 1 }),
-    ));
-    expect(screen.getByRole("combobox", { name: "Lọc hồ sơ quá hạn" }))
-      .toHaveTextContent("Hồ sơ: Quá hạn");
+    await waitFor(() =>
+      expect(fetchWarrantyCases).toHaveBeenLastCalledWith(
+        expect.objectContaining({ overdue: true, status: undefined, page: 1 }),
+      ),
+    );
+    expect(
+      screen.getByRole("combobox", { name: "Lọc hồ sơ quá hạn" }),
+    ).toHaveTextContent("Hồ sơ: Quá hạn");
   });
 
   it("deep-link ?screen=WAR-02 mở modal tiếp nhận", async () => {
@@ -443,7 +487,9 @@ describe("WarrantyPage (WAR-01 hub)", () => {
     fireEvent.mouseDown(screen.getByLabelText("Sắp xếp danh sách bảo hành"));
     fireEvent.click(await screen.findByRole("option", { name: /Cũ nhất/ }));
     fireEvent.mouseDown(screen.getByLabelText("Lọc hồ sơ quá hạn"));
-    fireEvent.click(await screen.findByRole("option", { name: "Hồ sơ: Quá hạn" }));
+    fireEvent.click(
+      await screen.findByRole("option", { name: "Hồ sơ: Quá hạn" }),
+    );
     fireEvent.mouseDown(screen.getByLabelText("Số dòng mỗi trang"));
     fireEvent.click(await screen.findByRole("option", { name: "20 / trang" }));
 

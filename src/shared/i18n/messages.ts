@@ -1198,11 +1198,11 @@ export const MESSAGES_VI = {
       maskedNotice:
         "Thông tin khách hàng (tên/SĐT/địa chỉ) đang được che theo quyền",
       searchPlaceholder:
-        "Quét hoặc nhập mã hồ sơ / mã máy / mã tạm / tên khách / SĐT / sản phẩm...",
+        "Tìm mã hồ sơ / tên khách hàng / SĐT / mã máy / sản phẩm...",
       // §13.8: thiếu warranty.pii.view thì BE chặn tra theo tên/SĐT, nên đừng
       // mời người dùng gõ thứ chắc chắn không ra kết quả.
       searchPlaceholderNoPii:
-        "Quét hoặc nhập mã hồ sơ / mã máy / mã tạm / sản phẩm...",
+        "Tìm mã hồ sơ / mã máy / mã tạm / sản phẩm...",
       searchAria: "Tìm hồ sơ bảo hành",
       statusFilterAria: "Lọc trạng thái bảo hành",
       statusFilterPlaceholder: "Trạng thái: Tất cả",
