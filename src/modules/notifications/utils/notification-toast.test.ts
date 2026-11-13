@@ -10,6 +10,7 @@ vi.mock("sonner", () => ({ toast }));
 
 import {
   claimUndeliveredNotifications,
+  createNotificationClaims,
   isNotificationEnabled,
   notificationCategory,
   notificationToastType,
@@ -109,15 +110,28 @@ describe("in-app notification toast batching", () => {
   });
 });
 
+describe("account-scoped notification claims", () => {
+  it("requests canonical count reconciliation if the bounded recent-ID cache overflows", () => {
+    const claims = createNotificationClaims();
+    const batch = Array.from({ length: 10001 }, (_, i) => item(`bounded-${i}`));
+    const result = claims.claim(batch);
+    expect(result.fresh).toHaveLength(10001);
+    expect(result.needsReconcile).toBe(true);
+    expect(claims.claim([batch.at(-1)!]).fresh).toEqual([]);
+    expect(claims.claim([batch[0]]).needsReconcile).toBe(true);
+    expect(createNotificationClaims().claim([batch[0]]).fresh).toHaveLength(1);
+  });
+});
+
 describe("notification delivery rules", () => {
   it.each([
     ["info", "info"],
     ["warning", "warning"],
     ["critical", "error"],
   ] as const)("maps %s to the %s toast type", (severity, expected) => {
-    expect(notificationToastType(item(`severity-${severity}`, { severity }))).toBe(
-      expected,
-    );
+    expect(
+      notificationToastType(item(`severity-${severity}`, { severity })),
+    ).toBe(expected);
   });
 
   it("honors optional in-app categories and keeps account mandatory", () => {

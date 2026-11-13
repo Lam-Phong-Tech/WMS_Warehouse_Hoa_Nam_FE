@@ -34,11 +34,8 @@ export function createNotificationBurst(
   return {
     push(item) {
       if (!item?.id) return;
+      if (!pending.has(item.id) && pending.size >= MAX_PENDING) flush();
       pending.set(item.id, item);
-      if (pending.size > MAX_PENDING) {
-        const oldest = pending.keys().next().value;
-        if (oldest !== undefined) pending.delete(oldest);
-      }
       if (timer === null) timer = setTimeout(flush, windowMs);
     },
     flush,

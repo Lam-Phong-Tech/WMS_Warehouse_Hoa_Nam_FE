@@ -4,7 +4,7 @@ import type { NotificationItem } from "../types/notification.types";
 import { getNotificationText } from "./notification-text";
 
 export const MAX_INDIVIDUAL_TOASTS = 3;
-const delivered = new Set<string>();
+const SUMMARY_ID = "notification-burst-summary";
 
 export type NotificationPreferences = Record<
   string,
@@ -47,22 +47,33 @@ export function notificationToastType(
   return "info";
 }
 
-/** Mark ids as delivered so duplicate socket events cannot inflate the badge or repeat a toast. */
+/** Claims belong to one account/socket lifetime. Overflow falls back to canonical DB counts. */
+export function createNotificationClaims() {
+  const delivered = new Set<string>();
+  let needsReconcile = false;
+  return {
+    claim(items: NotificationItem[]) {
+      const fresh: NotificationItem[] = [];
+      for (const item of items) {
+        if (!item?.id || delivered.has(item.id)) continue;
+        delivered.add(item.id);
+        fresh.push(item);
+        if (delivered.size > 10_000) {
+          const oldest = delivered.values().next().value;
+          if (oldest !== undefined) delivered.delete(oldest);
+          needsReconcile = true;
+        }
+      }
+      return { fresh, needsReconcile };
+    },
+  };
+}
+
+const defaultClaims = createNotificationClaims();
 export function claimUndeliveredNotifications(
   items: NotificationItem[],
 ): NotificationItem[] {
-  const fresh: NotificationItem[] = [];
-  for (const item of items) {
-    if (!item?.id || delivered.has(item.id)) continue;
-    delivered.add(item.id);
-    fresh.push(item);
-  }
-  while (delivered.size > 200) {
-    const oldest = delivered.values().next().value;
-    if (oldest === undefined) break;
-    delivered.delete(oldest);
-  }
-  return fresh;
+  return defaultClaims.claim(items).fresh;
 }
 
 function severityRank(item: NotificationItem): number {
@@ -81,14 +92,20 @@ function createdAt(item: NotificationItem): number {
  * most three individual messages, then one summary; it never creates a storm
  * of dozens of toasts.
  */
-export function showNotificationToasts(items: NotificationItem[]): void {
-  if (items.length === 0) return;
+export function showIndividualNotificationToasts(
+  items: NotificationItem[],
+  limit = MAX_INDIVIDUAL_TOASTS,
+): string[] {
+  if (items.length === 0) return [];
   const ordered = [...items].sort(
     (left, right) =>
       severityRank(right) - severityRank(left) ||
       createdAt(right) - createdAt(left),
   );
-  const individual = ordered.slice(0, MAX_INDIVIDUAL_TOASTS);
+  const individual = ordered.slice(
+    0,
+    Math.max(0, Math.min(MAX_INDIVIDUAL_TOASTS, Math.floor(limit))),
+  );
 
   for (const item of individual) {
     const copy = getNotificationText(item);
@@ -102,11 +119,33 @@ export function showNotificationToasts(items: NotificationItem[]): void {
     else toast.info(copy.title, options);
   }
 
-  const remaining = items.length - individual.length;
-  if (remaining > 0) {
-    toast.info(tStatic("notifications.burst.title", { count: remaining }), {
-      description: tStatic("notifications.burst.description"),
-      id: "notification-burst-summary",
-    });
-  }
+  return individual.map((item) => `notification-${item.id}`);
+}
+
+export function showNotificationSummary(
+  count: number,
+  options: { duration?: number; onDismiss?: () => void } = {},
+): void {
+  toast.info(tStatic("notifications.burst.title", { count }), {
+    description: tStatic("notifications.burst.description"),
+    id: SUMMARY_ID,
+    ...options,
+  });
+}
+
+export function dismissNotificationToast(id: string): void {
+  toast.dismiss(id);
+}
+
+export function dismissNotificationSummary(): void {
+  toast.dismiss(SUMMARY_ID);
+}
+
+export function showNotificationToasts(
+  items: NotificationItem[],
+  individualLimit = MAX_INDIVIDUAL_TOASTS,
+): void {
+  const displayed = showIndividualNotificationToasts(items, individualLimit);
+  if (items.length > displayed.length)
+    showNotificationSummary(items.length - displayed.length);
 }

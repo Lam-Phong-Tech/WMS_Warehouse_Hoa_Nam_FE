@@ -1,16 +1,20 @@
 import { createNotificationBurst } from "../utils/notification-burst";
-import { createNotificationTabLeader, type NotificationTabLeader } from "../utils/notification-tab-leader";
 import {
-  claimUndeliveredNotifications,
+  createNotificationTabLeader,
+  type NotificationTabLeader,
+} from "../utils/notification-tab-leader";
+import {
+  createNotificationClaims,
   isNotificationEnabled,
-  showNotificationToasts,
 } from "../utils/notification-toast";
 import {
   profileKeys,
   type ProfilePreferences,
 } from "@/modules/auth/types/profile.types";
 import { NOTIFICATION_KEYS } from "@/modules/notifications/constants/notification.constants";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
+import { createNotificationToastQueue } from "../utils/notification-toast-queue";
 import { useQueryClient } from "@tanstack/react-query";
 import { connectEcho, disconnectEcho } from "@/shared/lib/echo";
 import { api } from "@/shared/api/axios";
@@ -36,6 +40,13 @@ export function useNotificationSocket(): void {
   const incrementBy = useNotificationStore((s) => s.incrementBy);
   const setConnected = useNotificationStore((s) => s.setConnected);
   const queryClient = useQueryClient();
+  const { pathname } = useLocation();
+  const pathRef = useRef(pathname);
+  const resetPresentation = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    pathRef.current = pathname;
+    if (pathname.startsWith("/notifications")) resetPresentation.current?.();
+  }, [pathname]);
 
   useEffect(() => {
     if (!isAuthenticated || !userId) return;
@@ -44,15 +55,43 @@ export function useNotificationSocket(): void {
     let leave: (() => void) | null = null;
     let reconcileOnVisible = false;
     let leader: NotificationTabLeader | null = null;
+    const claims = createNotificationClaims();
+    const pendingIds = new Set<string>();
+    const blockedToastIds = new Set<string>();
+    const visible = () =>
+      !cancelled &&
+      useAuthStore.getState().isAuthenticated &&
+      useAuthStore.getState().user?.user_id === userId &&
+      !document.hidden &&
+      !pathRef.current.startsWith("/notifications");
+    const toasts = createNotificationToastQueue({ isVisible: visible });
+    resetPresentation.current = () => {
+      toasts.reset();
+      for (const id of pendingIds) blockedToastIds.add(id);
+    };
 
     const handleIncoming = (items: NotificationItem[]): boolean => {
-      const fresh = claimUndeliveredNotifications(items);
-      if (fresh.length === 0) return false;
+      if (
+        cancelled ||
+        !useAuthStore.getState().isAuthenticated ||
+        useAuthStore.getState().user?.user_id !== userId
+      )
+        return false;
+      const { fresh, needsReconcile } = claims.claim(items);
+      if (fresh.length === 0) {
+        for (const item of items) {
+          pendingIds.delete(item.id);
+          blockedToastIds.delete(item.id);
+        }
+        return false;
+      }
 
       incrementBy(fresh.length);
       const hidden = document.hidden;
       void queryClient.invalidateQueries({
-        queryKey: NOTIFICATION_KEYS.list,
+        queryKey: needsReconcile
+          ? NOTIFICATION_KEYS.root
+          : NOTIFICATION_KEYS.list,
         refetchType: hidden ? "none" : "active",
       });
       if (hidden) reconcileOnVisible = true;
@@ -60,14 +99,15 @@ export function useNotificationSocket(): void {
       const preferences = queryClient.getQueryData<ProfilePreferences>(
         profileKeys.preferences(userId),
       );
-      const toastable = fresh.filter((item) =>
-        isNotificationEnabled(item, preferences?.notifications),
+      const toastable = fresh.filter(
+        (item) =>
+          !blockedToastIds.has(item.id) &&
+          isNotificationEnabled(item, preferences?.notifications),
       );
-      if (
-        !hidden &&
-        !window.location.pathname.startsWith("/notifications")
-      ) {
-        showNotificationToasts(toastable);
+      if (visible()) toasts.push(toastable);
+      for (const item of items) {
+        pendingIds.delete(item.id);
+        blockedToastIds.delete(item.id);
       }
       return true;
     };
@@ -85,11 +125,16 @@ export function useNotificationSocket(): void {
           setConnected(true);
           // Reconnect may have missed events while offline; reconcile the badge
           // and list with the persisted notification state.
-          void queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.root });
+          void queryClient.invalidateQueries({
+            queryKey: NOTIFICATION_KEYS.root,
+          });
         });
         channel.listen(".notification.created", (payload: NotificationItem) => {
           if (cancelled || useAuthStore.getState().user?.user_id !== userId)
             return;
+          if (!payload?.id) return;
+          pendingIds.add(payload.id);
+          if (!visible()) blockedToastIds.add(payload.id);
           burst.push(payload);
         });
         channel.listen(".auth.session-replaced", () => {
@@ -113,7 +158,11 @@ export function useNotificationSocket(): void {
     leader.start();
 
     const reconcileWhenVisible = () => {
-      if (document.hidden || !reconcileOnVisible) return;
+      if (document.hidden) {
+        resetPresentation.current?.();
+        return;
+      }
+      if (!reconcileOnVisible) return;
       reconcileOnVisible = false;
       void queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.root });
     };
@@ -122,6 +171,8 @@ export function useNotificationSocket(): void {
     return () => {
       cancelled = true;
       burst.dispose();
+      toasts.dispose();
+      resetPresentation.current = null;
       leader?.stop();
       document.removeEventListener("visibilitychange", reconcileWhenVisible);
       leave?.();

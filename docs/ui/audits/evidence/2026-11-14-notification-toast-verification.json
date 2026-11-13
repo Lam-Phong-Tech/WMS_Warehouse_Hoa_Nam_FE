@@ -1,0 +1,148 @@
+{
+  "date": "2026-11-14",
+  "branch": "dev",
+  "frontend_base": "6fae08b9304a2c5a1947d4b0b32be3545f66aeb3",
+  "backend_commit": "f9e2ac42b80c760f09dc80b80d0863a283224f09",
+  "contract": {
+    "individual_toasts_per_user_tab": 3,
+    "sliding_window_ms": 10000,
+    "summary_max_updates_per_second": 1,
+    "pending_buffer_early_flush_at": 1000,
+    "history_and_badge_are_independent_of_presentation": true
+  },
+  "verification": [
+    {
+      "command": "npx vitest run src/modules/notifications --maxWorkers=2",
+      "result": "passed",
+      "files": 9,
+      "tests": 58
+    },
+    {
+      "command": "npm run lint",
+      "result": "passed"
+    },
+    {
+      "command": "npx eslint --config eslint.config.js src/modules/notifications e2e/notification-toast.spec.ts e2e/fixtures/notification-toast-echo.ts e2e/fixtures/notification-toast.tsx e2e/fixtures/vite.notification-toast.config.ts playwright.notification-toast.config.ts",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build",
+      "result": "passed",
+      "includes": "tsc -b, Vite production build, build manifest",
+      "warnings": [
+        "Existing large bundle chunk warnings"
+      ]
+    },
+    {
+      "command": "npx playwright test --config playwright.notification-toast.config.ts",
+      "result": "5 matrix/multi-tab cases passed; new lifecycle case passed on focused rerun after advancing the frozen clock beyond the 400ms batch boundary",
+      "cases": 6
+    },
+    {
+      "command": "npm run test:ci",
+      "result": "passed",
+      "files": 28,
+      "tests": 306
+    },
+    {
+      "command": "composer test:ci (backend, disposable SQLite)",
+      "result": "passed",
+      "tests": 243,
+      "passed": 242,
+      "skipped": 1,
+      "assertions": 4271
+    },
+    {
+      "command": "GitHub backend DEV workflow core regression (SQLite and PostgreSQL)",
+      "result": "passed",
+      "url": "https://github.com/Lam-Phong-Tech/WMS_Warehouse_Hoa_Nam_BE/actions/runs/43470275013"
+    }
+  ],
+  "browser_scope": {
+    "production_code": [
+      "useNotificationSocket",
+      "notification-tab-leader",
+      "BroadcastChannel",
+      "React Query",
+      "Zustand stores",
+      "AppProviders/Sonner/theme/styles"
+    ],
+    "fixture_boundary": "Echo transport and persisted history source are synthetic; this is not a live backend, real database history or VPS deployment test.",
+    "matrix": [
+      {
+        "width": 1440,
+        "theme": "light"
+      },
+      {
+        "width": 1440,
+        "theme": "dark"
+      },
+      {
+        "width": 390,
+        "theme": "light"
+      },
+      {
+        "width": 390,
+        "theme": "dark"
+      }
+    ],
+    "assertions": [
+      "1201 distinct items retain history=1201 and badge=1201",
+      "3 individuals plus summary1198",
+      "replayed socket event does not inflate badge",
+      "history navigation clears presentation and returning does not replay old toasts",
+      "two tabs retain the complete burst without duplicate badge",
+      "navigation retains the same rolling admission budget",
+      "manually closed summary never replays old counts"
+    ],
+    "screenshots_visually_reviewed": [
+      "test-results/notification-toast/1440-light.png",
+      "test-results/notification-toast/1440-dark.png",
+      "test-results/notification-toast/390-light.png",
+      "test-results/notification-toast/390-dark.png"
+    ],
+    "not_verified": [
+      "Full live notification dropdown/page against backend",
+      "All product overlays/screens at all breakpoints",
+      "Real background visibility and account changes in browser; covered by hook/unit tests"
+    ]
+  },
+  "review": {
+    "fresh_review_completed": true,
+    "findings_fixed_red_to_green": [
+      "Presentation reset must retain rolling admission for the same account",
+      "Dismiss retired toast IDs before dropping tracking, including hover-paused toasts",
+      "Controller owns summary lifetime and manual dismissal cannot replay old counts"
+    ],
+    "deferred_minors": []
+  },
+  "rulings": [
+    {
+      "decision": "Bound recent claims to 10000 IDs per account/socket lifetime; reconcile canonical backend unread/list state after overflow.",
+      "reason": "The old global 200-ID cache could recount duplicate IDs after early burst flush and across account changes.",
+      "cost": "Very large sessions require additional backend unread reconciliation; evicted IDs cannot be deduplicated locally forever."
+    },
+    {
+      "decision": "Track at most3 owned individual toast IDs and dismiss retired IDs explicitly.",
+      "reason": "Sonner hover can outlive nominal toast duration; account cleanup must not leave old account content onscreen.",
+      "cost": "A hover-paused older toast closes when newer admitted individuals replace it."
+    }
+  ],
+  "known_limits": [
+    {
+      "scope": "Entire frontend suite",
+      "result": "Not green",
+      "detail": "AgencyComparisonTab.test.tsx:161 still searches old tab name /So sánh đơn vị nhận hàng/. Full-suite bail and isolated rerun reproduce this. Report source/test unchanged by this feature."
+    },
+    {
+      "scope": "Initial frontend core CI run",
+      "result": "1 inventory test timeout at20s with build/browser/tests running concurrently",
+      "detail": "Final serial rerun recorded separately; no unrelated timeout or test configuration relaxed."
+    },
+    {
+      "scope": "Initial backend auto deploy before user-authorized VPS remediation",
+      "result": "blocked",
+      "detail": "DEV_DEPLOY_FAILED: Missing or unreadable trusted reviewed migration receipt. Core regression succeeded; no migration guard bypassed. User subsequently authorized VPS remediation; tracked separately from this frontend verification."
+    }
+  ]
+}

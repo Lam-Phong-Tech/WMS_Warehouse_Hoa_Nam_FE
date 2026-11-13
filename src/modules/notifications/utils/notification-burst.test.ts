@@ -33,10 +33,9 @@ describe("notification burst buffer", () => {
     burst.push(item("same"));
     burst.push(item("other"));
     vi.advanceTimersByTime(400);
-    expect(flush.mock.calls[0][0].map((entry: { id: string }) => entry.id)).toEqual([
-      "same",
-      "other",
-    ]);
+    expect(
+      flush.mock.calls[0][0].map((entry: { id: string }) => entry.id),
+    ).toEqual(["same", "other"]);
 
     burst.push(item("later"));
     vi.advanceTimersByTime(400);
@@ -56,5 +55,16 @@ describe("notification burst buffer", () => {
     vi.advanceTimersByTime(400);
 
     expect(flush).not.toHaveBeenCalled();
+  });
+  it("flushes early instead of discarding any of 1201 unique events", () => {
+    const batches: NotificationItem[][] = [];
+    const burst = createNotificationBurst((items) => batches.push(items));
+    for (let i = 0; i < 1201; i++) burst.push(item(`overflow-${i}`));
+    vi.advanceTimersByTime(400);
+    const ids = batches.flat().map((entry) => entry.id);
+    expect(ids).toHaveLength(1201);
+    expect(new Set(ids).size).toBe(1201);
+    expect(batches.every((batch) => batch.length <= 1000)).toBe(true);
+    burst.dispose();
   });
 });
