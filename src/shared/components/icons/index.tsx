@@ -105,6 +105,7 @@ export const UserAddOutlined = createFlaticonIcon("user-add");
 export const UserOutlined = createFlaticonIcon("user");
 export const UserSwitchOutlined = createFlaticonIcon("exchange");
 export const WarningOutlined = createFlaticonIcon("triangle-warning");
+export const WarehouseOutlined = createFlaticonIcon("warehouse");
 export const WifiOutlined = createFlaticonIcon("wifi");
 export const ZoomInOutlined = createFlaticonIcon("zoom-in");
 export const ZoomOutOutlined = createFlaticonIcon("zoom-out");

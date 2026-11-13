@@ -23,17 +23,6 @@
   letter-spacing: -0.015em;
   line-height: 29px;
 }
-#rpt08-history-report .rpt08-table-heading h2 > span {
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: #eaf5fa;
-  color: #0d5185;
-  font-size: 10px;
-  font-weight: 850;
-  letter-spacing: 0;
-  line-height: 18px;
-  white-space: nowrap;
-}
 #rpt08-history-report .rpt08-search-box {
   width: 100%;
   height: 40px;

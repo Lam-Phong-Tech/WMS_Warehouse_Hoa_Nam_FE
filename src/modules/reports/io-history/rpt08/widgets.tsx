@@ -7,7 +7,7 @@ import {
   HistoryOutlined,
   InboxOutlined,
   SearchOutlined,
-  StockOutlined,
+  WarehouseOutlined,
   SwapOutlined,
 } from "@/shared/components/icons";
 import type { DailyMovement, HistoryRow } from "./model";
@@ -120,7 +120,7 @@ export function ProductCard({
       aria-label={tUi("updatedUi.text_87e5b1b15d2e")}
     >
       <div className="rpt08-metric-icon">
-        <StockOutlined />
+        <WarehouseOutlined />
       </div>
       <div className="rpt08-product-card__body">
         <h2>{tUi("updatedUi.text_87e5b1b15d2e")}</h2>
@@ -529,12 +529,7 @@ export function HistoryTable({
       aria-labelledby="rpt08-table-title"
     >
       <div className="rpt08-table-heading">
-        <h2 id="rpt08-table-title">
-          {tUi("updatedUi.text_8814615e6de0")}
-          <span>
-            {noResult ? tUi("updatedUi.text_da0384630020") : number(total)}
-          </span>
-        </h2>
+        <h2 id="rpt08-table-title">{tUi("updatedUi.text_8814615e6de0")}</h2>
         <label className="rpt08-search-box">
           <SearchOutlined />
           <span className="rpt08-sr-only">

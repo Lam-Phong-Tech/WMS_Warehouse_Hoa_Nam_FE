@@ -406,8 +406,7 @@
   background: var(--ops-surface);
 }
 #rpt08-history-report .rpt08-product-breakdown > span,
-#rpt08-history-report .rpt08-unit-row small,
-#rpt08-history-report .rpt08-table-heading h2 > span {
+#rpt08-history-report .rpt08-unit-row small {
   background: var(--ops-pale);
   color: var(--ops-link);
 }
