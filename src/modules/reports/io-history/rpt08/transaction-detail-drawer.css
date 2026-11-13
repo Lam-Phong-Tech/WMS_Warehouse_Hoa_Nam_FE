@@ -82,7 +82,7 @@
 }
 .rpt08-transaction-drawer .rpt08-type-pill.is-reversal {
   background: color-mix(in srgb, #f1a20f 18%, var(--ops-surface));
-  color: #b97809;
+  color: #8a5a06;
 }
 @container rpt08-transaction (max-width: 480px) {
   .rpt08-transaction-fields {
