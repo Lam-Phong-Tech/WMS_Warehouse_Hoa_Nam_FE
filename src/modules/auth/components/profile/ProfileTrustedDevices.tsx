@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { UiAlert, UiConfirmDialog, UiStatusBadge } from "@/shared/ui";
+import {
+  FILTER_WIDTH,
+  UiAlert,
+  UiConfirmDialog,
+  UiPagination,
+  UiSelect,
+  UiStatusBadge,
+} from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
 import { formatDateTime } from "@/shared/utils/format-date";
@@ -26,12 +33,27 @@ export function ProfileTrustedDevices({ userId }: { userId?: string }) {
 
   const [target, setTarget] = useState<TrustedDevice | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  // Phân trang phía client (danh sách khay/thiết bị đã tải hết).
+  // Mặc định 6 thẻ/trang, chọn trong 6/9/16/30 như lịch sử đăng nhập.
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6);
 
   const revokeMutation = useMutation({
     mutationFn: (id: string) => profileService.revokeTrustedDevice(id),
   });
 
   const devices = query.data?.data ?? [];
+  const total = devices.length;
+  const lastPage = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, lastPage);
+  const pageStart = (safePage - 1) * pageSize;
+  const visibleDevices = devices.slice(pageStart, pageStart + pageSize);
+  const correctingPage = page > lastPage;
+  useEffect(() => {
+    if (!correctingPage) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Clamp the page when the list shrinks (e.g. after a revoke).
+    setPage(lastPage);
+  }, [correctingPage, lastPage]);
 
   const handleConfirmRevoke = async () => {
     if (!target || revokeMutation.isPending) return;
@@ -99,8 +121,8 @@ export function ProfileTrustedDevices({ userId }: { userId?: string }) {
           {t("auth.personal.trustedDevicesEmpty")}
         </p>
       ) : (
-        <div className="hn-personal-device-grid" data-count={devices.length}>
-          {devices.map((device) => {
+        <div className="hn-personal-device-grid" data-count={total}>
+          {visibleDevices.map((device) => {
             const label =
               device.device_label ||
               device.platform ||
@@ -151,6 +173,40 @@ export function ProfileTrustedDevices({ userId }: { userId?: string }) {
           })}
         </div>
       )}
+
+      {devices.length ? (
+        <div className="hn-login-history-pagination">
+          <div className="hn-login-history-summary">
+            <span>
+              {t("inventory.rangeLabel", {
+                from: total ? pageStart + 1 : 0,
+                to: Math.min(pageStart + pageSize, total),
+                total,
+              })}
+            </span>
+            <UiSelect
+              aria-label={t("shared.table.rowsPerPageAria")}
+              value={pageSize}
+              minWidth={FILTER_WIDTH.pageSize}
+              options={[6, 9, 16, 30].map((size) => ({
+                value: size,
+                label: t("shared.table.perPage", { size }),
+              }))}
+              onChange={(value) => {
+                setPageSize(Number(value));
+                setPage(1);
+              }}
+            />
+          </div>
+          <UiPagination
+            page={safePage}
+            pageSize={pageSize}
+            total={total}
+            showTotal={false}
+            onPageChange={setPage}
+          />
+        </div>
+      ) : null}
 
       <p className="hn-personal-note">
         {t("auth.personal.trustedDevicesIdentityNote")}
