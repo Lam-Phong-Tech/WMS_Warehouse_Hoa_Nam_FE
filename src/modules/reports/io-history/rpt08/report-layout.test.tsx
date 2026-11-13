@@ -15,6 +15,11 @@ const rows: HistoryRow[] = Array.from({ length: PAGE_SIZE }, (_, index) => ({
   objectSecondary: "Test fixture",
   quantity: index + 1,
   actor: "Test User",
+  department: "Kho",
+  createdAt: `2026-09-23T${String(9 + index).padStart(2, "0")}:00:00+07:00`,
+  movementCount: 1,
+  movementNo: `MV-${index + 1}`,
+  lines: [],
 }));
 function mountTable(page = 1, total = 42, extra = {}) {
   const onPageChange = vi.fn();

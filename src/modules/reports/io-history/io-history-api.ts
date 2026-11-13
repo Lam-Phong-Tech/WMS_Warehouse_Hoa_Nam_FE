@@ -79,6 +79,13 @@ const STALE_MS = CACHE_POLICIES.report.staleTime;
 
 export type IoDocType = "INBOUND" | "OUTBOUND" | "REVERSAL";
 
+/** Một dòng hàng của chứng từ sau khi ghi nhận. */
+export type IoHistoryLine = {
+  code: string;
+  name: string;
+  qty: number | null;
+};
+
 /** Bộ lọc "Loại chứng từ"; chuỗi rỗng = tất cả (đúng `st.type` của mockup). */
 export type IoTypeFilter = "" | IoDocType;
 
@@ -106,6 +113,8 @@ export type IoHistoryRow = {
   originalDocumentNo: string;
   /** "MÃ · TÊN" của từng dòng SKU trong chứng từ. */
   skuLines: string[];
+  /** Dòng hàng có cấu trúc (mã/tên/SL ghi nhận) — bản thay thế có dấu cho skuLines. */
+  lines: IoHistoryLine[];
 };
 
 export type IoHistorySnapshot = {
@@ -340,6 +349,13 @@ export function useIoHistorySnapshot({
               .join(" · "),
           )
           .filter((label) => label !== ""),
+        lines: lines
+          .map((line) => ({
+            code: text(line.product_code, ""),
+            name: text(line.product_name, ""),
+            qty: finiteQuantity(line.posted_qty),
+          }))
+          .filter((line) => line.code !== "" || line.name !== ""),
       });
     }
 
@@ -389,6 +405,7 @@ export function useIoHistorySnapshot({
         movementNo: movements?.count === 1 ? movements.firstNo : "",
         originalDocumentNo: text(row.reference_document_code, ""),
         skuLines: [],
+        lines: [],
       });
     }
 

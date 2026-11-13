@@ -84,6 +84,115 @@
   background: color-mix(in srgb, #f1a20f 18%, var(--ops-surface));
   color: #8a5a06;
 }
+.rpt08-transaction-drawer .rpt08-transaction-fields {
+  margin-bottom: 0;
+}
+.rpt08-transaction-action {
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 22px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+.rpt08-transaction-action i {
+  flex: none;
+  font-size: 17px;
+  line-height: 1;
+}
+.rpt08-transaction-action:hover {
+  border-color: var(--ops-link);
+  background: var(--ops-surface);
+}
+.rpt08-transaction-action:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 2px;
+}
+.rpt08-lines {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ops-divider);
+}
+.rpt08-lines__head {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rpt08-lines__head h3 {
+  margin: 0;
+  color: var(--ops-heading);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 20px;
+}
+.rpt08-lines__head span {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+}
+.rpt08-lines__list {
+  max-height: 220px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: auto;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+.rpt08-lines__list li {
+  min-width: 0;
+  padding: 7px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.rpt08-lines__list li + li {
+  border-top: 1px solid var(--ops-line);
+}
+.rpt08-lines__sku {
+  color: var(--ops-heading);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.rpt08-lines__name {
+  min-width: 0;
+  color: var(--ops-text);
+  font-size: 12px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rpt08-lines__qty {
+  color: var(--ops-heading);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
 @container rpt08-transaction (max-width: 480px) {
   .rpt08-transaction-fields {
     grid-template-columns: minmax(0, 1fr);

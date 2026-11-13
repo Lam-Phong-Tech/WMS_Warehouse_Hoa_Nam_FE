@@ -25,6 +25,7 @@ vi.mock("../io-history-api", () => ({
           movementNo: "MV-001",
           originalDocumentNo: "",
           skuLines: ["D034514 · Bộ đầu tuýp 14 chi tiết"],
+          lines: [{ code: "D034514", name: "Bộ đầu tuýp 14 chi tiết", qty: 1 }],
         },
       ],
       dataAsOf: new Date().toISOString(),
@@ -52,6 +53,17 @@ it("opens transaction details in a right drawer and restores the same report aft
     await within(drawer).findByText(/D034514 · Bộ đầu tuýp 14 chi tiết/),
   ).toBeInTheDocument();
   expect(within(drawer).getByText("Quản trị viên 02")).toBeInTheDocument();
+  // Bộ thông tin mới: phòng ban, movement và danh sách dòng hàng.
+  expect(within(drawer).getByText("Phòng ban")).toBeInTheDocument();
+  expect(within(drawer).getByText("Kho")).toBeInTheDocument();
+  expect(within(drawer).getByText("Movement")).toBeInTheDocument();
+  expect(within(drawer).getByText("MV-001")).toBeInTheDocument();
+  expect(
+    within(drawer).getByRole("button", { name: /Xem chi tiết phiếu xuất/ }),
+  ).toBeInTheDocument();
+  const linesList = drawer.querySelector(".rpt08-lines__list");
+  expect(linesList).not.toBeNull();
+  expect(within(linesList as HTMLElement).getByText("D034514")).toBeInTheDocument();
   await user.keyboard("{Escape}");
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(screen.getByRole("table")).toBe(table);

@@ -38,6 +38,7 @@ describe("recent transaction report links", () => {
       movementNo: `MV-${index}`,
       originalDocumentNo: "",
       skuLines: [],
+      lines: [],
     }));
     vi.mocked(useIoHistorySnapshot).mockReturnValue({
       snapshot: { rows, dataAsOf: "2026-11-06T04:30:00Z" },

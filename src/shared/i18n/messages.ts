@@ -6274,6 +6274,19 @@ export const MESSAGES_VI = {
       placeholder: "Control bên trong shell",
     },
   },
+  rpt08: {
+    detail: {
+      department: "Phòng ban",
+      createdDate: "Ngày tạo phiếu",
+      movement: "Movement",
+      movements: "{count} movement",
+      originalDocument: "Phiếu gốc",
+      linesTitle: "Dòng hàng",
+      linesCount: "{count} dòng hàng",
+      viewInboundDocument: "Xem chi tiết phiếu nhập",
+      viewOutboundDocument: "Xem chi tiết phiếu xuất",
+    },
+  },
 } as const;
 
 /** Mọi đường dẫn dạng `namespace.khoá` trỏ tới một chuỗi lá. */

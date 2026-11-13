@@ -1,6 +1,6 @@
 import { parseDateTime, BUSINESS_TIMEZONE } from "@/shared/utils/date-time";
 import dayjs from "dayjs";
-import type { IoDocType, IoHistoryRow } from "../io-history-api";
+import type { IoDocType, IoHistoryLine, IoHistoryRow } from "../io-history-api";
 import { ISO_DATE } from "../io-history-api";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -23,6 +23,11 @@ export type HistoryRow = {
   objectSecondary: string;
   quantity: number | null;
   actor: string;
+  department: string;
+  createdAt: string;
+  movementCount: number;
+  movementNo: string;
+  lines: IoHistoryLine[];
   source?: IoHistoryRow;
 };
 
@@ -96,6 +101,11 @@ export function mapLiveRow(row: IoHistoryRow): HistoryRow | null {
     objectSecondary,
     quantity: row.qty === null ? null : Math.abs(row.qty),
     actor: row.actor || "—",
+    department: row.department || "—",
+    createdAt: row.createdAt,
+    movementCount: row.movementCount,
+    movementNo: row.movementNo,
+    lines: row.lines,
     source: row,
   };
 }
