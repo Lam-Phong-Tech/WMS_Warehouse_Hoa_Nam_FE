@@ -782,6 +782,34 @@ export function PvProductCatalogPage() {
     },
   ] as const;
 
+  const industryFilterControl = (
+    <UiSelect
+      value={industryFilter}
+      onChange={(next) => applyFilter(() => setIndustryFilter(next))}
+      // "Tất cả" là mặc định: không hiện nút × khi đang chọn nó.
+      // Nếu người dùng xoá một nhóm đã chọn, trả về đúng sentinel
+      // ALL thay vì "" — nếu không danh sách sẽ lọc theo chuỗi rỗng
+      // và rơi vào trạng thái "Không có kết quả phù hợp".
+      clearValue={FILTER_ALL}
+      aria-label={t("pv.admin.industryFilterAria")}
+      minWidth={0}
+      fullWidth
+      menuClassName="pv-catalog-menu"
+      placeholder={copy("Nhóm sản phẩm: Tất cả", "Product group: All")}
+      options={[
+        {
+          value: FILTER_ALL,
+          label: copy("Nhóm sản phẩm: Tất cả", "Product group: All"),
+        },
+        ...industryOptions.map((option) => ({
+          ...option,
+          label: `${copy("Nhóm sản phẩm", "Product group")}: ${option.label}`,
+        })),
+      ]}
+      data-testid="pv-catalog-industry-filter"
+    />
+  );
+
   return (
     <Box className="pv-catalog-page" data-testid="pv-product-catalog-page">
       <header className="pv-catalog-heading">
@@ -906,33 +934,9 @@ export function PvProductCatalogPage() {
               data-testid="pv-catalog-search"
             />
           </div>
-          <div className="pv-catalog-filter">
-            <UiSelect
-              value={industryFilter}
-              onChange={(next) => applyFilter(() => setIndustryFilter(next))}
-              // "Tất cả" là mặc định: không hiện nút × khi đang chọn nó.
-              // Nếu người dùng xoá một nhóm đã chọn, trả về đúng sentinel
-              // ALL thay vì "" — nếu không danh sách sẽ lọc theo chuỗi rỗng
-              // và rơi vào trạng thái "Không có kết quả phù hợp".
-              clearValue={FILTER_ALL}
-              aria-label={t("pv.admin.industryFilterAria")}
-              minWidth={0}
-              fullWidth
-              menuClassName="pv-catalog-menu"
-              placeholder={copy("Nhóm sản phẩm: Tất cả", "Product group: All")}
-              options={[
-                {
-                  value: FILTER_ALL,
-                  label: copy("Nhóm sản phẩm: Tất cả", "Product group: All"),
-                },
-                ...industryOptions.map((option) => ({
-                  ...option,
-                  label: `${copy("Nhóm sản phẩm", "Product group")}: ${option.label}`,
-                })),
-              ]}
-              data-testid="pv-catalog-industry-filter"
-            />
-          </div>
+          {isTablet ? null : (
+            <div className="pv-catalog-filter">{industryFilterControl}</div>
+          )}
           <div className="pv-catalog-filter">
             <UiSelect
               value={publishedFilter}
@@ -975,6 +979,9 @@ export function PvProductCatalogPage() {
           className="pv-catalog-extra-filters"
           hidden={!filtersOpen}
         >
+          {isTablet ? (
+            <div className="pv-catalog-filter">{industryFilterControl}</div>
+          ) : null}
           <div className="pv-catalog-view-filter">
             <span>{copy("Cách hiển thị", "View")}</span>
             <div

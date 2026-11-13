@@ -1277,3 +1277,31 @@ body:has(.pv-catalog-pagination [aria-expanded="true"])
     display: none;
   }
 }
+
+/* Tablet 621–979px: giữ tiêu đề và nhóm nút hành động trên cùng một hàng như
+   desktop; ô "Nhóm sản phẩm" chuyển vào panel "Bộ lọc"; hàng lọc chỉ còn
+   search (ngắn lại) + Trạng thái + nút Bộ lọc trên một dòng. */
+@container pv-catalog (min-width: 621px) and (max-width: 979.98px) {
+  .pv-catalog-heading {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .pv-catalog-heading > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .pv-catalog-heading-actions {
+    width: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+  .pv-catalog-filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+  .pv-catalog-search {
+    grid-column: auto;
+  }
+  .pv-catalog-extra-filters .pv-catalog-filter {
+    width: min(320px, 100%);
+  }
+}
