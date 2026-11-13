@@ -21,6 +21,10 @@
 .hn-ncc-header {
   justify-content: space-between;
 }
+.hn-ncc-header .hn-ncc-primary.MuiButton-root {
+  min-height: 44px;
+  padding: 10px 20px;
+}
 .hn-ncc-primary.MuiButton-root {
   background: var(--ops-primary);
   color: var(--ops-on-primary);
