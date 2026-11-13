@@ -478,6 +478,9 @@ function InboundListScreen() {
                   "supplier",
                   "hn-inbound-col-supplier",
                 )}
+                <th className="hn-inbound-col-product-type">
+                  {t("inbound.list.colProductType")}
+                </th>
                 {sortHeader(
                   tUi("updatedUi.text_5306083bc2fb"),
                   "scanned",
@@ -531,17 +534,17 @@ function InboundListScreen() {
                     </span>
                     <span className="hn-inbound-compact">{progress(row)}</span>
                   </td>
+                  <td className="hn-inbound-product-type-cell">
+                    <span
+                      className="hn-inbound-product-type"
+                      data-testid="inbound-product-type"
+                    >
+                      {productTypeText(row) || EMPTY_TEXT}
+                    </span>
+                  </td>
                   <td className="hn-inbound-desktop hn-inbound-progress-cell">
                     <div className="hn-inbound-progress-stack">
                       <span>{progress(row)}</span>
-                      {productTypeText(row) ? (
-                        <span
-                          className="hn-inbound-product-type"
-                          data-testid="inbound-product-type"
-                        >
-                          {productTypeText(row)}
-                        </span>
-                      ) : null}
                     </div>
                   </td>
                   <td className="hn-inbound-created-date-cell">

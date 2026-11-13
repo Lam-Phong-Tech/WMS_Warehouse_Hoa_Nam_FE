@@ -584,6 +584,7 @@ export const MESSAGES_VI = {
       colDocument: "Phiếu nhập",
       colSource: "Mã chứng từ bên ngoài",
       colSupplier: "Nhà cung cấp",
+      colProductType: "Loại sản phẩm",
       colCreated: "Ngày tạo",
       colNote: "Ghi chú",
       colScannedQty: "Số lượng đã quét",

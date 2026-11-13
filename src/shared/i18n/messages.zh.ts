@@ -1187,6 +1187,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       colDocument: "入库单",
       colSource: "外部单据编号",
       colSupplier: "供应商",
+      colProductType: "产品类型",
       colCreated: "创建于",
       colNote: "注意",
       colScannedQty: "扫描数量",

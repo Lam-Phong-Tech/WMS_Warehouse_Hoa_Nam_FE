@@ -1,5 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -63,7 +66,9 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
   });
 
   afterEach(() => {
+    cleanup();
     cleanupTestState();
+    useLanguageStore.getState().setLanguage("vi");
     vi.clearAllMocks();
   });
 
@@ -74,7 +79,10 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("NCC-001 - Honda Việt Nam")).toBeInTheDocument();
 
-    // Dưới tiến độ ghi nhận hiện loại hàng thực nhận của phiếu.
+    expect(
+      screen.getByRole("columnheader", { name: "Loại sản phẩm" }),
+    ).toBeInTheDocument();
+    // Loại hàng thực nhận nằm trong cột riêng, kể cả khi tiến độ bị ẩn.
     expect(screen.getAllByTestId("inbound-product-type")).toHaveLength(2);
     expect(screen.getByText("Sản phẩm")).toBeInTheDocument();
     expect(screen.getByText("Linh kiện")).toBeInTheDocument();
@@ -88,6 +96,53 @@ describe("IN-01 · phiếu chờ bổ sung thông tin SKU", () => {
       1,
     );
   });
+
+  it.each([
+    ["vi", "Loại sản phẩm", "Chưa có"],
+    ["en", "Product type", "None yet"],
+    ["zh", "产品类型", "暂无"],
+  ] as const)(
+    "shows a dedicated product-type column in %s with mixed and unknown receipts",
+    async (language, heading, emptyLabel) => {
+      if (language === "en") await ensureEnglishMessages();
+      if (language === "zh") await ensureChineseMessages();
+      useLanguageStore.getState().setLanguage(language);
+      vi.mocked(useInboundDocuments).mockReturnValue({
+        data: {
+          data: [
+            makeDocument({
+              id: "mixed",
+              code: "PN-MIXED",
+              productTypes: ["PRODUCT", "COMPONENT"],
+            }),
+            makeDocument({
+              id: "unknown",
+              code: "PN-UNKNOWN",
+              productTypes: undefined,
+            }),
+          ],
+          meta: { total: 2 },
+        },
+        isLoading: false,
+        isFetching: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof useInboundDocuments>);
+      renderWithProviders(<InboundPage />);
+      expect(
+        screen.getByRole("columnheader", { name: heading }),
+      ).toBeInTheDocument();
+      const mixedRow = screen.getByText("PN-MIXED").closest("tr")!;
+      expect(
+        within(mixedRow).getByTestId("inbound-product-type"),
+      ).toHaveTextContent(/.+ · .+/);
+      const unknownRow = screen.getByText("PN-UNKNOWN").closest("tr")!;
+      expect(
+        within(unknownRow).getByTestId("inbound-product-type"),
+      ).toHaveTextContent(emptyLabel);
+    },
+  );
 
   it("lọc ở BE chứ không lọc sau khi phân trang", async () => {
     renderWithProviders(<InboundPage />);

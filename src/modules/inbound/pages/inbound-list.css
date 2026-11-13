@@ -1065,7 +1065,7 @@
 .hn-inbound-list-card {
   padding: 0;
   overflow: hidden;
-  /* Chặn bảng 850px tràn lan scrollable-overflow ra ngoài card lên `main`
+  /* Chặn bảng rộng tràn lan scrollable-overflow ra ngoài card lên `main`
      (cuộn ngang cả trang trên tablet); bảng vẫn cuộn ngang trong card. */
   contain: paint;
 }
@@ -1079,7 +1079,7 @@
   scrollbar-width: thin;
 }
 .hn-inbound-list table.hn-inbound-table {
-  min-width: 850px;
+  min-width: 980px;
   color: var(--in-text);
 }
 .hn-inbound-list .hn-inbound-table :is(th, td) {
@@ -1144,6 +1144,7 @@
 .hn-inbound-table .hn-inbound-col-index { width: 56px; }
 .hn-inbound-table .hn-inbound-col-code { width: 210px; }
 .hn-inbound-table .hn-inbound-col-supplier { width: auto; }
+.hn-inbound-table .hn-inbound-col-product-type { width: 130px; }
 .hn-inbound-table .hn-inbound-col-progress { width: 18%; }
 .hn-inbound-table .hn-inbound-col-created-date { width: 150px; }
 .hn-inbound-table .hn-inbound-col-created { width: 190px; }
@@ -1238,6 +1239,14 @@
   .hn-inbound-list .hn-inbound-table .hn-inbound-created-cell {
     display: block;
     grid-column: 1 / -1;
+    grid-row: 5;
+  }
+  .hn-inbound-list .hn-inbound-product-type-cell {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  .hn-inbound-list .hn-inbound-created-date-cell,
+  .hn-inbound-list .hn-inbound-actions-cell {
     grid-row: 4;
   }
   .hn-inbound-pagination-controls { width: auto; }
