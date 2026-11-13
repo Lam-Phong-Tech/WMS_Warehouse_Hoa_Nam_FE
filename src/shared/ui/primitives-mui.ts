@@ -8,6 +8,10 @@
  * canonical Ui* — không re-export để tránh 2 public choice cùng purpose.
  */
 export { default as Box, type BoxProps } from "@mui/material/Box";
+export {
+  default as InputAdornment,
+  type InputAdornmentProps,
+} from "@mui/material/InputAdornment";
 // Drawer/Menu/Popover: cùng props MUI, thêm đúng một việc là không render khi
 // trang chứa nó đang bị giữ sống ở trạng thái ẩn (xem components/PageOverlays).
 export { Drawer, Menu, Popover } from "./components/PageOverlays";

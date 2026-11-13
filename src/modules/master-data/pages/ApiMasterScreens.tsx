@@ -123,6 +123,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTextField,
+  InputAdornment,
   useUiConfirm,
   useMediaQuery,
 } from "@/shared/ui";
@@ -2350,7 +2351,11 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   "aria-label": t("masterData.recipient.searchAria"),
                 },
                 input: {
-                  startAdornment: <SearchOutlined aria-hidden="true" />,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchOutlined aria-hidden="true" />
+                    </InputAdornment>
+                  ),
                 },
               }}
             />

@@ -9,6 +9,7 @@ import {
   UiPagination,
   UiSelect,
   UiTextField,
+  InputAdornment,
   UiIcon,
   UiVuexyDateRangePicker,
 } from "@/shared/ui";
@@ -252,7 +253,13 @@ export function AuditLogsPage() {
                 "aria-label": t("audit.searchAria"),
                 title: t("audit.searchHint"),
               },
-              input: { startAdornment: <UiIcon name="search" size="sm" /> },
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <UiIcon name="search" size="sm" />
+                  </InputAdornment>
+                ),
+              },
             }}
             onChange={(event) => setSearchInput(event.target.value)}
           />

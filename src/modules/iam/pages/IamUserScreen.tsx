@@ -25,6 +25,7 @@ import {
   UiSelect,
   UiStatusBadge,
   UiTextField,
+  InputAdornment,
   type UiStatusTone,
 } from "@/shared/ui";
 import {
@@ -937,7 +938,13 @@ export function IamUserScreen({
             placeholder={t("iam.user.searchPlaceholder")}
             slotProps={{
               htmlInput: { "aria-label": t("iam.user.searchAria") },
-              input: { startAdornment: <UiIcon name="search" size="md" /> },
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <UiIcon name="search" size="md" />
+                  </InputAdornment>
+                ),
+              },
             }}
             fullWidth
           />
