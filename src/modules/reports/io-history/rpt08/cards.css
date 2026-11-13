@@ -497,11 +497,14 @@
   line-height: 14px;
 }
 
+/* Đường dẫn nhãn chỉ chiếm đúng khoảng trống giữa ô nhãn và donut (gap 10px);
+   trước đó vươn 66px vào phía trong ô nhãn nên gạch ngang chữ "Nhập kho" /
+   "Xuất kho" (ảnh báo người dùng 13/11/2026). */
 #rpt08-history-report .rpt08-donut-side::after {
   content: "";
   position: absolute;
   top: 27px;
-  width: 66px;
+  width: 12px;
   border-top: 1px solid;
 }
 
@@ -519,7 +522,7 @@
 }
 
 #rpt08-history-report .rpt08-donut-side.is-left::after {
-  right: -5px;
+  right: -11px;
   border-color: #0788c9;
 }
 
@@ -529,7 +532,7 @@
 }
 
 #rpt08-history-report .rpt08-donut-side.is-right::after {
-  left: -5px;
+  left: -11px;
   border-color: #20b5bd;
 }
 

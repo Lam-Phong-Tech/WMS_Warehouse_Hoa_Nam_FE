@@ -580,21 +580,9 @@
 .hn-rpt-io .io-donut-label.is-out > strong {
   color: var(--io-out);
 }
-.hn-rpt-io .io-donut-label::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  z-index: -1;
-  width: 35%;
-  height: 1px;
-  background: var(--io-line);
-}
-.hn-rpt-io .io-donut-label.is-in::after {
-  right: 0;
-}
-.hn-rpt-io .io-donut-label.is-out::after {
-  left: 0;
-}
+/* Không vẽ đường dẫn (leader) từ vành donut về nhãn: đường 1px nằm ở giữa ô
+   nhãn nên luôn cắt ngang chữ "Nhập kho"/"Xuất kho" (ảnh báo người dùng
+   13/11/2026). Bản hẹp trước đây đã ẩn ::after — giờ bỏ hẳn ở mọi bề rộng. */
 .hn-rpt-io .io-donut-reversal {
   display: flex;
   justify-content: center;
@@ -825,9 +813,6 @@
     width: 114px;
     height: 114px;
     flex-basis: 114px;
-  }
-  .hn-rpt-io .io-donut-label::after {
-    display: none;
   }
   .hn-rpt-io .io-donut-label strong {
     font-size: 17px;
