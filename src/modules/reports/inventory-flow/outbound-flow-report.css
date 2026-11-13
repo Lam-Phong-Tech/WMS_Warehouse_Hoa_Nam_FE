@@ -1083,6 +1083,7 @@
   z-index: 1;
   display: grid;
   gap: 2px;
+  max-width: 64%;
   text-align: center;
   transform: rotate(90deg);
 }
@@ -1097,6 +1098,7 @@
   color: var(--ops-muted);
   color: var(--ops-muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .outbound-progress-legend {
