@@ -586,6 +586,14 @@
 .hn-war04-table .hn-war04-index-cell {
   text-align: center;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+@container hn-war04 (min-width: 651px) {
+  .hn-war04-table .hn-war04-index-cell {
+    padding-inline: 8px;
+  }
 }
 .hn-war04-row-actions {
   justify-content: center;
