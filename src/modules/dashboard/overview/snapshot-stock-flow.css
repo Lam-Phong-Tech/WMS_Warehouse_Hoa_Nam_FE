@@ -17,8 +17,13 @@
 .hn-stock-flow__legend > button { display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px; margin: -4px -8px; border: 0; border-radius: 6px; background: transparent; color: var(--ops-primary, #004e74); font: inherit; font-size: 13px; line-height: 20px; cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
 .hn-stock-flow__legend > button:hover { background: #eef4f8; }
 .hn-stock-flow__legend > button:focus-visible { outline: 2px solid var(--stock-flow-stock); outline-offset: 1px; }
-/* Nút đang chọn quyết định đường kẻ chạy theo phần nào (nhập / xuất / tồn). */
-.hn-stock-flow__legend > button.is-active { color: var(--stock-flow-stock); background: #e3eff4; font-weight: 700; }
+/* Nút đang chọn quyết định đường kẻ chạy theo phần nào (nhập / xuất / tồn).
+   Chữ của nút đang chọn lấy đúng màu series đó: nhập = xanh đậm hệ thống; xuất = vàng đậm (token
+   --ops-warning-text, swatch #b87905 chỉ ~3.6:1 trên nền trắng nên không đủ 4.5:1 cho chữ); tồn = xanh lá. */
+.hn-stock-flow__legend > button.is-active { background: #e3eff4; font-weight: 700; }
+.hn-stock-flow__legend > button.is-active[data-metric="inbound"] { color: var(--stock-flow-in); }
+.hn-stock-flow__legend > button.is-active[data-metric="outbound"] { color: var(--ops-warning-text, #8f5b00); }
+.hn-stock-flow__legend > button.is-active[data-metric="stock"] { color: var(--stock-flow-stock); }
 .hn-stock-flow__legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .hn-stock-flow__in { background: var(--stock-flow-in); }
 .hn-stock-flow__out { background: var(--stock-flow-out); }

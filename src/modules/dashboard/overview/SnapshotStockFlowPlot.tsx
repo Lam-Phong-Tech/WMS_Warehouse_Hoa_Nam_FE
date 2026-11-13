@@ -109,7 +109,7 @@ export class StockFlowPlotCanvas extends Component<CanvasProps, CanvasState> {
             const swatch = metric === "inbound" ? "hn-stock-flow__in" : metric === "outbound" ? "hn-stock-flow__out" : "hn-stock-flow__stock";
             const label = metric === "inbound" ? copy.inbound : metric === "outbound" ? copy.outbound : copy.stock;
             return (
-              <button key={metric} type="button" className={active ? "is-active" : undefined}
+              <button key={metric} type="button" data-metric={metric} className={active ? "is-active" : undefined}
                 aria-pressed={active} onClick={() => this.setState({ lineMetric: metric })}>
                 <i className={swatch} />{label}
               </button>
