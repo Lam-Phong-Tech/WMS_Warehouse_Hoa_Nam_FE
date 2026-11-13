@@ -115,12 +115,18 @@ export function snapshotPlotGeometry(
   const barGap = Math.min(4, step * 0.08);
   const slot = barWidth + barGap;
   const x = (index: number) => pad.left + step * (index + 0.5);
+  /** Đường kẻ bám đúng vào cột của metric đang chọn (nhập=trái, xuất=giữa, tồn=phải),
+      thay vì luôn đứng ở tâm cụm cột. */
+  const xMetric = (index: number) => {
+    const offset = line === "inbound" ? -slot : line === "stock" ? slot : 0;
+    return x(index) + offset;
+  };
   const linePoints = days.map((day, index) => {
     const value =
       line === "inbound" ? day.inbound : line === "outbound" ? day.outbound : day.closing;
     if (value === null) return null;
     const axis = line === "stock" ? stockAxis : flowAxis;
-    return { x: x(index), y: axisY(value, axis, pad.top, plotHeight) };
+    return { x: xMetric(index), y: axisY(value, axis, pad.top, plotHeight) };
   });
   return {
     width, height, pad, plotWidth, plotHeight, step, barWidth, barGap, slot,
