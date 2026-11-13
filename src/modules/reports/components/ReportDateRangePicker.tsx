@@ -14,6 +14,7 @@ export function ReportDateRangePicker({
   className,
   popupClassName,
   maxDate,
+  showFieldPrefixes = true,
   ...props
 }: UiVuexyDateRangePickerProps) {
   const t = useT();
@@ -23,7 +24,7 @@ export function ReportDateRangePicker({
     <UiVuexyDateRangePicker
       {...props}
       allowClear={false}
-      showFieldPrefixes
+      showFieldPrefixes={showFieldPrefixes}
       format="DD/MM/YYYY"
       presets={presets ?? defaultPresets}
       maxDate={maxDate ?? businessToday().endOf("day")}

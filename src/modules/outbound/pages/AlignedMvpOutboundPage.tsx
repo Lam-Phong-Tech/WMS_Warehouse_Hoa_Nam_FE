@@ -521,6 +521,7 @@ export default function AlignedMvpOutboundPage() {
                 <ReportDateRangePicker
                   value={createdRange}
                   aria-label={t("outbound.list.dateFilterAria")}
+                  showFieldPrefixes={false}
                   onChange={(value) => {
                     setCreatedRange(value);
                     setPage(1);
