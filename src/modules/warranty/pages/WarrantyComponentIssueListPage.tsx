@@ -670,9 +670,6 @@ export default function WarrantyComponentIssueListPage() {
           </div>
         </footer>
       </section>
-      <p className="hn-war04-footer-note">
-        {tUi("updatedUi.text_98a5893d0fce")}
-      </p>
       {createOpen ? (
         <ComponentIssueCasePicker
           onClose={() => setCreateOpen(false)}
