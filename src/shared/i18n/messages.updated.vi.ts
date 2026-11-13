@@ -1,5 +1,7 @@
 /** UI copy for the aligned warehouse screens; keys are stable across wording changes. */
 export const MESSAGES_UPDATED_VI = {
+  searchSourceIncomplete:
+    "Danh sách tìm kiếm tải chưa đầy đủ hoặc đã thay đổi. Vui lòng thu hẹp bộ lọc hoặc tải lại.",
   text_000a7ce014e9: "Loại nơi nhận",
   text_0076c0b72a9b: "Sắp xếp khác cho danh sách bảo hành",
   text_011a7faf1f18: "Chọn hồ sơ bảo hành",
@@ -134,7 +136,7 @@ export const MESSAGES_UPDATED_VI = {
   text_35a49d741afd: "Tiếp nhận, theo dõi xử lý và trả máy cho khách",
   text_35c4166cfbd1: "Thông tin kho xuất hàng",
   text_35d391efde06: "Xem SKU cần kiểm tra",
-  text_35f2275a1d2b: "Mã phiếu / SKU / Serial / Lô / Pallet",
+  text_35f2275a1d2b: "Tìm tên tệp nhập…",
   text_369f96fc8284: "Thử từ khóa khác hoặc đặt lại bộ lọc.",
   text_36cef5453a55: "Số giao dịch theo ngày",
   text_37a49b4e2cd9: "Tồn hệ thống",
@@ -305,7 +307,7 @@ export const MESSAGES_UPDATED_VI = {
   text_8318b7b404da: "· {value0} hoàn tác",
   text_835ab3a8df42: "linh kiện",
   text_83ddf4187c12: "Cập nhật mới nhất",
-  text_863fd52b84b2: "Mã phiếu, SKU, Serial, Lô, Pallet...",
+  text_863fd52b84b2: "Tìm chứng từ, SKU, người thao tác, đối tác…",
   text_869645273267: "Xuất Excel",
   text_86e6f9d0c5e3: "Phiếu / Toa",
   text_879c05bb679d: "Mở rộng khoảng thời gian",
@@ -420,7 +422,7 @@ export const MESSAGES_UPDATED_VI = {
   text_b31b4145e6d2: "|  Không thể mở chi tiết phiếu. Vui lòng thử lại.",
   text_b363686f3815: "Tài khoản chưa được cấp quyền xuất Excel",
   text_b495069027b3: "gần nhất",
-  text_b4e6c9c5842a: "Tìm mã phiếu, SKU, serial...",
+  text_b4e6c9c5842a: "Tìm tên tệp nhập…",
   text_b4f188abbc07: "Mở cấu hình Kho Hoa Nam",
   text_b4f2ee5e17a8: "Chưa có số liệu tổng hợp mã quét",
   text_b61ca2400129: "{value0}: tồn {value1}",

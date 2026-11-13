@@ -3883,7 +3883,7 @@ export const MESSAGES_EN: MessageTree = {
       fieldDocType: "Document type",
       fieldQuickSearch: "Quick search",
       quickSearchAria: "Search inbound–outbound history",
-      quickSearchPlaceholder: "Document / request / recipient",
+      quickSearchPlaceholder: "Document no. / operator / recipient",
       resetting: "Resetting…",
       reset: "Reset",
       exportDenied: "Report export permission is required",

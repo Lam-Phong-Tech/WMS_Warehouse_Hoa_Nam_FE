@@ -269,7 +269,17 @@ export function filterBatches(
     if (filters.actor && batch.actor !== filters.actor) return false;
     if (
       keyword &&
-      !`${batch.batchNo} ${batch.sourceFile}`.toLowerCase().includes(keyword)
+      ![
+        batch.batchNo,
+        batch.sourceFile,
+        ...batch.matchLines.flatMap((line) => [
+          text(line.source_request_no, ""),
+          text(line.outbound_no, ""),
+        ]),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(keyword)
     ) {
       return false;
     }

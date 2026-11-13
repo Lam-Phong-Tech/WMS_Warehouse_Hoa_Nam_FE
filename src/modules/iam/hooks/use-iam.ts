@@ -7,12 +7,13 @@ import {
   createIamRole,
   createIamUserWithRole,
   deleteIamRole,
-  getIamDepartments,
+  getAllIamDepartments,
   updateIamDepartment,
   type IamDepartmentPayload,
   getAllIamPermissions,
   getIamRole,
   getIamRoles,
+  getAllIamRoles,
   getIamUserPermissionOverrides,
   getIamUsers,
   grantIamUserPermission,
@@ -54,8 +55,8 @@ export const iamKeys = {
  */
 export function useIamDepartments(params: IamDepartmentListParams = {}) {
   return useQuery({
-    queryKey: iamKeys.departments(params),
-    queryFn: () => getIamDepartments(params),
+    queryKey: [...iamKeys.departments(params), "all"],
+    queryFn: () => getAllIamDepartments(params),
     select: (result) => result.data,
   });
 }
@@ -70,8 +71,8 @@ export function useIamUsers(params: IamUserListParams) {
 /** Keep data as IamRole[] for existing IAM-01 consumers. */
 export function useIamRoles(params: IamRoleListParams = {}) {
   return useQuery({
-    queryKey: iamKeys.roles(params),
-    queryFn: () => getIamRoles(params),
+    queryKey: [...iamKeys.roles(params), "all"],
+    queryFn: () => getAllIamRoles(params),
     select: (result) => result.data,
   });
 }

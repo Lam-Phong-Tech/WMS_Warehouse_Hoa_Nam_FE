@@ -29,6 +29,7 @@ import {
   buildDaily,
   displayAsOf,
   mapLiveRow,
+  historySearchText,
   type AppliedFilters,
   type DailyMovement,
   type ExportState,
@@ -126,10 +127,7 @@ export default function IoHistoryReport() {
     const needle = deferredSearch.trim().toLocaleLowerCase("vi");
     if (!needle) return reportRows;
     return reportRows.filter((row) =>
-      [row.documentNo, row.objectPrimary, row.objectSecondary, row.actor]
-        .join(" ")
-        .toLocaleLowerCase("vi")
-        .includes(needle),
+      historySearchText(row).join(" ").toLocaleLowerCase("vi").includes(needle),
     );
   }, [deferredSearch, reportRows]);
 

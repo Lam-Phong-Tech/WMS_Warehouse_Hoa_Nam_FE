@@ -358,6 +358,36 @@ describe("RPT-07 · Xuất theo người nhận / đại lý", () => {
     ).toBeInTheDocument();
   });
 
+  it("finds a grouped agency by a receiver on a later document", async () => {
+    vi.mocked(http.get).mockImplementation(async (url: unknown) => {
+      if (String(url) === "/reports/outbound-by-recipient")
+        return {
+          rows: [
+            ...OUTBOUND_ROWS,
+            {
+              ...OUTBOUND_ROWS[0],
+              document_id: "doc-2",
+              outbound_no: "PX-0002",
+              recipient_id: "receiver-2",
+              recipient_name: "Second Receiver",
+            },
+          ],
+          pagination: { current_page: 1, last_page: 1, total: 3 },
+        } as never;
+      return (PAYLOAD[String(url)] ?? { rows: [] }) as never;
+    });
+    const user = userEvent.setup();
+    renderReport();
+    await within(await screen.findByRole("table")).findByText("Đại lý An Phát");
+    await user.type(
+      screen.getByPlaceholderText("Tên đại lý, người nhận, mã phiếu..."),
+      "Second Receiver",
+    );
+    expect(
+      within(screen.getByRole("table")).getByText("Đại lý An Phát"),
+    ).toBeInTheDocument();
+  });
+
   it("quyền report.export điều khiển đúng nút Xuất báo cáo", async () => {
     renderReport();
     await within(await screen.findByRole("table")).findByText("Đại lý An Phát");

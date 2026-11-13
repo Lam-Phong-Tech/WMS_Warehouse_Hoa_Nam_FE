@@ -5,6 +5,7 @@ import {
 } from "@/shared/api/api-read-values";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
+import { readAllApiPages } from "@/shared/api/read-all-pages";
 import type { MasterStatus } from "@/modules/master-data/types/mvp-master.types";
 
 /**
@@ -14,11 +15,7 @@ import type { MasterStatus } from "@/modules/master-data/types/mvp-master.types"
  * gom về một service thay vì năm bản sao.
  */
 export type CatalogMasterKind =
-  | "BRAND"
-  | "CATEGORY"
-  | "MODEL"
-  | "POWER_SOURCE"
-  | "PACKAGE";
+  "BRAND" | "CATEGORY" | "MODEL" | "POWER_SOURCE" | "PACKAGE";
 
 export interface CatalogMasterRecord {
   id: string;
@@ -209,9 +206,13 @@ export async function updateCatalogMaster(
 
 /** Model chỉ được gắn brand ACTIVE (BE trả 422 BRAND_NOT_ACTIVE khi vi phạm). */
 export async function getActiveBrandOptions(): Promise<CatalogMasterRecord[]> {
-  const page = await getCatalogMasters("BRAND", {
-    status: "ACTIVE",
-    per_page: 200,
-  });
-  return page.data;
+  return readAllApiPages<CatalogMasterRecord>(
+    (page) =>
+      getCatalogMasters("BRAND", {
+        status: "ACTIVE",
+        per_page: 200,
+        page,
+      }),
+    (brand) => brand.id,
+  );
 }

@@ -110,6 +110,21 @@ export function mapLiveRow(row: IoHistoryRow): HistoryRow | null {
   };
 }
 
+export function historySearchText(row: HistoryRow): string[] {
+  return [
+    row.documentNo,
+    row.objectPrimary,
+    row.objectSecondary,
+    row.actor,
+    row.department,
+    row.movementNo,
+    row.source?.party ?? "",
+    row.source?.originalDocumentNo ?? "",
+    ...(row.source?.skuLines ?? []),
+    ...row.lines.flatMap((line) => [line.code, line.name]),
+  ];
+}
+
 function daysInRange(from: string, to: string): string[] {
   const start = dayjs(from).startOf("day");
   const end = dayjs(to).startOf("day");
@@ -129,8 +144,12 @@ export function buildDaily(
   to: string,
 ): DailyMovement[] {
   const keys = daysInRange(from, to);
-  const counts = new Map<string, { inbound: number; outbound: number; reversal: number }>();
-  for (const key of keys) counts.set(key, { inbound: 0, outbound: 0, reversal: 0 });
+  const counts = new Map<
+    string,
+    { inbound: number; outbound: number; reversal: number }
+  >();
+  for (const key of keys)
+    counts.set(key, { inbound: 0, outbound: 0, reversal: 0 });
 
   for (const row of rows) {
     const key = parseDateTime(row.timestamp, BUSINESS_TIMEZONE).format(

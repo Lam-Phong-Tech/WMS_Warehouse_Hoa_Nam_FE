@@ -1,5 +1,7 @@
 /** UI copy for the aligned warehouse screens; keys are stable across wording changes. */
 export const MESSAGES_UPDATED_EN = {
+  searchSourceIncomplete:
+    "The search list is incomplete or has changed. Narrow the filters or reload.",
   text_000a7ce014e9: "Recipient type",
   text_0076c0b72a9b: "Other sort options for the warranty list",
   text_011a7faf1f18: "Select a warranty case",
@@ -139,7 +141,7 @@ export const MESSAGES_UPDATED_EN = {
     "Receive devices, track repairs and return devices to customers",
   text_35c4166cfbd1: "Outbound warehouse information",
   text_35d391efde06: "View SKUs to review",
-  text_35f2275a1d2b: "Document / SKU / Serial / Lot / Pallet",
+  text_35f2275a1d2b: "Search import file name…",
   text_369f96fc8284: "Try another search term or reset the filters.",
   text_36cef5453a55: "Transactions by day",
   text_37a49b4e2cd9: "System stock",
@@ -309,7 +311,7 @@ export const MESSAGES_UPDATED_EN = {
   text_8318b7b404da: "· {value0} reversals",
   text_835ab3a8df42: "components",
   text_83ddf4187c12: "Most recently updated",
-  text_863fd52b84b2: "Document, SKU, Serial, Lot, Pallet...",
+  text_863fd52b84b2: "Search document, SKU, operator, partner…",
   text_869645273267: "Export Excel",
   text_86e6f9d0c5e3: "Document / Request",
   text_879c05bb679d: "Expand the date range",
@@ -427,7 +429,7 @@ export const MESSAGES_UPDATED_EN = {
   text_b363686f3815:
     "Your account does not have permission to export Excel files",
   text_b495069027b3: "most recent",
-  text_b4e6c9c5842a: "Search document, SKU, serial...",
+  text_b4e6c9c5842a: "Search import file name…",
   text_b4f188abbc07: "Open Hoa Nam warehouse settings",
   text_b4f2ee5e17a8: "Scan code totals are not available yet",
   text_b61ca2400129: "{value0}: stock {value1}",

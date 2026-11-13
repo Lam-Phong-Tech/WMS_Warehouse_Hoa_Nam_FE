@@ -19,6 +19,7 @@ import {
   fetchPutawayHistory,
   fetchPutawayTasks,
   fetchPutawayTrays,
+  fetchAllPutawayTrays,
   putawayIdempotencyKey,
   resolvePutawayTrayByScanCode,
   type PutawayHistory,
@@ -132,7 +133,7 @@ describe("putaway real API contract", () => {
   it("filters terminal TRAY states returned by the API", async () => {
     vi.mocked(http.getPage).mockResolvedValue({
       data: trays,
-      meta: {},
+      meta: { total: trays.length, last_page: 1, current_page: 1 },
     });
 
     const result = await fetchPutawayTrays();
@@ -164,6 +165,35 @@ describe("putaway real API contract", () => {
     expect(http.getPage).toHaveBeenNthCalledWith(2, "/putaway-tasks", {
       params: { search: "BOX", page: 2, per_page: 200 },
     });
+  });
+
+  it("loads all tray pages before tray search or map filtering", async () => {
+    for (const read of [fetchPutawayTrays, fetchAllPutawayTrays]) {
+      vi.mocked(http.getPage)
+        .mockReset()
+        .mockResolvedValueOnce({
+          data: [trays[0]],
+          meta: { total: 2, current_page: 1, last_page: 2 },
+        })
+        .mockResolvedValueOnce({
+          data: [
+            {
+              ...trays[0],
+              container_id: "REMOTE",
+              container_code: "TRAY-REMOTE",
+            },
+          ],
+          meta: { total: 2, current_page: 2, last_page: 2 },
+        });
+      const result = await read();
+      expect(result.map((row) => row.container_code)).toEqual([
+        "TRAY-A-01",
+        "TRAY-REMOTE",
+      ]);
+      expect(http.getPage).toHaveBeenLastCalledWith("/containers", {
+        params: { container_type: "TRAY", page: 2, per_page: 200 },
+      });
+    }
   });
 
   it("fetches every page of the putaway history so history search sees all events", async () => {

@@ -172,11 +172,13 @@ describe("REV-00 preserved list interactions", () => {
     await waitFor(() => expectLatestRequest({ page: 2 }));
 
     const search = screen.getByRole("textbox", { name: "Tìm phiếu đảo" });
-    fireEvent.change(search, { target: { value: "  REV-20260923  " } });
+    fireEvent.change(search, {
+      target: { value: `  ${DOCUMENT.reference_document_code}  ` },
+    });
     expectLatestRequest({ keyword: undefined });
     await waitFor(() =>
       expectLatestRequest({
-        keyword: "REV-20260923",
+        keyword: DOCUMENT.reference_document_code,
         status: "POSTED",
         page: 1,
       }),

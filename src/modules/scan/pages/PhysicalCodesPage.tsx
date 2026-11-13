@@ -190,15 +190,41 @@ export default function PhysicalCodesPage() {
     enabled: activeTab === "list",
   });
   const batchesQuery = useQuery({
-    queryKey: ["scan", "batches", { page: batchPage, per_page: batchPerPage }],
+    queryKey: [
+      "scan",
+      "batches",
+      {
+        page: batchPage,
+        per_page: batchPerPage,
+        keyword: batchSearch.trim() || undefined,
+      },
+    ],
     queryFn: () =>
-      fetchScanBatchesPage({ page: batchPage, per_page: batchPerPage }),
+      fetchScanBatchesPage({
+        page: batchPage,
+        per_page: batchPerPage,
+        keyword: batchSearch.trim() || undefined,
+      }),
     enabled: activeTab === "history",
   });
   const eventsQuery = useQuery({
-    queryKey: ["scan", "events", { page: eventPage, per_page: eventPerPage }],
+    queryKey: [
+      "scan",
+      "events",
+      {
+        page: eventPage,
+        per_page: eventPerPage,
+        keyword: eventSearch.trim() || undefined,
+        scan_batch_id: eventBatchFilter || undefined,
+      },
+    ],
     queryFn: () =>
-      fetchScanEventsPage({ page: eventPage, per_page: eventPerPage }),
+      fetchScanEventsPage({
+        page: eventPage,
+        per_page: eventPerPage,
+        keyword: eventSearch.trim() || undefined,
+        scan_batch_id: eventBatchFilter || undefined,
+      }),
     enabled: activeTab === "history",
   });
   const codes = codesQuery.data ?? [];
@@ -247,23 +273,10 @@ export default function PhysicalCodesPage() {
     : codes;
 
   const normalizedBatchSearch = batchSearch.trim().toLowerCase();
-  const filteredBatches = normalizedBatchSearch
-    ? batches.filter((row) =>
-        (row.batch_no ?? "").toLowerCase().includes(normalizedBatchSearch),
-      )
-    : batches;
+  const filteredBatches = batches;
 
   const normalizedEventSearch = eventSearch.trim().toLowerCase();
-  const filteredEvents = events.filter((row) => {
-    if (eventBatchFilter && row.batch_id !== eventBatchFilter) return false;
-    if (
-      normalizedEventSearch &&
-      !(row.code_value ?? "").toLowerCase().includes(normalizedEventSearch)
-    ) {
-      return false;
-    }
-    return true;
-  });
+  const filteredEvents = events;
 
   const submitScan = useCallback(async () => {
     const rawCode = scanValue.trim();
@@ -687,6 +700,7 @@ export default function PhysicalCodesPage() {
               aria-label={t("scan.physical.colCodeValue")}
               width={FILTER_WIDTH.search}
               value={codeSearch}
+              disabled={codesQuery.isError}
               onChange={setCodeSearch}
             />
             <MvpPageSizeSelector
@@ -870,7 +884,10 @@ export default function PhysicalCodesPage() {
                 aria-label={t("scan.physical.searchBatchAria")}
                 width={220}
                 value={batchSearch}
-                onChange={setBatchSearch}
+                onChange={(value) => {
+                  setBatchSearch(value);
+                  setBatchPage(1);
+                }}
               />
             </Stack>
             <MvpPageSizeSelector
@@ -951,7 +968,10 @@ export default function PhysicalCodesPage() {
                 aria-label={t("scan.physical.searchEventAria")}
                 width={220}
                 value={eventSearch}
-                onChange={setEventSearch}
+                onChange={(value) => {
+                  setEventSearch(value);
+                  setEventPage(1);
+                }}
               />
               {eventBatchFilter ? (
                 <UiStatusBadge

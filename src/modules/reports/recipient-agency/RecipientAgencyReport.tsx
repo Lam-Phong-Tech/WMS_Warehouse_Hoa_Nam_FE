@@ -481,7 +481,9 @@ export default function RecipientAgencyReport() {
     const needle = search.trim().toLocaleLowerCase("vi");
     if (!needle) return dealers;
     return dealers.filter((row) => {
-      const docNos = row.events.map((event) => event.outbound_no).join(" ");
+      const docNos = row.events
+        .flatMap((event) => [event.outbound_no, receiverName(event)])
+        .join(" ");
       return (row.name + " " + row.receiver + " " + docNos)
         .toLocaleLowerCase("vi")
         .includes(needle);

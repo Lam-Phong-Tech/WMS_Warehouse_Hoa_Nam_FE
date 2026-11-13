@@ -1201,8 +1201,7 @@ export const MESSAGES_VI = {
         "Tìm mã hồ sơ / tên khách hàng / SĐT / mã máy / sản phẩm...",
       // §13.8: thiếu warranty.pii.view thì BE chặn tra theo tên/SĐT, nên đừng
       // mời người dùng gõ thứ chắc chắn không ra kết quả.
-      searchPlaceholderNoPii:
-        "Tìm mã hồ sơ / mã máy / mã tạm / sản phẩm...",
+      searchPlaceholderNoPii: "Tìm mã hồ sơ / mã máy / mã tạm / sản phẩm...",
       searchAria: "Tìm hồ sơ bảo hành",
       statusFilterAria: "Lọc trạng thái bảo hành",
       statusFilterPlaceholder: "Trạng thái: Tất cả",
@@ -3868,7 +3867,7 @@ export const MESSAGES_VI = {
       fieldDocType: "Loại chứng từ",
       fieldQuickSearch: "Tìm nhanh",
       quickSearchAria: "Tìm lịch sử nhập xuất",
-      quickSearchPlaceholder: "Mã phiếu / yêu cầu / người nhận",
+      quickSearchPlaceholder: "Mã phiếu / người thao tác / người nhận",
       resetting: "Đang đặt lại…",
       reset: "Đặt lại",
       exportDenied: "Cần quyền xuất báo cáo",

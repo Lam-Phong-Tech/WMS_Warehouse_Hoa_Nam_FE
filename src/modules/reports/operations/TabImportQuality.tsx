@@ -387,7 +387,16 @@ export default function TabImportQuality() {
       if (resultFilter === "DUPLICATE" && batch.duplicate === 0) return false;
       if (statusFilter && batch.status !== statusFilter) return false;
       if (actorFilter && batch.actor !== actorFilter) return false;
-      if (keyword && !batch.batchNo.toLowerCase().includes(keyword)) {
+      if (
+        keyword &&
+        ![
+          batch.batchNo,
+          ...batch.matchLines.map((line) => text(line.source_request_no, "")),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(keyword)
+      ) {
         return false;
       }
       if (sku) {

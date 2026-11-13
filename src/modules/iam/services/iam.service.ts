@@ -52,6 +52,17 @@ export async function getIamRoles(
   return { data: result.data, meta: result.meta };
 }
 
+/** Local role pickers need the complete catalog, unlike the paginated role table. */
+export async function getAllIamRoles(
+  params: IamRoleListParams = {},
+): Promise<IamPageResult<IamRole>> {
+  const data = await readAllApiPages<IamRole>(
+    (page) => getIamRoles({ ...params, page }),
+    (role) => role.role_id,
+  );
+  return { data, meta: { total: data.length } };
+}
+
 export async function getIamPermissions(
   params: IamPermissionListParams = {},
 ): Promise<IamPageResult<IamPermission>> {
@@ -91,6 +102,16 @@ export async function getIamDepartments(
     },
   );
   return { data: result.data, meta: result.meta };
+}
+
+export async function getAllIamDepartments(
+  params: IamDepartmentListParams = {},
+): Promise<IamPageResult<IamDepartment>> {
+  const data = await readAllApiPages<IamDepartment>(
+    (page) => getIamDepartments({ ...params, page }),
+    (department) => department.department_id,
+  );
+  return { data, meta: { total: data.length } };
 }
 
 export interface IamDepartmentPayload {

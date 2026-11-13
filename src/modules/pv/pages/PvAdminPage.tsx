@@ -14,6 +14,7 @@ import {
   UiTabPanel,
   UiText,
   UiTextField,
+  UiPagination,
   FILTER_WIDTH,
 } from "@/shared/ui";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
@@ -71,7 +72,12 @@ import {
 } from "@/shared/constants/business-labels";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { guardBackdropClose } from "@/shared/utils/dialogGuard";
-import { ActionButton, ActionIconButton, RowActionButton, RowActionGroup } from "@/shared/components/actions";
+import {
+  ActionButton,
+  ActionIconButton,
+  RowActionButton,
+  RowActionGroup,
+} from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
@@ -168,8 +174,14 @@ function SimpleMasterTab({
   canManage,
   onSave,
   testId,
+  search,
+  onSearch,
+  pagination,
 }: {
   title: string;
+  search: string;
+  onSearch: (value: string) => void;
+  pagination: ReactNode;
   rows: PvAdminSimpleMaster[];
   isPending: boolean;
   /** Query đang refetch (sau khi lưu/invalidate) — hiện loading trên bảng. */
@@ -188,7 +200,6 @@ function SimpleMasterTab({
   const t = useT();
   const [editing, setEditing] = useState<PvAdminSimpleMaster | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const [formValues, setFormValues] = useState<MasterFormValues>({
     code: "",
     name: "",
@@ -341,7 +352,7 @@ function SimpleMasterTab({
         <SearchInput
           placeholder={t("pv.admin.masterSearch", { title })}
           value={search}
-          onChange={setSearch}
+          onChange={onSearch}
           width={FILTER_WIDTH.search}
         />
       </FilterBar>
@@ -368,6 +379,8 @@ function SimpleMasterTab({
           </RowActionButton>
         )}
       />
+
+      {pagination}
 
       <UiDialog
         open={isOpen}
@@ -471,10 +484,71 @@ export default function PvAdminPage() {
   const t = useT();
   const { canManageMaster, canPublish } = useCanManagePv();
 
-  const industries = usePvAdminIndustries();
-  const tags = usePvAdminTags();
-  const rules = usePvAdminRules();
-  const profiles = usePvAdminProfiles();
+  const [industrySearch, setIndustrySearch] = useState("");
+  const [tagSearch, setTagSearch] = useState("");
+  const [ruleSearch, setRuleSearch] = useState("");
+  const [ruleStatus, setRuleStatus] = useState<"ALL" | "ACTIVE" | "INACTIVE">(
+    "ALL",
+  );
+  const [profileSearch, setProfileSearch] = useState("");
+  const [profileIndustryFilter, setProfileIndustryFilter] = useState("ALL");
+  const [profilePublishedFilter, setProfilePublishedFilter] = useState<
+    "ALL" | "PUBLISHED" | "HIDDEN"
+  >("ALL");
+  const [pages, setPages] = useState({
+    industries: 1,
+    tags: 1,
+    rules: 1,
+    profiles: 1,
+  });
+  const [pageSize, setPageSize] = useState(10);
+  const resetPage = (key: keyof typeof pages) =>
+    setPages((current) => ({ ...current, [key]: 1 }));
+  const industries = usePvAdminIndustries({
+    keyword: industrySearch.trim(),
+    page: String(pages.industries),
+    per_page: String(pageSize),
+  });
+  const tags = usePvAdminTags({
+    keyword: tagSearch.trim(),
+    page: String(pages.tags),
+    per_page: String(pageSize),
+  });
+  const rules = usePvAdminRules({
+    keyword: ruleSearch.trim(),
+    status: ruleStatus === "ALL" ? "" : ruleStatus,
+    page: String(pages.rules),
+    per_page: String(pageSize),
+  });
+  const profiles = usePvAdminProfiles({
+    keyword: profileSearch.trim(),
+    industry_id: profileIndustryFilter === "ALL" ? "" : profileIndustryFilter,
+    published:
+      profilePublishedFilter === "ALL"
+        ? ""
+        : profilePublishedFilter === "PUBLISHED"
+          ? "1"
+          : "0",
+    page: String(pages.profiles),
+    per_page: String(pageSize),
+  });
+  // Editing selectors must retain all small master options regardless of list search/page.
+  const industryLookup = usePvAdminIndustries({ all_pages: "1" });
+  const tagLookup = usePvAdminTags({ all_pages: "1" });
+  const pagination = (key: keyof typeof pages, total: number) => (
+    <UiPagination
+      page={pages[key]}
+      pageSize={pageSize}
+      total={total}
+      onPageChange={(page) =>
+        setPages((current) => ({ ...current, [key]: page }))
+      }
+      onPageSizeChange={(size) => {
+        setPageSize(size);
+        setPages({ industries: 1, tags: 1, rules: 1, profiles: 1 });
+      }}
+    />
+  );
 
   const saveIndustry = useSavePvIndustry();
   const saveTag = useSavePvTag();
@@ -486,19 +560,19 @@ export default function PvAdminPage() {
 
   const industryOptions = useMemo(
     () =>
-      (industries.data?.data ?? []).map((industry) => ({
+      (industryLookup.data?.data ?? []).map((industry) => ({
         value: industry.id,
         label: industry.name,
       })),
-    [industries.data],
+    [industryLookup.data],
   );
   const tagOptions = useMemo(
     () =>
-      (tags.data?.data ?? []).map((tag) => ({
+      (tagLookup.data?.data ?? []).map((tag) => ({
         value: tag.id,
         label: tag.name,
       })),
-    [tags.data],
+    [tagLookup.data],
   );
 
   const [profileEditing, setProfileEditing] = useState<PvAdminProfile | null>(
@@ -507,11 +581,7 @@ export default function PvAdminPage() {
   const [profileViewing, setProfileViewing] = useState<PvAdminProfile | null>(
     null,
   );
-  const [profileSearch, setProfileSearch] = useState("");
-  const [profileIndustryFilter, setProfileIndustryFilter] = useState("ALL");
-  const [profilePublishedFilter, setProfilePublishedFilter] = useState<
-    "ALL" | "PUBLISHED" | "HIDDEN"
-  >("ALL");
+
   const industryNameById = useMemo(
     () => new Map(industryOptions.map((item) => [item.value, item.label])),
     [industryOptions],
@@ -613,38 +683,15 @@ export default function PvAdminPage() {
     }
   }
 
-  const profileRows = useMemo(() => profiles.data?.data ?? [], [profiles.data?.data]);
+  const profileRows = useMemo(
+    () => profiles.data?.data ?? [],
+    [profiles.data?.data],
+  );
   const isProfileFilterActive =
     profileSearch.trim() !== "" ||
     profileIndustryFilter !== "ALL" ||
     profilePublishedFilter !== "ALL";
-  const filteredProfiles = useMemo(() => {
-    const query = profileSearch.trim().toLowerCase();
-    return profileRows.filter((row) => {
-      if (
-        profileIndustryFilter !== "ALL" &&
-        !row.industry_ids.includes(profileIndustryFilter)
-      ) {
-        return false;
-      }
-      if (profilePublishedFilter === "PUBLISHED" && !row.published) {
-        return false;
-      }
-      if (profilePublishedFilter === "HIDDEN" && row.published) {
-        return false;
-      }
-      if (!query) return true;
-      return (
-        row.sku_code.toLowerCase().includes(query) ||
-        row.display_name.toLowerCase().includes(query)
-      );
-    });
-  }, [
-    profileRows,
-    profileSearch,
-    profileIndustryFilter,
-    profilePublishedFilter,
-  ]);
+  const filteredProfiles = profileRows;
 
   // Part 5: DataTable (antd adapter, freeze) → ResponsiveDataTable.
   const profileColumns: ResponsiveTableColumn<PvAdminProfile>[] = [
@@ -743,6 +790,21 @@ export default function PvAdminPage() {
     </RowActionGroup>
   );
 
+  if (industryLookup.isError || tagLookup.isError) {
+    return (
+      <PvErrorState
+        error={industryLookup.error ?? tagLookup.error}
+        onRetry={() => {
+          void industryLookup.refetch();
+          void tagLookup.refetch();
+        }}
+      />
+    );
+  }
+  if (industryLookup.isPending || tagLookup.isPending) {
+    return <LoadingState tip={t("pv.common.loading")} />;
+  }
+
   return (
     <Box sx={{ padding: "clamp(8px, 2vw, 16px)" }}>
       {/* Tiêu đề màn do header chung của shell dựng (AppPageHeader). */}
@@ -814,14 +876,20 @@ export default function PvAdminPage() {
                 <SearchInput
                   placeholder={t("pv.admin.profileSearch")}
                   value={profileSearch}
-                  onChange={setProfileSearch}
+                  onChange={(value) => {
+                    setProfileSearch(value);
+                    resetPage("profiles");
+                  }}
                   width={FILTER_WIDTH.search}
                 />
                 <UiSelect
                   value={profileIndustryFilter}
                   aria-label={t("pv.admin.industryFilterAria")}
                   minWidth={180}
-                  onChange={(value) => setProfileIndustryFilter(value)}
+                  onChange={(value) => {
+                    setProfileIndustryFilter(value);
+                    resetPage("profiles");
+                  }}
                   options={[
                     { value: "ALL", label: t("pv.admin.industryAll") },
                     ...industryOptions,
@@ -831,11 +899,12 @@ export default function PvAdminPage() {
                   value={profilePublishedFilter}
                   aria-label={t("pv.admin.publishedFilterAria")}
                   minWidth={180}
-                  onChange={(value) =>
+                  onChange={(value) => {
                     setProfilePublishedFilter(
                       value as "ALL" | "PUBLISHED" | "HIDDEN",
-                    )
-                  }
+                    );
+                    resetPage("profiles");
+                  }}
                   options={[
                     { value: "ALL", label: t("pv.common.statusAll") },
                     {
@@ -863,6 +932,10 @@ export default function PvAdminPage() {
                 }
                 renderRowActions={renderProfileRowActions}
               />
+              {pagination(
+                "profiles",
+                Number(profiles.data?.meta?.total ?? profileRows.length),
+              )}
             </div>
           )}
         </UiTabPanel>
@@ -872,6 +945,19 @@ export default function PvAdminPage() {
         <UiTabPanel value={activeTab}>
           <SimpleMasterTab
             testId="pv-admin-industries"
+            search={industrySearch}
+            onSearch={(value) => {
+              setIndustrySearch(value);
+              resetPage("industries");
+            }}
+            pagination={pagination(
+              "industries",
+              Number(
+                industries.data?.meta?.total ??
+                  industries.data?.data.length ??
+                  0,
+              ),
+            )}
             title={t("pv.admin.masterIndustry")}
             rows={industries.data?.data ?? []}
             isPending={industries.isPending}
@@ -889,6 +975,15 @@ export default function PvAdminPage() {
         <UiTabPanel value={activeTab}>
           <SimpleMasterTab
             testId="pv-admin-tags"
+            search={tagSearch}
+            onSearch={(value) => {
+              setTagSearch(value);
+              resetPage("tags");
+            }}
+            pagination={pagination(
+              "tags",
+              Number(tags.data?.meta?.total ?? tags.data?.data.length ?? 0),
+            )}
             title={t("pv.admin.masterTag")}
             rows={tags.data?.data ?? []}
             isPending={tags.isPending}
@@ -913,6 +1008,20 @@ export default function PvAdminPage() {
             <PvErrorState error={rules.error} onRetry={() => rules.refetch()} />
           ) : (
             <PvRuleTab
+              search={ruleSearch}
+              onSearch={(value) => {
+                setRuleSearch(value);
+                resetPage("rules");
+              }}
+              statusFilter={ruleStatus}
+              onStatusFilter={(value) => {
+                setRuleStatus(value);
+                resetPage("rules");
+              }}
+              pagination={pagination(
+                "rules",
+                Number(rules.data?.meta?.total ?? rules.data?.data.length ?? 0),
+              )}
               rows={rules.data?.data ?? []}
               isFetching={rules.isFetching}
               industryOptions={industryOptions}
@@ -1166,6 +1275,11 @@ export default function PvAdminPage() {
 }
 
 function PvRuleTab({
+  search,
+  onSearch,
+  statusFilter,
+  onStatusFilter,
+  pagination,
   rows,
   isFetching,
   industryOptions,
@@ -1173,6 +1287,11 @@ function PvRuleTab({
   canManage,
   onSave,
 }: {
+  search: string;
+  onSearch: (value: string) => void;
+  statusFilter: "ALL" | "ACTIVE" | "INACTIVE";
+  onStatusFilter: (value: "ALL" | "ACTIVE" | "INACTIVE") => void;
+  pagination: ReactNode;
   rows: PvAdminRule[];
   /** Query đang refetch (sau khi lưu/invalidate) — hiện loading trên bảng. */
   isFetching: boolean;
@@ -1196,10 +1315,7 @@ function PvRuleTab({
   const [editing, setEditing] = useState<PvAdminRule | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [viewing, setViewing] = useState<PvAdminRule | null>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "ALL" | "ACTIVE" | "INACTIVE"
-  >("ALL");
+
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [formValues, setFormValues] = useState<{
@@ -1220,23 +1336,7 @@ function PvRuleTab({
     () => new Map(tagOptions.map((item) => [item.value, item.label])),
     [tagOptions],
   );
-  const filteredRows = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return rows.filter((row) => {
-      if (statusFilter !== "ALL" && row.status !== statusFilter) return false;
-      if (!query) return true;
-      const selectorText = row.sku_id
-        ? row.sku_id
-        : row.category_id
-          ? row.category_id
-          : row.tag_id
-            ? (tagNameById.get(row.tag_id) ?? row.tag_id)
-            : "";
-      const haystack =
-        `${row.industry_name ?? ""} ${selectorText}`.toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [rows, search, statusFilter, tagNameById]);
+  const filteredRows = rows;
 
   function openForm(row?: PvAdminRule) {
     setEditing(row ?? null);
@@ -1394,7 +1494,7 @@ function PvRuleTab({
         <SearchInput
           placeholder={t("pv.admin.ruleSearch")}
           value={search}
-          onChange={setSearch}
+          onChange={onSearch}
           width={FILTER_WIDTH.search}
         />
         <UiSelect
@@ -1402,7 +1502,7 @@ function PvRuleTab({
           aria-label={t("pv.admin.statusFilterAria")}
           minWidth={180}
           onChange={(value) =>
-            setStatusFilter(value as "ALL" | "ACTIVE" | "INACTIVE")
+            onStatusFilter(value as "ALL" | "ACTIVE" | "INACTIVE")
           }
           options={[
             { value: "ALL", label: t("pv.common.statusAll") },
@@ -1418,9 +1518,7 @@ function PvRuleTab({
         // Quy tắc không có mã nghiệp vụ — mô tả bằng ngành nghề + mức ưu tiên
         // thay vì đọc UUID cho người dùng trình đọc màn hình.
         loading={isFetching}
-        onRowClick={(row) =>
-          canManage ? openForm(row) : setViewing(row)
-        }
+        onRowClick={(row) => (canManage ? openForm(row) : setViewing(row))}
         emptyText={
           search.trim() || statusFilter !== "ALL"
             ? t("pv.common.noMatch")
@@ -1441,6 +1539,8 @@ function PvRuleTab({
           </RowActionGroup>
         )}
       />
+
+      {pagination}
 
       <UiDialog
         open={viewing !== null}

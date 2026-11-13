@@ -183,10 +183,7 @@ export async function fetchPutawayHistory(
 }
 
 export async function fetchPutawayTrays(): Promise<TrayOption[]> {
-  const result = await http.getPage<TrayOption[]>(API_ENDPOINTS.CONTAINERS, {
-    params: { container_type: "TRAY", per_page: 200 },
-  });
-  return result.data.filter(isPutawayTrayUsable);
+  return (await fetchAllPutawayTrays()).filter(isPutawayTrayUsable);
 }
 
 /**
@@ -195,10 +192,13 @@ export async function fetchPutawayTrays(): Promise<TrayOption[]> {
  * như luồng chọn khay để xếp.
  */
 export async function fetchAllPutawayTrays(): Promise<TrayOption[]> {
-  const result = await http.getPage<TrayOption[]>(API_ENDPOINTS.CONTAINERS, {
-    params: { container_type: "TRAY", per_page: 500 },
-  });
-  return result.data;
+  return readAllApiPages<TrayOption>(
+    (page) =>
+      http.getPage<TrayOption[]>(API_ENDPOINTS.CONTAINERS, {
+        params: { container_type: "TRAY", page, per_page: 200 },
+      }),
+    (row) => row.container_id,
+  );
 }
 
 export async function createPutawayTask(payload: {

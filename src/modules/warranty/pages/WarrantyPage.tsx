@@ -148,7 +148,10 @@ export default function WarrantyPage() {
     sort_order: sortMode === "oldest" ? "asc" : "desc",
     overdue: overdueOnly || undefined,
   });
-  const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
+  const defectsQuery = useMvpDefects(
+    { status: "ACTIVE", per_page: 100 },
+    { all: true },
+  );
 
   const rows = listQuery.data?.data ?? [];
   const pagination = resolveApiPagination(listQuery.data?.meta, {
@@ -584,9 +587,7 @@ export default function WarrantyPage() {
             </Box>
           ) : null}
 
-          <TableLoadingBanner
-            loading={listQuery.isLoading}
-          />
+          <TableLoadingBanner loading={listQuery.isLoading} />
           <WarrantyListTable
             columns={columns}
             rows={rows}

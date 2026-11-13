@@ -1,3 +1,7 @@
+import {
+  fetchCompleteReportPage,
+  completeReportLastPage,
+} from "./report-search-sources";
 import { fetchReversalReportSource } from "./report-reversal-source";
 import { useMemo } from "react";
 import { CACHE_POLICIES } from "@/shared/cache/cache-policy";
@@ -130,21 +134,13 @@ function isRouteMissing(error: unknown): boolean {
 }
 
 const SKU_PAGE_SIZE = 100;
-/** Trần an toàn cho vòng phân trang — 20 trang × 100 = 2.000 SKU. */
-const SKU_MAX_PAGES = 20;
-
 async function fetchAllSkusPaged(): Promise<SkuCatalogEntry[]> {
-  const pages = await fetchAllPages(
-    (page: number) =>
-      http.getPage<Raw[]>(API_ENDPOINTS.PRODUCTS, {
-        params: { page, per_page: SKU_PAGE_SIZE },
-      }),
-    (result) => n(result.meta?.last_page, 1),
-    SKU_MAX_PAGES,
+  const source = await fetchCompleteReportPage((page) =>
+    http.getPage<Raw[]>(API_ENDPOINTS.PRODUCTS, {
+      params: { page, per_page: SKU_PAGE_SIZE },
+    }),
   );
-  return pages.flatMap((result) =>
-    mapSkuRows(Array.isArray(result.data) ? result.data : []),
-  );
+  return mapSkuRows(source.data);
 }
 
 export type SkuCatalog = {
@@ -214,11 +210,13 @@ export function useUserDirectory() {
     // CỐ Ý giữ ở root `rpt-ops` (nhóm `report`, KHÔNG persist) chứ không chuyển
     // sang `ref` như các danh mục khác: đây là danh bạ NGƯỜI DÙNG (tên, email,
     // phòng ban). Không ghi dữ liệu cá nhân xuống đĩa của máy kho dùng chung.
-    queryKey: ["rpt-ops", "user-directory"],
+    queryKey: ["rpt-ops", "user-directory", "complete"],
     queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.USERS, {
-        params: { per_page: 200 },
-      }),
+      fetchCompleteReportPage((page) =>
+        http.getPage<Raw[]>(API_ENDPOINTS.USERS, {
+          params: { per_page: 200, page },
+        }),
+      ),
   });
 
   return useMemo(() => {
@@ -306,11 +304,13 @@ export function useCategoryOptions(): {
   loading: boolean;
 } {
   const query = useQuery({
-    queryKey: ["ref", "product-categories"],
+    queryKey: ["ref", "product-categories", "complete"],
     queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.PRODUCT_CATEGORIES, {
-        params: { status: "ACTIVE", per_page: 100 },
-      }),
+      fetchCompleteReportPage((page) =>
+        http.getPage<Raw[]>(API_ENDPOINTS.PRODUCT_CATEGORIES, {
+          params: { status: "ACTIVE", per_page: 100, page },
+        }),
+      ),
   });
   const rows = Array.isArray(query.data?.data) ? query.data.data : [];
   return {
@@ -331,11 +331,13 @@ export function usePrinterOptions(): {
   loading: boolean;
 } {
   const query = useQuery({
-    queryKey: ["ref", "printer-configs"],
+    queryKey: ["ref", "printer-configs", "complete"],
     queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.PRINTER_CONFIGS, {
-        params: { per_page: 100 },
-      }),
+      fetchCompleteReportPage((page) =>
+        http.getPage<Raw[]>(API_ENDPOINTS.PRINTER_CONFIGS, {
+          params: { per_page: 100, page },
+        }),
+      ),
   });
   const rows = Array.isArray(query.data?.data) ? query.data.data : [];
   return {
@@ -351,11 +353,13 @@ export function usePrinterOptions(): {
 
 export function useAgencyOptions() {
   const query = useQuery({
-    queryKey: ["ref", "agencies"],
+    queryKey: ["ref", "agencies", "complete"],
     queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.AGENCIES, {
-        params: { status: "ACTIVE", per_page: 200 },
-      }),
+      fetchCompleteReportPage((page) =>
+        http.getPage<Raw[]>(API_ENDPOINTS.AGENCIES, {
+          params: { status: "ACTIVE", per_page: 200, page },
+        }),
+      ),
   });
   const rows = Array.isArray(query.data?.data) ? query.data.data : [];
   const entries = rows.map((row) => ({
@@ -391,11 +395,13 @@ export function useDefectOptions(): {
   loading: boolean;
 } {
   const query = useQuery({
-    queryKey: ["ref", "defects"],
+    queryKey: ["ref", "defects", "complete"],
     queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.DEFECT_CATALOGS, {
-        params: { status: "ACTIVE", per_page: 200 },
-      }),
+      fetchCompleteReportPage((page) =>
+        http.getPage<Raw[]>(API_ENDPOINTS.DEFECT_CATALOGS, {
+          params: { status: "ACTIVE", per_page: 200, page },
+        }),
+      ),
   });
   const rows = Array.isArray(query.data?.data) ? query.data.data : [];
   return {
@@ -577,11 +583,13 @@ export function useImportMatch({ from, to, enabled = true }: PeriodArgs) {
 /** Import báo cáo SKU (Excel) — tổng dòng / hợp lệ / lỗi theo từng lần nộp. */
 export function useSkuImportReports({ enabled = true }: { enabled?: boolean }) {
   return useQuery({
-    queryKey: ["rpt-ops", "sku-import-reports"],
+    queryKey: ["rpt-ops", "sku-import-reports", "complete"],
     queryFn: () =>
-      http.getPage<Raw[]>(API_ENDPOINTS.SKU_IMPORT_REPORTS, {
-        params: { per_page: 100 },
-      }),
+      fetchCompleteReportPage((page) =>
+        http.getPage<Raw[]>(API_ENDPOINTS.SKU_IMPORT_REPORTS, {
+          params: { per_page: 100, page },
+        }),
+      ),
     enabled,
     staleTime: STALE_MS,
     placeholderData: (previous) => previous,
@@ -604,7 +612,7 @@ export function useLabelLog({ from, to, enabled = true }: PeriodArgs) {
 
 /** Trần vòng lặp phân trang cho các endpoint bảo hành (max 100/trang ở BE). */
 const WARRANTY_PAGE_SIZE = 100;
-const WARRANTY_MAX_PAGES = 10;
+const WARRANTY_MAX_PAGES = 100;
 
 /**
  * Hồ sơ bảo hành + bệnh/lỗi (N:N) + tổng hợp theo bệnh/lỗi.
@@ -634,7 +642,12 @@ export function useWarrantyReport({
     model,
   });
   return useQuery({
-    queryKey: ["rpt-ops", "warranty-defects", baseParams],
+    queryKey: [
+      "rpt-ops",
+      "warranty-defects",
+      baseParams,
+      "complete-identifiers",
+    ],
     queryFn: async () => {
       // Trang 1 tuần tự (để biết tổng số trang), phần còn lại song song —
       // xem @/shared/api/paginate-all. Vòng lặp await cũ biến mỗi trang thành
@@ -644,7 +657,11 @@ export function useWarrantyReport({
           http.get<Raw>(API_ENDPOINTS.REPORTS_WARRANTY_DEFECTS, {
             params: { ...baseParams, page, per_page: WARRANTY_PAGE_SIZE },
           }),
-        (payload) => n((payload.pagination as Raw | undefined)?.last_page, 1),
+        (payload) =>
+          completeReportLastPage(
+            (payload.pagination as Raw | undefined)?.last_page,
+            WARRANTY_MAX_PAGES,
+          ),
         WARRANTY_MAX_PAGES,
       );
       const rows = pages.flatMap((payload) => listOf(payload.rows));
@@ -662,20 +679,14 @@ export function useWarrantyReport({
  */
 export function useWarrantyCases({ enabled = true }: { enabled?: boolean }) {
   return useQuery({
-    queryKey: ["rpt-ops", "warranty-cases"],
+    queryKey: ["rpt-ops", "warranty-cases", "complete"],
     queryFn: async () => {
-      // Trang 1 tuần tự, phần còn lại song song (@/shared/api/paginate-all).
-      const pages = await fetchAllPages(
-        (page) =>
-          http.getPage<Raw[]>(API_ENDPOINTS.WARRANTY_CASES, {
-            params: { page, per_page: WARRANTY_PAGE_SIZE },
-          }),
-        (result) => n(result.meta?.last_page, 1),
-        WARRANTY_MAX_PAGES,
+      const source = await fetchCompleteReportPage((page) =>
+        http.getPage<Raw[]>(API_ENDPOINTS.WARRANTY_CASES, {
+          params: { page, per_page: WARRANTY_PAGE_SIZE },
+        }),
       );
-      return pages.flatMap((result) =>
-        Array.isArray(result.data) ? result.data : [],
-      );
+      return source.data;
     },
     enabled,
     staleTime: STALE_MS,
@@ -690,20 +701,14 @@ export function useComponentIssueDocuments({
   enabled?: boolean;
 }) {
   return useQuery({
-    queryKey: ["rpt-ops", "component-issue-documents"],
+    queryKey: ["rpt-ops", "component-issue-documents", "complete"],
     queryFn: async () => {
-      // Trang 1 tuần tự, phần còn lại song song (@/shared/api/paginate-all).
-      const pages = await fetchAllPages(
-        (page) =>
-          http.getPage<Raw[]>(API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENTS, {
-            params: { page, per_page: WARRANTY_PAGE_SIZE },
-          }),
-        (result) => n(result.meta?.last_page, 1),
-        WARRANTY_MAX_PAGES,
+      const source = await fetchCompleteReportPage((page) =>
+        http.getPage<Raw[]>(API_ENDPOINTS.COMPONENT_ISSUE_DOCUMENTS, {
+          params: { page, per_page: WARRANTY_PAGE_SIZE },
+        }),
       );
-      return pages.flatMap((result) =>
-        Array.isArray(result.data) ? result.data : [],
-      );
+      return source.data;
     },
     enabled,
     staleTime: STALE_MS,
@@ -779,7 +784,7 @@ export function useOutboundByRecipient({
   region?: string;
   skuCode?: string;
   /**
-   * Trần số trang cuốn về. Mặc định giữ nguyên trần chung (10 trang = 1.000
+   * Trần số trang cuốn về. Mặc định dùng trần chung (100 trang = 10.000
    * dòng) cho lát cắt RPT-07 — đó là MỘT kỳ báo cáo nên hiếm khi chạm trần.
    *
    * Tab "So sánh đối tượng nhận hàng" đọc cửa sổ RỘNG GẤP ĐÔI (kỳ đang xem +

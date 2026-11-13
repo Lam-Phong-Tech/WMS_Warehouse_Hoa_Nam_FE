@@ -29,6 +29,24 @@ import type {
   PvProductQuery,
 } from "@/modules/pv/types/pv.types";
 import type { PublicApiError } from "@/shared/api/public-http";
+import { readAllApiPages } from "@/shared/api/read-all-pages";
+
+async function listSmallMaster(
+  resource: "industries" | "tags",
+  params: Record<string, string>,
+) {
+  if (params.all_pages !== "1")
+    return listPvAdminResources<PvAdminSimpleMaster>(resource, params);
+  const data = await readAllApiPages<PvAdminSimpleMaster>(
+    (page) =>
+      listPvAdminResources<PvAdminSimpleMaster>(resource, {
+        page,
+        per_page: 200,
+      }),
+    (row) => row.id,
+  );
+  return { data, meta: { total: data.length } };
+}
 
 export const pvKeys = {
   all: ["pv"] as const,
@@ -117,15 +135,16 @@ export function usePvRecommendations(industryId: string | undefined) {
 export function usePvAdminIndustries(params: Record<string, string> = {}) {
   return useQuery({
     queryKey: pvKeys.admin("industries", params),
-    queryFn: () =>
-      listPvAdminResources<PvAdminSimpleMaster>("industries", params),
+    queryFn: () => listSmallMaster("industries", params),
+    placeholderData: (previous) => previous,
   });
 }
 
 export function usePvAdminTags(params: Record<string, string> = {}) {
   return useQuery({
     queryKey: pvKeys.admin("tags", params),
-    queryFn: () => listPvAdminResources<PvAdminSimpleMaster>("tags", params),
+    queryFn: () => listSmallMaster("tags", params),
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -134,6 +153,7 @@ export function usePvAdminRules(params: Record<string, string> = {}) {
     queryKey: pvKeys.admin("recommendation-rules", params),
     queryFn: () =>
       listPvAdminResources<PvAdminRule>("recommendation-rules", params),
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -142,6 +162,7 @@ export function usePvAdminProfiles(params: Record<string, string> = {}) {
     queryKey: pvKeys.admin("product-profiles", params),
     queryFn: () =>
       listPvAdminResources<PvAdminProfile>("product-profiles", params),
+    placeholderData: (previous) => previous,
   });
 }
 

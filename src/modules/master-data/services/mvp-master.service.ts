@@ -264,6 +264,13 @@ export function updateMvpAgency(
 export function getMvpDefects(params: MasterListParams) {
   return listPage<DefectRecord>(API_ENDPOINTS.DEFECT_CATALOGS, params);
 }
+export async function getAllMvpDefects(params: MasterListParams) {
+  const data = await readAllApiPages<DefectRecord>(
+    (page) => getMvpDefects({ ...params, page }),
+    (row) => row.defect_id,
+  );
+  return { data, meta: { total: data.length } };
+}
 export function createMvpDefect(payload: DefectPayload) {
   return http.post<DefectRecord>(API_ENDPOINTS.DEFECT_CATALOGS, payload);
 }

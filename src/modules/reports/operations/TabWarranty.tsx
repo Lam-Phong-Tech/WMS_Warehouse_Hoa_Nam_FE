@@ -85,6 +85,7 @@ import {
   useReportExport,
 } from "./report-export";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
+import { warrantyReportIdentifiers } from "./report-warranty-search";
 
 const WARRANTY_STATUSES = [
   "RECEIVED",
@@ -121,6 +122,7 @@ type CaseRow = {
   skuId: string;
   skuName: string;
   physicalCode: string;
+  identifiers: string[];
   defect: string;
   defectIds: string[];
   defectNames: string[];
@@ -268,9 +270,13 @@ export default function TabWarranty() {
         skuId: text(row.sku_id, ""),
         skuName: text(row.sku_name, ""),
         physicalCode: text(
-          raw.serial_number ?? raw.physical_code ?? row.temporary_item_code,
+          raw.serial_number ??
+            row.serial_number ??
+            raw.physical_code ??
+            row.temporary_item_code,
           "",
         ),
+        identifiers: warrantyReportIdentifiers(row, raw),
         defect: text(row.defect, ""),
         defectIds: defectList.map((item) => text(item.defect_id, "")),
         defectNames: defectList.map((item) => text(item.defect_name, "")),
@@ -469,6 +475,7 @@ export default function TabWarranty() {
         caseNo: item.caseNo,
         model: item.model,
         physicalCode: item.physicalCode,
+        identifiers: item.identifiers,
         status: item.status,
         componentName:
           catalog.byCode.get(component.skuCode)?.sku_name ?? component.skuCode,
@@ -487,7 +494,7 @@ export default function TabWarranty() {
     const needle = componentKeyword.trim().toLowerCase();
     if (!needle) return componentRows;
     return componentRows.filter((row) =>
-      `${row.caseNo} ${row.model} ${row.componentSku} ${row.physicalCode}`
+      `${row.caseNo} ${row.model} ${row.componentSku} ${row.identifiers.join(" ")}`
         .toLowerCase()
         .includes(needle),
     );
@@ -525,7 +532,7 @@ export default function TabWarranty() {
         return false;
       if (needle) {
         const haystack =
-          `${item.caseNo} ${item.model} ${item.physicalCode}`.toLowerCase();
+          `${item.caseNo} ${item.model} ${item.identifiers.join(" ")}`.toLowerCase();
         if (!haystack.includes(needle)) return false;
       }
       return true;

@@ -89,6 +89,48 @@ describe("physical code reads during background refresh", () => {
   });
   afterEach(cleanupTestState);
 
+  it("disables code search while the list contract cannot load", async () => {
+    service.fetchPhysicalCodes.mockRejectedValue(
+      new Error("Physical code list endpoint is not approved"),
+    );
+    showPage();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("textbox", { name: "Giá trị mã" }),
+      ).toBeDisabled(),
+    );
+  });
+
+  it("sends history searches to the server instead of filtering a fetched page", async () => {
+    showPage();
+    fireEvent.click(screen.getByRole("tab", { name: "Lịch sử quét" }));
+    await screen.findByText("Initial result");
+    fireEvent.change(screen.getByRole("textbox", { name: "Tìm theo số lô" }), {
+      target: { value: " remote-batch " },
+    });
+    await waitFor(() =>
+      expect(service.fetchScanBatchesPage).toHaveBeenLastCalledWith({
+        page: 1,
+        per_page: 10,
+        keyword: "remote-batch",
+      }),
+    );
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Tìm theo mã sự kiện quét" }),
+      {
+        target: { value: " REMOTE-CODE " },
+      },
+    );
+    await waitFor(() =>
+      expect(service.fetchScanEventsPage).toHaveBeenLastCalledWith({
+        page: 1,
+        per_page: 10,
+        keyword: "REMOTE-CODE",
+        scan_batch_id: undefined,
+      }),
+    );
+  });
+
   it("updates the visible filtered code list from the query cache without clearing search", async () => {
     showPage();
     await screen.findByText("ITEM-001");
@@ -105,7 +147,7 @@ describe("physical code reads during background refresh", () => {
     expect(search).toHaveValue("ITEM");
   });
 
-  it("refreshes the active history pages and retains its local event filter", async () => {
+  it("refreshes the active history pages and retains its server event filter", async () => {
     showPage();
     await screen.findByText("ITEM-001");
     fireEvent.click(screen.getByRole("tab", { name: "Lịch sử quét" }));
@@ -114,6 +156,17 @@ describe("physical code reads during background refresh", () => {
       name: "Tìm theo mã sự kiện quét",
     });
     fireEvent.change(search, { target: { value: "ITEM-001" } });
+    await waitFor(() =>
+      expect(service.fetchScanEventsPage).toHaveBeenLastCalledWith({
+        page: 1,
+        per_page: 10,
+        keyword: "ITEM-001",
+        scan_batch_id: undefined,
+      }),
+    );
+    await waitFor(() =>
+      expect(queryClient.isFetching({ queryKey: ["scan", "events"] })).toBe(0),
+    );
     service.fetchScanEventsPage.mockResolvedValue({
       data: [{ ...event, message: "Updated result" }],
       meta: { total: 1 },

@@ -8,6 +8,7 @@ import {
   Box,
   UiPagination,
   UiSelect,
+  UiAutocomplete,
   UiTextField,
   InputAdornment,
   UiIcon,
@@ -83,6 +84,12 @@ export function AuditLogsPage() {
   // phép, không cần lớp kiểm tra riêng ở màn nữa.
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [userId, setUserId] = useState("");
+  const [actorSearch, setActorSearch] = useState("");
+  const [actorKeyword, setActorKeyword] = useState("");
+  const [selectedActor, setSelectedActor] = useState<{
+    value: string;
+    label: string;
+  } | null>(null);
   // Nhật ký là dữ liệu ĐÃ XẢY RA: chặn ngày tương lai ngay trên lịch (cùng
   // luật với bộ lọc kỳ của báo cáo).
   const maxSelectableDate = pastDateBounds().maxDate;
@@ -90,13 +97,31 @@ export function AuditLogsPage() {
   // Danh bạ người dùng để lọc "ai đã thao tác". Best-effort: nếu tài khoản
   // không có quyền xem người dùng thì query lỗi và dropdown chỉ rỗng, phần
   // còn lại của trang vẫn chạy bình thường.
-  const usersQuery = useIamUsers({ per_page: 200 });
-  const userOptions = (usersQuery.data?.data ?? []).map((user) => ({
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setActorKeyword(actorSearch.trim()),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [actorSearch]);
+  const usersQuery = useIamUsers({
+    keyword: actorKeyword || undefined,
+    page: 1,
+    per_page: 20,
+  });
+  const actorResults = (usersQuery.data?.data ?? []).map((user) => ({
     value: user.user_id,
     label: user.email
       ? `${user.display_name} (${user.email})`
       : user.display_name,
   }));
+  const userOptions =
+    selectedActor &&
+    !actorResults.some((option) => option.value === selectedActor.value)
+      ? [selectedActor, ...actorResults]
+      : actorResults;
+  const hasMoreActors =
+    Number(usersQuery.data?.meta?.total) > actorResults.length;
 
   // Calendar dates are in the account zone; never let the DB session infer it.
   const dateFromParam = range?.[0]
@@ -130,21 +155,19 @@ export function AuditLogsPage() {
     return codes.length ? codes : undefined;
   }, [search]);
 
-  const { data, isLoading, isError, error, refetch } = useAuditLogs(
-    {
-      page,
-      limit: perPage,
-      sort_by: sortBy,
-      sort_order: sortOrder,
-      q: search || undefined,
-      actions: matchedActionCodes,
-      module: module || undefined,
-      action: action || undefined,
-      user_id: userId || undefined,
-      date_from: dateFromParam,
-      date_to: dateToParam,
-    },
-  );
+  const { data, isLoading, isError, error, refetch } = useAuditLogs({
+    page,
+    limit: perPage,
+    sort_by: sortBy,
+    sort_order: sortOrder,
+    q: search || undefined,
+    actions: matchedActionCodes,
+    module: module || undefined,
+    action: action || undefined,
+    user_id: userId || undefined,
+    date_from: dateFromParam,
+    date_to: dateToParam,
+  });
 
   const auditLogs = data?.data ?? [];
   const pagination = resolveApiPagination(data?.meta, {
@@ -202,7 +225,13 @@ export function AuditLogsPage() {
     : [...MVP_PAGE_SIZE_OPTIONS, perPage].sort((a, b) => a - b);
 
   const hasFilters = Boolean(
-    searchInput || module || action || userId || range?.[0] || range?.[1],
+    searchInput ||
+    module ||
+    action ||
+    userId ||
+    actorSearch ||
+    range?.[0] ||
+    range?.[1],
   );
   const clearFilters = () => {
     setSearchInput("");
@@ -210,6 +239,8 @@ export function AuditLogsPage() {
     setModule("");
     setAction("");
     setUserId("");
+    setSelectedActor(null);
+    setActorSearch("");
     setRange(null);
     setPage(1);
     selection.clear();
@@ -333,14 +364,30 @@ export function AuditLogsPage() {
             />
           </div>
           <div className="hn-audit-filter">
-            <UiSelect
+            <UiAutocomplete
               fullWidth
               menuClassName="hn-settings-menu"
-              value={userId}
+              value={userId || null}
               aria-label={t("audit.actorFilterAria")}
               placeholder={t("audit.actorFilterPlaceholder")}
+              filterMode="server"
+              onInputChange={setActorSearch}
+              loading={usersQuery.isFetching}
+              error={usersQuery.isError}
+              helperText={
+                usersQuery.isError
+                  ? t("iam.user.errLoadUsers")
+                  : hasMoreActors
+                    ? t("iam.effectiveUi.userSearchPartial")
+                    : undefined
+              }
               onChange={(value) => {
-                setUserId(String(value));
+                const id = value == null ? "" : String(value);
+                setUserId(id);
+                if (!id) setActorSearch("");
+                setSelectedActor(
+                  userOptions.find((option) => option.value === id) ?? null,
+                );
                 setPage(1);
               }}
               options={userOptions}

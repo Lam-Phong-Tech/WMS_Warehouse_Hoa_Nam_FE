@@ -721,7 +721,10 @@ export function WarrantyDetailModal({
     purchase_date: "",
     reason: "",
   });
-  const defectsQuery = useMvpDefects({ status: "ACTIVE", per_page: 100 });
+  const defectsQuery = useMvpDefects(
+    { status: "ACTIVE", per_page: 100 },
+    { all: true },
+  );
   const defectOptions = (defectsQuery.data?.data ?? []).map((defect) => ({
     value: defect.defect_id,
     label: `${defect.defect_code} · ${defect.defect_name}`,

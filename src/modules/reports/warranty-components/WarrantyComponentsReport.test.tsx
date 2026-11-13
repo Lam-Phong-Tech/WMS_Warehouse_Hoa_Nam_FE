@@ -209,6 +209,33 @@ describe("RPT-06 · Báo cáo Bảo hành & linh kiện", () => {
     cleanupTestState();
   });
 
+  it("searches authoritative serial supplied by the report payload", async () => {
+    vi.mocked(http.get).mockImplementation(async (url: unknown) => {
+      if (String(url) === "/reports/warranty-defects")
+        return {
+          ...(PAYLOAD[String(url)] as object),
+          rows: WARRANTY_ROWS.map((row, index) => ({
+            ...row,
+            serial_number: index === 0 ? "SN-REPORT-42" : "SN-OTHER",
+          })),
+        } as never;
+      return (PAYLOAD[String(url)] ?? { rows: [] }) as never;
+    });
+    const user = userEvent.setup();
+    renderReport();
+    await within(await caseTable()).findByText("BH-2026-0001");
+    await user.type(
+      screen.getByPlaceholderText("Tìm mã phiếu, serial, SKU, linh kiện..."),
+      "sn-report-42",
+    );
+    expect(
+      within(await caseTable()).getByText("BH-2026-0001"),
+    ).toBeInTheDocument();
+    expect(
+      within(await caseTable()).queryByText("BH-2026-0002"),
+    ).not.toBeInTheDocument();
+  });
+
   it("không hiển thị ô Kho trong bộ lọc", async () => {
     renderReport();
     const filters = await screen.findByRole("region", {

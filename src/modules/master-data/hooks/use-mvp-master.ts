@@ -6,6 +6,7 @@ import {
   createMvpSku,
   getMvpAgencies,
   getMvpDefects,
+  getAllMvpDefects,
   getMvpProductCatalogs,
   getMvpSkus,
   hasMvpSkuStock,
@@ -62,10 +63,17 @@ export function useMvpAgencies(params: MasterListParams) {
   });
 }
 
-export function useMvpDefects(params: MasterListParams) {
+export function useMvpDefects(
+  params: MasterListParams,
+  options?: { all?: boolean },
+) {
   return useQuery({
-    queryKey: mvpMasterKeys.defects(params),
-    queryFn: () => getMvpDefects(params),
+    queryKey: [
+      ...mvpMasterKeys.defects(params),
+      ...(options?.all ? ["complete"] : []),
+    ],
+    queryFn: () =>
+      options?.all ? getAllMvpDefects(params) : getMvpDefects(params),
   });
 }
 

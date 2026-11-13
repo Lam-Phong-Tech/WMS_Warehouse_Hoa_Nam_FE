@@ -73,6 +73,24 @@ describe("WWHN-252 · PvAdminPage (SCR-PV-ADM-01)", () => {
     });
   });
 
+  it("searches all profiles through the server and resets the requested page", async () => {
+    signInWith(["pv.master.manage"]);
+    renderWithProviders(<PvAdminPage />);
+    await screen.findByTestId("pv-admin-publish-switch");
+    fireEvent.change(
+      screen.getByPlaceholderText("Tìm theo mã SKU hoặc tên hiển thị..."),
+      {
+        target: { value: "REMOTE-SKU" },
+      },
+    );
+    await waitFor(() =>
+      expect(listPvAdminResourcesMock).toHaveBeenCalledWith(
+        "product-profiles",
+        expect.objectContaining({ keyword: "REMOTE-SKU", page: "1" }),
+      ),
+    );
+  });
+
   it("người chỉ có pv.master.manage KHÔNG bật/tắt được publish", async () => {
     signInWith(["pv.master.manage"]);
 
