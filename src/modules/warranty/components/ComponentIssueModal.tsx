@@ -497,7 +497,7 @@ export function ComponentIssueModal({
   const lineColumns: ResponsiveTableColumn<ComponentIssueLine>[] = [
     {
       key: "line_no",
-      header: t("warranty.componentIssue.colRowNumber"),
+      header: t("shared.table.rowNumber"),
       width: 48,
       render: (line) => (
         <Box

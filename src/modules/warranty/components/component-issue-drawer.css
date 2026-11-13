@@ -39,6 +39,7 @@
   display: inline-flex;
   align-items: center;
   margin: 0;
+  margin-inline-end: 8px;
   line-height: 1;
 }
 .hn-component-issue-context__case-action .MuiButton-startIcon i {

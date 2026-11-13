@@ -116,6 +116,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
   });
 
   it("hiển thị tên kho thay vì UUID khi mở phiếu đã tạo", async () => {
+    const onViewCase = vi.fn();
     vi.mocked(fetchComponentIssueDocument).mockResolvedValue(
       makeDetail() as never,
     );
@@ -125,12 +126,18 @@ describe("ComponentIssueModal (COMP-01)", () => {
         caseId="wc-1"
         caseActive
         documentId="ci-1"
+        onViewCase={onViewCase}
         onClose={() => {}}
       />,
     );
 
     expect(await screen.findByText("Kho tổng")).toBeInTheDocument();
     expect(screen.queryByText("wh-1")).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("columnheader", { name: "#" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Xem hồ sơ bảo hành" }));
+    expect(onViewCase).toHaveBeenCalledOnce();
   });
 
   it("hiển thị mốc tạo phiếu, ghi nhận và quét gần nhất", async () => {
