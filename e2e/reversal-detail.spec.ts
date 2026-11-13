@@ -10,9 +10,12 @@ for (const theme of ["light", "dark"]) {
         (value) => localStorage.setItem("hoa-nam-theme", value),
         theme,
       );
-      await page.goto("/e2e/fixtures/reversal-detail.html", {
-        waitUntil: "domcontentloaded",
-      });
+      await page.goto(
+        `/e2e/fixtures/reversal-detail.html${width === 768 ? "?shortCode=1" : ""}`,
+        {
+          waitUntil: "domcontentloaded",
+        },
+      );
       const opener = page.getByRole("button", { name: "Mở chi tiết" });
       await opener.click();
       const drawer = page.getByRole("dialog", {
@@ -20,6 +23,17 @@ for (const theme of ["light", "dark"]) {
       });
       await expect(drawer).toBeVisible();
       await expect(drawer).toHaveCSS("transform", "none");
+      const header = await drawer.locator(".ui-drawer-header").boundingBox();
+      const close = await drawer
+        .getByRole("button", { name: "Đóng", exact: true })
+        .boundingBox();
+      expect(close!.y - header!.y).toBeGreaterThanOrEqual(12);
+      expect(
+        header!.y + header!.height - close!.y - close!.height,
+      ).toBeGreaterThanOrEqual(12);
+      expect(
+        header!.x + header!.width - close!.x - close!.width,
+      ).toBeGreaterThanOrEqual(16);
       await expect(drawer.getByRole("article")).toHaveCount(10);
       const box = await drawer.boundingBox();
       expect(Math.abs(box!.x + box!.width - width)).toBeLessThanOrEqual(1);

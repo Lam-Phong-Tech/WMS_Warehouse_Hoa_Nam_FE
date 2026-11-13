@@ -6,6 +6,15 @@
 .hn-reversal-detail-drawer h2 {
   color: var(--ops-heading);
 }
+.hn-reversal-detail-drawer .ui-drawer-header > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+}
+.hn-reversal-detail-drawer .ui-drawer-header h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .hn-reversal-detail-drawer [data-ui-drawer-body] {
   container: reversal-detail / inline-size;
   padding-bottom: max(24px, env(safe-area-inset-bottom));

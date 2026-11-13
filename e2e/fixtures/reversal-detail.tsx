@@ -26,7 +26,10 @@ const queryClient = new QueryClient({
 });
 const params = new URLSearchParams(location.search);
 const status = params.get("status") === "DRAFT" ? "DRAFT" : "POSTED";
-const code = "REV-20261102152937-6HEKQB-ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const code =
+  params.get("shortCode") === "1"
+    ? "REV-20261112044101-KBGXSA"
+    : "REV-20261102152937-6HEKQB-ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 queryClient.setQueryData(["reversal", "detail", "rev-detail"], {
   id: "rev-detail",
   reversal_code: code,

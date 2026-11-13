@@ -241,26 +241,15 @@ export function ReversalDetailModal({ documentId, onClose }: Props) {
         className="hn-reversal-dialog hn-reversal-detail-drawer"
         {...dialog.dialogProps}
         width={820}
-        title={
-          <Box
-            component="span"
-            sx={{
-              display: "block",
-              position: "relative",
-              pr: 6,
-              overflowWrap: "anywhere",
-            }}
-          >
-            {t("reverse.detail.title", {
-              code: doc?.reversal_code ?? shortId(documentId),
-            })}
-            <ActionIconButton
-              kind="close"
-              label={t("common.close")}
-              onClick={dialog.close}
-              sx={{ position: "absolute", right: 0, top: 0 }}
-            />
-          </Box>
+        title={t("reverse.detail.title", {
+          code: doc?.reversal_code ?? shortId(documentId),
+        })}
+        headerEnd={
+          <ActionIconButton
+            kind="close"
+            label={t("common.close")}
+            onClick={dialog.close}
+          />
         }
       >
         <Stack spacing={2}>
