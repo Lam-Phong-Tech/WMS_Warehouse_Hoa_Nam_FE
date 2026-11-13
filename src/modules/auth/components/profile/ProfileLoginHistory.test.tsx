@@ -88,14 +88,14 @@ it("shows numbered pagination and resets to page one when the page size changes"
   expect(screen.getByText("Hiển thị 7–12 / 13 phiên đăng nhập")).toBeVisible();
   expect(get).toHaveBeenLastCalledWith(2, 6);
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Số bản ghi mỗi trang" }));
-  fireEvent.click(screen.getByRole("option", { name: "12 / trang" }));
+  fireEvent.click(screen.getByRole("option", { name: "9 / trang" }));
   expect(await screen.findByText("Thiết bị 1")).toBeVisible();
-  expect(screen.getByText("Hiển thị 1–12 / 13 phiên đăng nhập")).toBeVisible();
-  expect(get).toHaveBeenLastCalledWith(1, 12);
-  expect(screen.queryByText("Thiết bị 13")).not.toBeInTheDocument();
+  expect(screen.getByText("Hiển thị 1–9 / 13 phiên đăng nhập")).toBeVisible();
+  expect(get).toHaveBeenLastCalledWith(1, 9);
+  expect(screen.queryByText("Thiết bị 10")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /page 2/i }));
-  expect(await screen.findByText("Thiết bị 13")).toBeVisible();
-  expect(screen.getByText("Hiển thị 13–13 / 13 phiên đăng nhập")).toBeVisible();
+  expect(await screen.findByText("Thiết bị 10")).toBeVisible();
+  expect(screen.getByText("Hiển thị 10–13 / 13 phiên đăng nhập")).toBeVisible();
   expect(screen.getByRole("button", { name: /next page/i })).toBeDisabled();
 });
 

@@ -19,7 +19,8 @@ import { sessionName } from "./session-presentation";
 export function ProfileLoginHistory({ userId }: { userId: string }) {
   const t = useT();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  // Mặc định 6 thẻ (lưới 3 cột × 2 hàng trên desktop); chọn trong 6/9/16/30.
+  const [pageSize, setPageSize] = useState(6);
   const query = useQuery({
     queryKey: [...profileKeys.deviceHistory(userId), page, pageSize],
     queryFn: () => profileService.getDeviceHistory(page, pageSize),
@@ -140,7 +141,7 @@ export function ProfileLoginHistory({ userId }: { userId: string }) {
             value={pagination.pageSize}
             disabled={query.isFetching}
             minWidth={FILTER_WIDTH.pageSize}
-            options={[8, 16, 24].map((size) => ({
+            options={[6, 9, 16, 30].map((size) => ({
               value: size,
               label: t("shared.table.perPage", { size }),
             }))}
