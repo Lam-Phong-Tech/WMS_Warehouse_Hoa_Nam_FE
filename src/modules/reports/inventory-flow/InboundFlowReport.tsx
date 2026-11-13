@@ -851,7 +851,6 @@ export default function InboundFlowReport() {
             aria-label={tUi("reports.packingLabel.dateRangeLabel")}
           >
             <ReportDateRangePicker
-              autoApplyOnComplete
               value={[
                 draftRange.from ? dayjs(draftRange.from, ISO_DATE) : null,
                 draftRange.to ? dayjs(draftRange.to, ISO_DATE) : null,

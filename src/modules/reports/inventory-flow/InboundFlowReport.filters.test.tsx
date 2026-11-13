@@ -148,7 +148,7 @@ describe("RPT-01 inbound filters", () => {
     expect(within(table()).getByText("PN-ALPHA")).toBeInTheDocument();
   });
 
-  it("applies a complete custom date range without a second Apply button", async () => {
+  it("applies a complete custom date range only after clicking Apply", async () => {
     report.useInventoryFlowSnapshot.mockImplementation(
       (range: { from: string }) => ({
         snapshot: snapshot(
@@ -169,8 +169,8 @@ describe("RPT-01 inbound filters", () => {
     fireEvent.click(screen.getByRole("button", { name: "Từ ngày" }));
     const calendar = screen.getByRole("dialog", { name: "Khoảng thời gian" });
     expect(
-      within(calendar).queryByRole("button", { name: "Áp dụng" }),
-    ).not.toBeInTheDocument();
+      within(calendar).getByRole("button", { name: "Áp dụng" }),
+    ).toBeInTheDocument();
     fireEvent.click(
       within(calendar).getByRole("button", {
         name: dayjs().subtract(2, "day").format("DD/MM/YYYY"),
@@ -183,7 +183,27 @@ describe("RPT-01 inbound filters", () => {
       }),
     );
 
+    expect(within(table()).getByText("PN-ALPHA")).toBeInTheDocument();
+    expect(within(table()).queryByText("PN-OLDER")).not.toBeInTheDocument();
+    fireEvent.click(within(calendar).getByRole("button", { name: "Áp dụng" }));
     expect(await within(table()).findByText("PN-OLDER")).toBeInTheDocument();
+  });
+
+  it("discards a custom date selection when Cancel is clicked", () => {
+    renderWithProviders(<InboundFlowReport />, [
+      "/reports/inventory-flow?screen=RPT-01",
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "Từ ngày" }));
+    const calendar = screen.getByRole("dialog", { name: "Khoảng thời gian" });
+    for (const days of [2, 1]) {
+      fireEvent.click(within(calendar).getByRole("button", {
+        name: dayjs().subtract(days, "day").format("DD/MM/YYYY"),
+      }));
+    }
+    const calls = report.useInventoryFlowSnapshot.mock.calls.length;
+    fireEvent.click(within(calendar).getByRole("button", { name: "Hủy" }));
+    expect(report.useInventoryFlowSnapshot).toHaveBeenCalledTimes(calls);
+    expect(within(table()).getByText("PN-ALPHA")).toBeInTheDocument();
   });
 
   it("keeps a selected filter visible when a new period has no matching options", () => {
