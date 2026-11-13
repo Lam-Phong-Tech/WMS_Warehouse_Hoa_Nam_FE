@@ -336,13 +336,13 @@ export function HoaNamAuthShell({
             position: "relative",
             width: "100%",
             maxWidth: { xs: 620, sm: 824, xl: 620 },
-            minHeight: { xl: recoveryStep ? 636 : undefined },
             marginTop: { xs: "-30px", sm: "-45px", xl: 0 },
             padding: { xs: "30px 23px", sm: "46px 62px", xl: "40px" },
             borderRadius: "16px",
             border: "1px solid var(--auth-border)",
             backgroundColor: "var(--auth-panel)",
             boxShadow: isDark ? "0 15px 38px rgba(0,0,0,.28)" : "0 15px 38px rgba(28, 85, 132, .11)",
+            "& > form": recoveryStep ? { marginBottom: 0 } : undefined,
             "& form [data-busy]": recoveryStep
               ? { gap: { xl: "34px" } }
               : undefined,
@@ -370,7 +370,35 @@ export function HoaNamAuthShell({
           )}
 
           {recoveryStep ? (
-            <Box sx={{ color: "var(--auth-link)", fontSize: { xs: 16, sm: 18 }, marginBottom: "30px" }}>
+            <Box sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              color: "var(--auth-link)",
+              fontSize: { xs: 16, sm: 18 },
+              marginBottom: "30px",
+            }}>
+              {!hideRecoveryBack && (
+                <Box
+                  component={Link}
+                  to="/login"
+                  aria-label={t("auth.forgotPassword.backToLogin")}
+                  title={t("auth.forgotPassword.backToLogin")}
+                  sx={{
+                    display: "grid",
+                    placeItems: "center",
+                    flexShrink: 0,
+                    width: 40,
+                    height: 40,
+                    borderRadius: "8px",
+                    fontSize: 27,
+                    lineHeight: 1,
+                    "&:hover": { backgroundColor: "var(--auth-note)" },
+                  }}
+                >
+                  <span aria-hidden="true">←</span>
+                </Box>
+              )}
               {recoveryStep}
             </Box>
           ) : showRecoveryBack && !hideRecoveryBack ? (

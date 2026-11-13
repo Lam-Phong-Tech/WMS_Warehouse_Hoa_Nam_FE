@@ -1,5 +1,6 @@
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -48,6 +49,21 @@ describe("TC_UI_LOGIN_10 — recovery UI without breaking the existing OTP API",
   afterEach(() => {
     vi.useRealTimers();
     act(() => useLanguageStore.getState().setLanguage("vi"));
+  });
+  it("returns to sign in from the account step without submitting recovery", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Routes>
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/login" element={<h1>Sign-in destination</h1>} />
+      </Routes>,
+      ["/forgot-password"],
+    );
+    const back = screen.getByRole("link", { name: "Quay lại đăng nhập" });
+    expect(back).toHaveAttribute("href", "/login");
+    await user.click(back);
+    expect(screen.getByRole("heading", { name: "Sign-in destination" })).toBeInTheDocument();
+    expect(authService.forgotPassword).not.toHaveBeenCalled();
   });
   it("updates visible recovery validation after switching language", async () => {
     await ensureEnglishMessages();
