@@ -124,6 +124,7 @@ import {
   UiStatusBadge,
   UiTextField,
   useUiConfirm,
+  useMediaQuery,
 } from "@/shared/ui";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import { validatePhone } from "@/shared/constants/validation.constants";
@@ -366,6 +367,12 @@ function SkuCatalogSelect({
 export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const t = useT();
   const sidebarPinned = useContext(PinnedSidebarContext);
+  // Tablet (768–979px, vùng drawer theo token BREAKPOINTS): đưa ô "Loại hàng" và
+  // ô "Thông tin" vào panel "Bộ lọc" để hàng tìm kiếm chỉ còn search + Trạng thái.
+  // Desktop (≥980px) và mobile (<768px) giữ nguyên bố cục hiện có.
+  const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 979.98px)");
+  const informationInPanel = sidebarPinned || isTablet;
+  const typeInPanel = isTablet;
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
   const [overviewOpen, setOverviewOpen] = useState(() => {
     try {
@@ -906,6 +913,29 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
       ]}
     />
   );
+  const typeFilter = (
+    <UiSelect
+      aria-label={t("masterData.sku.typeFilterAria")}
+      value={type}
+      onChange={(value) => {
+        setType(value as SkuType | "");
+        setPage(1);
+      }}
+      placeholder={copy("Loại hàng: Tất cả", "Type: All")}
+      fullWidth
+      menuClassName="hn-sku-menu"
+      options={[
+        {
+          value: "PRODUCT",
+          label: copy("Loại hàng: Sản phẩm", "Type: Product"),
+        },
+        {
+          value: "COMPONENT",
+          label: copy("Loại hàng: Linh kiện", "Type: Component"),
+        },
+      ]}
+    />
+  );
 
   return (
     <>
@@ -992,7 +1022,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         >
           <div
             className="hn-sku-search-bar"
-            data-information-in-panel={sidebarPinned || undefined}
+            data-information-in-panel={informationInPanel || undefined}
+            data-type-in-panel={typeInPanel || undefined}
           >
             <UiTextField
               id="sku-list-search"
@@ -1015,27 +1046,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               }}
               fullWidth
             />
-            <UiSelect
-              aria-label={t("masterData.sku.typeFilterAria")}
-              value={type}
-              onChange={(value) => {
-                setType(value as SkuType | "");
-                setPage(1);
-              }}
-              placeholder={copy("Loại hàng: Tất cả", "Type: All")}
-              fullWidth
-              menuClassName="hn-sku-menu"
-              options={[
-                {
-                  value: "PRODUCT",
-                  label: copy("Loại hàng: Sản phẩm", "Type: Product"),
-                },
-                {
-                  value: "COMPONENT",
-                  label: copy("Loại hàng: Linh kiện", "Type: Component"),
-                },
-              ]}
-            />
+            {typeInPanel ? null : typeFilter}
             <UiSelect
               aria-label={t("masterData.status.filterAria")}
               value={status}
@@ -1053,7 +1064,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 })),
               ]}
             />
-            {!sidebarPinned ? informationFilter : null}
+            {!informationInPanel ? informationFilter : null}
             <button
               type="button"
               className="hn-sku-more-filters"
@@ -1079,7 +1090,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
             className="hn-sku-extra-filters"
             hidden={!filtersOpen}
           >
-            {sidebarPinned ? (
+            {typeInPanel ? (
+              <div className="hn-sku-filter">{typeFilter}</div>
+            ) : null}
+            {informationInPanel ? (
               <div className="hn-sku-filter">{informationFilter}</div>
             ) : null}
             <div className="hn-sku-filter">

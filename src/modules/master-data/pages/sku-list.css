@@ -786,6 +786,16 @@
     grid-template-columns:
       minmax(180px, 2fr) repeat(2, minmax(130px, 1fr)) max-content max-content;
   }
+  /* Tablet (621–979px): "Loại hàng" và "Thông tin" đã dời vào panel "Bộ lọc",
+     hàng lọc chỉ còn search + Trạng thái + nút Bộ lọc (+ Xóa lọc khi có). */
+  .hn-sku-search-bar[data-type-in-panel="true"] {
+    grid-template-columns:
+      minmax(180px, 2fr) minmax(150px, 1fr) max-content;
+  }
+  .hn-sku-search-bar[data-type-in-panel="true"]:has(.hn-sku-clear-filters) {
+    grid-template-columns:
+      minmax(180px, 2fr) minmax(150px, 1fr) max-content max-content;
+  }
 }
 @container hn-sku (max-width:1200px) {
   .hn-sku-search-bar {
