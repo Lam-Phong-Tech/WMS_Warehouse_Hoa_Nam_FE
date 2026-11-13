@@ -737,6 +737,7 @@
 
 .inbound-kpi__copy {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 5px;
   min-width: 0;
 }
@@ -1297,7 +1298,8 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-width: 116px;
+  min-width: 0;
+  max-width: 100%;
   justify-content: center;
   padding: 3px 8px;
   border-radius: 12px;
@@ -1306,6 +1308,8 @@
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .inbound-status::before {
   width: 5px;

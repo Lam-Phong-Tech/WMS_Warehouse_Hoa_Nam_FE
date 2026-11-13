@@ -1350,7 +1350,7 @@ export default function InboundFlowReport() {
                           <td
                             data-label={tUi("dashboard.composition.colStatus")}
                           >
-                            <span className="inbound-status" data-tone={tone}>
+                            <span className="inbound-status" data-tone={tone} title={inboundStatusLabel(document.status)}>
                               {inboundStatusLabel(document.status)}
                             </span>
                           </td>

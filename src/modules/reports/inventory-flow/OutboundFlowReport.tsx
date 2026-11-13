@@ -1574,7 +1574,7 @@ export default function OutboundFlowReport() {
                           <td
                             data-label={tUi("dashboard.composition.colStatus")}
                           >
-                            <span className="outbound-status" data-tone={tone}>
+                            <span className="outbound-status" data-tone={tone} title={outboundStatusLabel(document.status)}>
                               {outboundStatusLabel(document.status)}
                             </span>
                           </td>
