@@ -77,6 +77,9 @@
   border-radius: var(--ops-radius-card);
   background: var(--ops-surface);
   overflow: clip;
+  /* `contain: paint` chặn bảng (min-width 980px) lan scrollable-overflow ra ngoài
+     card, nếu không `main` sẽ xuất hiện thanh cuộn ngang cả trang trên tablet. */
+  contain: paint;
 }
 .hn-ncc-scroll {
   overflow: auto;
