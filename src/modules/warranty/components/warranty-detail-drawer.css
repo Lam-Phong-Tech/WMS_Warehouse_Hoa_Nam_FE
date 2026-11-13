@@ -9,6 +9,14 @@
   box-shadow: var(--ops-shadow-dialog);
 }
 
+/* Ẩn drawer chi tiết khi drawer "Sửa thông tin hồ sơ bảo hành" đang mở.
+   display:none giữ nguyên cây React (không tắt, không mất state/query) —
+   đóng drawer sửa (nút X / Lưu / backdrop theo quyền) thì drawer chi tiết
+   hiện lại nguyên trạng. */
+.hn-war-detail-drawer.hn-war-hidden-behind-edit {
+  display: none;
+}
+
 .hn-war-detail-shell {
   display: flex;
   flex-direction: column;

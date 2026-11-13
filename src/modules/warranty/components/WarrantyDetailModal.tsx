@@ -1322,6 +1322,13 @@ export function WarrantyDetailModal({
     <>
       <WarrantyDetailDrawer
         {...dialog.dialogProps}
+        slotProps={
+          correctOpen
+            ? // Ẩn tạm bằng CSS (không unmount) — drawer chi tiết nằm lại đúng vị
+              // trí và trạng thái khi người dùng đóng drawer sửa thông tin (nút X).
+              { root: { className: "hn-war-hidden-behind-edit" } }
+            : undefined
+        }
         title={
           <>
             <Stack
