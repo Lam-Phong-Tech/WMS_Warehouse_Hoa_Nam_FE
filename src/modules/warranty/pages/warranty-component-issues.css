@@ -315,10 +315,55 @@
 }
 .hn-war04-filters {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(145px, 1fr)) auto;
+  grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(145px, 1fr)) auto;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: 0;
+}
+.hn-war04-filters:has(> .hn-war04-clear-filters) {
+  grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(145px, 1fr)) auto auto;
+}
+.hn-war04-filter-area {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.hn-war04-filter-toggle {
+  min-height: 48px;
+  white-space: nowrap;
+}
+.hn-war04-filter-toggle[aria-expanded="true"] {
+  border-color: var(--ops-link);
+  background: var(--war-pale);
+}
+.hn-war04-extra-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(210px, 1fr)) minmax(240px, 1.3fr);
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--war-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--war-surface);
+}
+.hn-war04-extra-filters[hidden] {
+  display: none;
+}
+.hn-war04-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.hn-war04-date-filter > span {
+  flex-shrink: 0;
+  color: var(--war-muted);
+}
+.hn-war04-date-filter .hn-vuexy-date-field {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  min-height: 48px;
 }
 .hn-war04-field {
   min-width: 0;
@@ -327,7 +372,8 @@
   min-width: 0;
   width: 100%;
 }
-.hn-war04-filters .MuiOutlinedInput-root {
+.hn-war04-filters .MuiOutlinedInput-root,
+.hn-war04-extra-filters .MuiOutlinedInput-root {
   height: 48px;
 }
 .hn-war04 .MuiOutlinedInput-root,
@@ -794,7 +840,8 @@
   }
 }
 @container hn-war04 (max-width: 1000px) {
-  .hn-war04-filters {
+  .hn-war04-filters,
+  .hn-war04-filters:has(> .hn-war04-clear-filters) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .hn-war04-search {
@@ -802,6 +849,12 @@
   }
   .hn-war04-clear-filters {
     justify-self: start;
+  }
+  .hn-war04-extra-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hn-war04-extra-filters > .hn-war04-field {
+    grid-column: 1 / -1;
   }
 }
 @container hn-war04 (max-width: 650px) {
@@ -824,7 +877,10 @@
   }
   .hn-war04-filters {
     gap: 10px;
-    padding: 12px;
+    padding: 0;
+  }
+  .hn-war04-extra-filters {
+    grid-template-columns: minmax(0, 1fr);
   }
   .hn-war04-search {
     grid-column: 1 / -1;

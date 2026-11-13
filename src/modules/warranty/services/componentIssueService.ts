@@ -40,6 +40,8 @@ export type ComponentIssueLine = {
 };
 
 export type ComponentIssueListParams = {
+  date_from?: string;
+  date_to?: string;
   warranty_case_id?: string;
   status?: ComponentIssueStatus | string;
   keyword?: string;
@@ -195,6 +197,8 @@ export async function fetchComponentIssueDocuments(
       page: params.page,
       per_page: params.per_page ?? 10,
       sort_order: params.sort_order,
+      date_from: params.date_from,
+      date_to: params.date_to,
     }).filter(([, value]) => value !== undefined && value !== ""),
   );
   const result = await http.getPage<RawRecord[] | { data?: RawRecord[] }>(

@@ -28,6 +28,23 @@ import {
 } from "./componentIssueService";
 
 describe("componentIssueService (COMP-01)", () => {
+  it("forwards inclusive document date bounds to the paginated API", async () => {
+    vi.mocked(http.getPage).mockResolvedValue({ data: [], meta: { total: 0 } });
+    await fetchComponentIssueDocuments({
+      date_from: "2026-11-01",
+      date_to: "2026-11-13",
+      status: "POSTED",
+      page: 2,
+    });
+    expect(http.getPage).toHaveBeenCalledWith("/warranty-component-issues", {
+      params: expect.objectContaining({
+        date_from: "2026-11-01",
+        date_to: "2026-11-13",
+        status: "POSTED",
+        page: 2,
+      }),
+    });
+  });
   beforeEach(() => {
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();

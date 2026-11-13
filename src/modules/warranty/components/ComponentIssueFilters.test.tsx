@@ -4,7 +4,7 @@ import { renderWithProviders } from "@/test/test-utils";
 import { ComponentIssueFilters } from "./ComponentIssueFilters";
 
 describe("ComponentIssueFilters", () => {
-  it("filters immediately with inline controls and keeps sorting inside the filter row", async () => {
+  it("filters immediately and reveals date bounds and sorting inside the filter panel", async () => {
     const onSearchChange = vi.fn();
     const onStatusChange = vi.fn();
     const onTrackingChange = vi.fn();
@@ -17,6 +17,10 @@ describe("ComponentIssueFilters", () => {
         status=""
         tracking=""
         sortOrder="desc"
+        dateFrom={null}
+        dateTo={null}
+        onDateFromChange={vi.fn()}
+        onDateToChange={vi.fn()}
         statusOptions={[{ value: "POSTED", label: "Đã ghi sổ" }]}
         hasFilters={false}
         onSearchChange={onSearchChange}
@@ -31,6 +35,13 @@ describe("ComponentIssueFilters", () => {
       target: { value: "CI-0001" },
     });
     expect(onSearchChange).toHaveBeenCalledWith("CI-0001");
+    expect(screen.getAllByRole("combobox")).toHaveLength(2);
+    expect(screen.queryByRole("combobox", { name: /Sắp xếp/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Bộ lọc" }));
+    expect(screen.getByRole("button", { name: "Từ ngày" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Đến ngày" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole("combobox")).toHaveLength(3);
     expect(
       screen.queryByRole("button", { name: /áp dụng|đặt lại/i }),
@@ -62,6 +73,10 @@ describe("ComponentIssueFilters", () => {
         status="POSTED"
         tracking=""
         sortOrder="desc"
+        dateFrom={null}
+        dateTo={null}
+        onDateFromChange={vi.fn()}
+        onDateToChange={vi.fn()}
         statusOptions={[{ value: "POSTED", label: "Đã ghi sổ" }]}
         hasFilters
         onSearchChange={vi.fn()}

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { businessToday } from "@/shared/utils/date-time";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -148,6 +149,53 @@ async function selectOption(label: string, name: string) {
 }
 
 describe("WarrantyComponentIssueListPage (WAR-04)", () => {
+  it("applies document dates to API queries, preserves them when collapsed, and clears the range", async () => {
+    renderPage();
+    await screen.findByText("CI-0001");
+    const toggle = screen.getByRole("button", { name: "Bộ lọc" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    const from = businessToday().startOf("month");
+    const to = businessToday();
+    fireEvent.click(screen.getByRole("button", { name: "Từ ngày" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: from.format("DD/MM/YYYY") }),
+    );
+    await waitFor(() =>
+      expect(fetchComponentIssueDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          date_from: from.format("YYYY-MM-DD"),
+          page: 1,
+        }),
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Đến ngày" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: to.format("DD/MM/YYYY") }),
+    );
+    await waitFor(() =>
+      expect(fetchComponentIssueDocuments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          date_from: from.format("YYYY-MM-DD"),
+          date_to: to.format("YYYY-MM-DD"),
+          page: 1,
+        }),
+      ),
+    );
+    fireEvent.click(toggle);
+    expect(screen.queryByRole("button", { name: "Từ ngày" })).toBeNull();
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Từ ngày" })).toHaveTextContent(
+      from.format("DD/MM/YYYY"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(
+      screen.getByRole("button", { name: "Từ ngày" }),
+    ).not.toHaveTextContent(from.format("DD/MM/YYYY"));
+    expect(
+      screen.getByRole("button", { name: "Đến ngày" }),
+    ).not.toHaveTextContent(to.format("DD/MM/YYYY"));
+  });
   beforeEach(() => {
     window.sessionStorage.removeItem("hn-war04-overview-open");
     documents = DOCUMENTS;
@@ -400,9 +448,7 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     }));
     renderPage();
     await screen.findByRole("button", { name: "CI-0001" });
-    expect(
-      screen.getByRole("columnheader", { name: "#" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "#" })).toBeInTheDocument();
     expect(
       screen.queryByRole("columnheader", { name: /Cập nhật/ }),
     ).not.toBeInTheDocument();

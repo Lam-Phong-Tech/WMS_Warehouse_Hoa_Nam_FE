@@ -164,6 +164,8 @@ describe("fetchComponentIssueTrackingRows", () => {
       keyword: "CI",
       status: "DRAFT",
       tracking: "SERIAL",
+      date_from: "2026-11-01",
+      date_to: "2026-11-13",
     });
     expect(result.map((row) => row.id)).toEqual(["2", "3"]);
     expect(listMock).toHaveBeenCalledTimes(3);
@@ -172,6 +174,8 @@ describe("fetchComponentIssueTrackingRows", () => {
         keyword: "CI",
         status: "DRAFT",
         per_page: 50,
+        date_from: "2026-11-01",
+        date_to: "2026-11-13",
       });
     }
     expect(client.getQueryData(warrantyKeys.componentIssueDetail("2"))).toEqual(
@@ -186,6 +190,8 @@ describe("fetchComponentIssueTrackingRows", () => {
       keyword: "CI",
       status: "DRAFT",
       tracking: "QUANTITY",
+      date_from: "2026-11-01",
+      date_to: "2026-11-13",
     });
     expect(quantity.map((row) => row.id)).toEqual(["1", "3"]);
     expect(detailMock).toHaveBeenCalledTimes(3);

@@ -143,7 +143,10 @@ function readPagination(
  */
 export async function fetchComponentIssueTrackingRows(
   queryClient: QueryClient,
-  params: Pick<ComponentIssueListParams, "keyword" | "status"> & {
+  params: Pick<
+    ComponentIssueListParams,
+    "keyword" | "status" | "date_from" | "date_to"
+  > & {
     tracking: "SERIAL" | "QUANTITY";
   },
 ): Promise<ComponentIssueDocument[]> {
@@ -151,6 +154,8 @@ export async function fetchComponentIssueTrackingRows(
     const listParams = {
       keyword: params.keyword,
       status: params.status,
+      ...(params.date_from ? { date_from: params.date_from } : {}),
+      ...(params.date_to ? { date_to: params.date_to } : {}),
       page,
       per_page: PAGE_SIZE,
     };

@@ -2,6 +2,7 @@ import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-valu
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { BarChartOutlined } from "@/shared/components/icons";
 import { useEffect, useMemo, useState } from "react";
+import type { Dayjs } from "dayjs";
 import { useNavigate } from "react-router-dom";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FILTER_WIDTH, UiIcon, UiPagination, UiSelect } from "@/shared/ui";
@@ -80,6 +81,10 @@ export default function WarrantyComponentIssueListPage() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [dateFrom, setDateFrom] = useState<Dayjs | null>(null);
+  const [dateTo, setDateTo] = useState<Dayjs | null>(null);
+  const dateFromValue = dateFrom?.format("YYYY-MM-DD");
+  const dateToValue = dateTo?.format("YYYY-MM-DD");
   const [overviewOpen, setOverviewOpen] = useState(() => {
     try {
       return window.sessionStorage.getItem("hn-war04-overview-open") === "true";
@@ -116,6 +121,8 @@ export default function WarrantyComponentIssueListPage() {
       page,
       per_page: perPage,
       sort_order: sortOrder,
+      date_from: dateFromValue,
+      date_to: dateToValue,
     },
     !tracking,
   );
@@ -125,13 +132,15 @@ export default function WarrantyComponentIssueListPage() {
     queryKey: [
       ...warrantyKeys.all,
       "component-issues-by-tracking",
-      { search, status, tracking },
+      { search, status, tracking, dateFromValue, dateToValue },
     ],
     queryFn: () =>
       fetchComponentIssueTrackingRows(queryClient, {
         keyword: search || undefined,
         status: status || undefined,
         tracking: tracking as "SERIAL" | "QUANTITY",
+        date_from: dateFromValue,
+        date_to: dateToValue,
       }),
     enabled: Boolean(tracking),
   });
@@ -232,7 +241,12 @@ export default function WarrantyComponentIssueListPage() {
     caseQueries.some((query) => query.isError) ||
     skuIndexQuery.isError;
   const hasFilters = Boolean(
-    searchInput || status || tracking || sortOrder === "asc",
+    searchInput ||
+    status ||
+    tracking ||
+    sortOrder === "asc" ||
+    dateFrom ||
+    dateTo,
   );
   const isInitialLoading =
     activeQuery.isLoading || (activeQuery.isPending && !online);
@@ -251,6 +265,8 @@ export default function WarrantyComponentIssueListPage() {
     setStatus("");
     setTracking("");
     setSortOrder("desc");
+    setDateFrom(null);
+    setDateTo(null);
     setPage(1);
   };
   const trackingLabel = (document: ComponentIssueDocument) => {
@@ -364,35 +380,48 @@ export default function WarrantyComponentIssueListPage() {
           {tUi("updatedUi.text_2ee63258302d")}
         </div>
       ) : null}
+      <ComponentIssueFilters
+        search={searchInput}
+        status={status}
+        tracking={tracking}
+        sortOrder={sortOrder}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={(next) => {
+          setDateFrom(next);
+          if (next && dateTo && next.isAfter(dateTo, "day")) setDateTo(next);
+          setPage(1);
+        }}
+        onDateToChange={(next) => {
+          setDateTo(next);
+          if (next && dateFrom && next.isBefore(dateFrom, "day"))
+            setDateFrom(next);
+          setPage(1);
+        }}
+        statusOptions={Object.entries(getSTATUS_LABELS()).map(
+          ([value, label]) => ({ value, label }),
+        )}
+        hasFilters={hasFilters}
+        onSearchChange={setSearchInput}
+        onStatusChange={(value) => {
+          setStatus(value);
+          setPage(1);
+        }}
+        onTrackingChange={(value) => {
+          setTracking(value);
+          setPage(1);
+        }}
+        onSortChange={(value) => {
+          setSortOrder(value);
+          setPage(1);
+        }}
+        onClear={resetFilters}
+      />
       <section
         className="hn-war04-list"
         aria-label={tUi("updatedUi.text_11362358afdc")}
         aria-busy={activeQuery.isFetching}
       >
-        <ComponentIssueFilters
-          search={searchInput}
-          status={status}
-          tracking={tracking}
-          sortOrder={sortOrder}
-          statusOptions={Object.entries(getSTATUS_LABELS()).map(
-            ([value, label]) => ({ value, label }),
-          )}
-          hasFilters={hasFilters}
-          onSearchChange={setSearchInput}
-          onStatusChange={(value) => {
-            setStatus(value);
-            setPage(1);
-          }}
-          onTrackingChange={(value) => {
-            setTracking(value);
-            setPage(1);
-          }}
-          onSortChange={(value) => {
-            setSortOrder(value);
-            setPage(1);
-          }}
-          onClear={resetFilters}
-        />
         {activeQuery.isError ? (
           <ApiErrorAlert
             error={activeQuery.error}
