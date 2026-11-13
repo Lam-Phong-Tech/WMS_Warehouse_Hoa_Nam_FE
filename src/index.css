@@ -449,6 +449,18 @@ table tbody tr[data-clickable="true"]:focus-visible {
   font-weight: inherit;
   color: inherit;
   cursor: pointer;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Cột đầu bảng (table-layout: fixed) không cắt chữ thì nhãn dài tràn sang ô kế
+   bên — cắt một dòng + "…"; tooltip trên nút sắp xếp hiện đủ nhãn. */
+.hn-sortable-th > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hn-sortable-th:hover {
