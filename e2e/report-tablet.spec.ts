@@ -2,6 +2,34 @@ import { expect, test, type Page } from "@playwright/test";
 
 type ReportName = "inbound" | "outbound" | "recipient" | "import-quality";
 
+for (const language of ["vi", "en", "zh"]) {
+  for (const width of [1536, 768]) {
+    test(`outbound status text remains inside padded badge ${language} ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1080 });
+      await page.addInitScript((value) => localStorage.setItem("erp-language", JSON.stringify({state:{language:value}, version:0})), language);
+      await page.goto("/e2e/fixtures/report-tablet.html?report=outbound&dailyBars=1&statusClip=1");
+      const badge = page.locator('.outbound-table-wrap .outbound-status[data-tone="processing"]').first();
+      await expect(badge).toBeVisible();
+      await expect(badge).toHaveText(language === "vi" ? "Đang quét xuất hàng" : language === "en" ? "Issue scan in progress" : "正在扫描出库");
+      const result = await badge.evaluate((el) => {
+        const bounds = el.getBoundingClientRect();
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        const rects: DOMRect[] = [];
+        while (walker.nextNode()) {
+          if (!walker.currentNode.textContent?.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(walker.currentNode);
+          rects.push(...Array.from(range.getClientRects()));
+        }
+        return { left: Math.min(...rects.map(r=>r.left)) - bounds.left, right: bounds.right - Math.max(...rects.map(r=>r.right)), text: el.textContent };
+      });
+      expect(result.left).toBeGreaterThanOrEqual(7);
+      expect(result.right).toBeGreaterThanOrEqual(7);
+      await page.screenshot({ path: `test-results/report-tablet/status-${language}-${width}.png`, fullPage: true });
+    });
+  }
+}
+
 const REPORTS: ReportName[] = [
   "inbound",
   "outbound",

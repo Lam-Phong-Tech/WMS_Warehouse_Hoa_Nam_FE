@@ -1595,7 +1595,9 @@ export default function OutboundFlowReport() {
                               data-tone={tone}
                               title={outboundStatusLabel(document.status)}
                             >
-                              {outboundStatusLabel(document.status)}
+                              <span className="outbound-status__label">
+                                {outboundStatusLabel(document.status)}
+                              </span>
                             </span>
                           </td>
                           <td>

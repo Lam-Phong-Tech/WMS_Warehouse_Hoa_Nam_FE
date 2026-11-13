@@ -240,6 +240,7 @@ http.get = async (url: string) => {
     return { rows: new URLSearchParams(location.search).has("dailyBars")
       ? DOCUMENTS.map((document) => ({
         ...document,
+        status: new URLSearchParams(location.search).has("statusClip") && document.doc_type === "OUTBOUND" ? "SCANNING" : document.status,
         posted_at: new Date().toISOString(),
         document_date: new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }),
       })) : DOCUMENTS } as never;
