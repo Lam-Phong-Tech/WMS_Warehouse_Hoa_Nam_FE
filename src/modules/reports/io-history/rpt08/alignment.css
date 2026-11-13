@@ -63,7 +63,7 @@
 }
 #rpt08-history-report .rpt08-export-note {
   flex-basis: 100%;
-  max-width: 100%;
+  max-width: 320px;
   text-align: right;
   color: var(--ops-muted);
   font-size: 11px;

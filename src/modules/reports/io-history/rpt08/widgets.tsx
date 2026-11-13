@@ -61,13 +61,13 @@ export function OverviewCard({
           ) : (
             <>
               <span style={{ width: `${inboundRate}%` }}>
-                {percent(inboundRate)}
+                {inboundRate >= 8 ? percent(inboundRate) : null}
               </span>
               <span style={{ width: `${outboundRate}%` }}>
-                {percent(outboundRate)}
+                {outboundRate >= 8 ? percent(outboundRate) : null}
               </span>
               <span className="is-reversal" style={{ width: `${reversalRate}%` }}>
-                {percent(reversalRate)}
+                {reversalRate >= 8 ? percent(reversalRate) : null}
               </span>
             </>
           )}
@@ -132,12 +132,12 @@ export function ProductCard({
           <span className="is-inbound">
             <i className="is-inbound" />
             <strong>{inbound === null ? "—" : number(inbound)}</strong>
-            {" " + tUi("updatedUi.text_22652147af7d")}
+            {" " + tUi("dashboard.snapshot.inbound")}
           </span>
           <span className="is-outbound">
             <i className="is-outbound" />
             <strong>{outbound === null ? "—" : number(outbound)}</strong>
-            {" " + tUi("updatedUi.text_4f12e82f09c9")}
+            {" " + tUi("dashboard.snapshot.outbound")}
           </span>
           <span className="is-reversal">
             <i className="is-reversal" />
