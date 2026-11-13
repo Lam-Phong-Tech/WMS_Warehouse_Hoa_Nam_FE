@@ -1239,3 +1239,28 @@
   }
   .hn-inbound-pagination-controls { width: auto; }
 }
+
+/* Tablet 621–979px: ô tìm kiếm (ngắn lại) và nút Bộ lọc cùng hàng đầu; hai ô
+   Trạng thái / Thông tin SKU xuống hàng hai. Desktop giữ nguyên thứ tự cũ. */
+@container hn-inbound (min-width: 621px) and (max-width: 979.98px) {
+  .hn-inbound-filters {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+  .hn-inbound-search {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .hn-inbound-more-filters {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+  }
+  .hn-inbound-filters > .hn-inbound-filter:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .hn-inbound-filters > .hn-inbound-filter:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
