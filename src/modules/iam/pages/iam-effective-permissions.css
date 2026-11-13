@@ -149,6 +149,8 @@
   line-height: 22px;
 }
 .hn-effective-table strong {
+  display: block;
+  min-width: 0;
   font-weight: 600;
   color: var(--ops-heading);
 }
@@ -159,7 +161,12 @@
   margin-bottom: 8px;
 }
 .hn-effective-source-line i {
+  flex-shrink: 0;
   margin-top: 3px;
+}
+.hn-effective-source-line .hn-truncate {
+  flex: 1;
+  min-width: 0;
 }
 .hn-effective-scope-line {
   display: flex;

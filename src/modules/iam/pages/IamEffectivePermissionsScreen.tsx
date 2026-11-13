@@ -12,6 +12,7 @@ import {
   UiTextField,
 } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
+import { TruncatedText } from "@/shared/components/data-display/TruncatedText";
 import {
   useIamUsers,
   useIamRolesPage,
@@ -426,7 +427,11 @@ export function IamEffectivePermissionsScreen({
                           <tr key={permission.permission_key}>
                             <td className="stt-col">{stt}</td>
                             <td data-label={t("iam.effectiveUi.permission")}>
-                              <strong>{permission.permission_name}</strong>
+                              <strong>
+                                <TruncatedText lines={1}>
+                                  {permission.permission_name}
+                                </TruncatedText>
+                              </strong>
                             </td>
                             <td data-label={t("iam.user.colStatus")}>
                               <UiStatusBadge
@@ -453,7 +458,9 @@ export function IamEffectivePermissionsScreen({
                                         }
                                         size="sm"
                                       />
-                                      <span>{source.name}</span>
+                                      <TruncatedText lines={1}>
+                                        {source.name}
+                                      </TruncatedText>
                                     </div>
                                   ))
                                 : unknown
@@ -467,12 +474,16 @@ export function IamEffectivePermissionsScreen({
                                       key={source.id}
                                       className="hn-effective-scope-line"
                                     >
-                                      <small>
-                                        {entries.length > 1
-                                          ? source.name
-                                          : null}
-                                      </small>
-                                      <span>{source.scope}</span>
+                                      {entries.length > 1 ? (
+                                        <small>
+                                          <TruncatedText lines={1}>
+                                            {source.name}
+                                          </TruncatedText>
+                                        </small>
+                                      ) : null}
+                                      <TruncatedText lines={1}>
+                                        {source.scope}
+                                      </TruncatedText>
                                     </div>
                                   ))
                                 : "—"}
