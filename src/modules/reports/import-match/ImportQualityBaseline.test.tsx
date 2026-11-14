@@ -37,11 +37,11 @@ it("i18n: switches all three KPI hints without remounting", async () => {
   });
   expect(screen.getByText("In reporting period")).toBeVisible();
   expect(screen.getByText("Needs review")).toBeVisible();
-  expect(screen.getByText("Cannot reconcile")).toBeVisible();
+  expect(screen.getByText("Data to fix before import")).toBeVisible();
   expect(screen.getByRole("button", { name: "View 0 records" })).toBeVisible();
   expect(screen.queryByText("Trong kỳ báo cáo")).not.toBeInTheDocument();
   act(() => useLanguageStore.getState().setLanguage("vi"));
-  expect(screen.getByText("Không thể đối chiếu")).toBeVisible();
+  expect(screen.getByText("Dữ liệu cần sửa trước khi nhập")).toBeVisible();
 });
 
 it("numbers records across pages and resets numbering after filtering or changing page size", async () => {

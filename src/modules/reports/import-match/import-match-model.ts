@@ -90,7 +90,36 @@ export type ImportMatchBatch = {
   matchLines: Raw[];
   skuCodes: string[];
   errorFileAvailable: boolean;
+  importDetails?: ImportFileDetails;
 };
+
+export type ImportFileDetails = {
+  sourceId: string;
+  version: number | null;
+  mode: string;
+  uploader: string;
+  uploaderAccount: string;
+  uploadedAt: string;
+  actorAccount: string;
+  size: number | null;
+  sheet: string;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number | null;
+  updateExisting: boolean | null;
+  sourceAvailable: boolean;
+  sourceStatus: string;
+  errorExpiresAt: string;
+  errorStatus?: string;
+  inserted: number | null;
+  updated: number | null;
+  notWritten: number | null;
+  plannedInserted: number | null;
+  plannedUpdated: number | null;
+};
+
+const optionalNumber = (value: unknown): number | null =>
+  value === null || value === undefined || value === "" ? null : n(value);
 
 export type ImportMatchResultFilter = "" | "SUCCESS" | "FAILED" | "DUPLICATE";
 
@@ -140,10 +169,20 @@ export function buildImportBatches(
 ): ImportMatchBatch[] {
   return rows.map((row) => {
     const rowErrors = listOf(row.row_errors);
-    let duplicate = 0;
+    const rowIssues = new Map<string, boolean>();
+    for (const error of rowErrors) {
+      const key = text(error.row, String(rowIssues.size));
+      rowIssues.set(
+        key,
+        (rowIssues.get(key) ?? true) && isDuplicateCode(text(error.code, "")),
+      );
+    }
+    const duplicate = [...rowIssues.values()].filter(Boolean).length;
+    const completeErrors = rowErrors.length === n(row.error_rows);
+    const counts = row.row_counts as
+      { valid?: number; duplicate?: number; invalid?: number } | undefined;
     const errors: BatchErrorLine[] = rowErrors.map((error) => {
       const code = text(error.code, "");
-      if (isDuplicateCode(code)) duplicate += 1;
       return {
         rowNo: text(error.row, EMPTY_TEXT),
         code: code || "UNKNOWN",
@@ -170,17 +209,75 @@ export function buildImportBatches(
       sourceVersion: text(row.template_version, ""),
       at: text(row.created_at, ""),
       total: n(row.total_rows),
-      success: n(row.valid_rows),
-      failed: Math.max(0, n(row.error_rows) - duplicate),
-      duplicate,
+      success:
+        counts?.valid ??
+        (completeErrors
+          ? Math.max(0, n(row.total_rows) - rowIssues.size)
+          : n(row.valid_rows)),
+      failed:
+        counts?.invalid ??
+        Math.max(
+          0,
+          (completeErrors ? rowIssues.size : n(row.error_rows)) - duplicate,
+        ),
+      duplicate: counts?.duplicate ?? duplicate,
       // KHÔNG fallback sang actor_id (UUID): trường này hiện ở cột "Người thực
       // hiện" và nuôi luôn danh sách chọn của bộ lọc người thực hiện.
-      actor: resolveActorName(text(row.actor_id, "")),
+      actor:
+        text(row.actor_name, "") || resolveActorName(text(row.actor_id, "")),
       status: text(row.status, ""),
       errors,
       matchLines: [],
       skuCodes: [],
       errorFileAvailable: Boolean(row.error_file_available),
+      importDetails: {
+        sourceId: text(row.source_file_id, ""),
+        version: optionalNumber(row.result_version),
+        mode,
+        uploader: text(row.uploaded_by_name, ""),
+        uploaderAccount: text(row.uploaded_by_account, ""),
+        uploadedAt: text(row.uploaded_at, ""),
+        actorAccount: text(row.actor_account, ""),
+        size: optionalNumber(row.file_size_bytes),
+        sheet: text(row.sheet_name, ""),
+        startedAt: text(row.started_at, ""),
+        completedAt: text(row.completed_at, ""),
+        durationMs: optionalNumber(row.processing_duration_ms),
+        updateExisting:
+          typeof row.update_existing === "boolean" ? row.update_existing : null,
+        sourceAvailable: row.source_file_available === true,
+        sourceStatus: text(row.source_file_status, "NOT_RETAINED"),
+        errorExpiresAt: text(row.error_file_expires_at, ""),
+        errorStatus: text(row.error_file_status, "UNAVAILABLE"),
+        inserted:
+          optionalNumber(row.actual_inserted_rows) ??
+          (mode === "DRY_RUN" || row.status === "REJECTED"
+            ? 0
+            : optionalNumber(row.inserted_rows)),
+        updated:
+          optionalNumber(row.actual_updated_rows) ??
+          (mode === "DRY_RUN" || row.status === "REJECTED"
+            ? 0
+            : optionalNumber(row.updated_rows)),
+        notWritten:
+          optionalNumber(row.not_written_rows) ??
+          (mode === "DRY_RUN" || row.status === "REJECTED"
+            ? n(row.total_rows)
+            : mode === "COMMIT"
+              ? Math.max(
+                  0,
+                  n(row.total_rows) -
+                    n(row.inserted_rows) -
+                    n(row.updated_rows),
+                )
+              : null),
+        plannedInserted:
+          optionalNumber(row.planned_inserted_rows) ??
+          (mode === "DRY_RUN" ? optionalNumber(row.inserted_rows) : null),
+        plannedUpdated:
+          optionalNumber(row.planned_updated_rows) ??
+          (mode === "DRY_RUN" ? optionalNumber(row.updated_rows) : null),
+      },
     };
   });
 }

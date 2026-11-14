@@ -93,6 +93,68 @@ export function useImportQualityIssues(batchId: string | null, page: number) {
   });
 }
 
+export async function fetchImportQualityVersions(
+  batchId: string,
+): Promise<Raw[]> {
+  const pages = await fetchAllPages(
+    (page) =>
+      http.getPage<Raw[]>(
+        `${IMPORT_REPORTS}/${encodeURIComponent(batchId)}/versions`,
+        { params: { page, per_page: PAGE_SIZE } },
+      ),
+    (result) => {
+      const lastPage = n(result.meta?.last_page, 1);
+      if (!Number.isInteger(lastPage) || lastPage < 1 || lastPage > 100)
+        throw new Error("Too many result history pages.");
+      return lastPage;
+    },
+    100,
+  );
+  return pages.flatMap((page) => (Array.isArray(page.data) ? page.data : []));
+}
+
+export function useImportQualityVersions(batchId: string) {
+  return useQuery({
+    queryKey: ["rpt-04", "sku-import-versions", batchId],
+    queryFn: () => fetchImportQualityVersions(batchId),
+    enabled: Boolean(batchId),
+    staleTime: CACHE_POLICIES.report.staleTime,
+  });
+}
+
+export async function recheckImportQuality(batchId: string): Promise<Raw> {
+  return http.post<Raw>(
+    `${IMPORT_REPORTS}/${encodeURIComponent(batchId)}/recheck`,
+    {},
+  );
+}
+
+export async function downloadImportQualityFile(
+  batchId: string,
+  kind: "source-file" | "result-file" | "error-file",
+) {
+  const { blob, fileName } = await http.downloadFile(
+    `${IMPORT_REPORTS}/${encodeURIComponent(batchId)}/${kind}`,
+  );
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download =
+    fileName ||
+    (kind === "result-file"
+      ? "sku-import-result.xlsx"
+      : kind === "error-file"
+        ? "sku-import-errors.csv"
+        : "sku-import.xlsx");
+  document.body.appendChild(anchor);
+  try {
+    anchor.click();
+  } finally {
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+
 export async function downloadImportQualityExport(
   filters: Record<string, string>,
   workbook?: ExportWorkbookOptions,

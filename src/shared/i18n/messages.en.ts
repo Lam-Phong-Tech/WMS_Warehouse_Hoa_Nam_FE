@@ -10,6 +10,7 @@ import { MESSAGES_NFC_EN } from "./messages.nfc.en";
 import { DASHBOARD_SNAPSHOT_EN } from "./messages.dashboard-snapshot";
 import { PACKING_LABEL_REPORT_EN } from "./messages.packing-label-report";
 import type { MessageTree } from "./messages";
+import { IMPORT_RESULT_EN } from "./messages.import-result";
 
 /**
  * BẢN DỊCH TIẾNG ANH — tách khỏi messages.ts và NẠP ĐỘNG.
@@ -22,6 +23,7 @@ import type { MessageTree } from "./messages";
  * KHOÁ vẫn đỏ typecheck; thiếu khoá vẫn hợp lệ và t() rơi về tiếng Việt.
  */
 export const MESSAGES_EN: MessageTree = {
+  importResult: IMPORT_RESULT_EN,
   dashboardAudit: DASHBOARD_AUDIT_EN,
   goodsTraceAudit: GOODS_TRACE_AUDIT_EN,
   uiAudit: UI_AUDIT_EN,

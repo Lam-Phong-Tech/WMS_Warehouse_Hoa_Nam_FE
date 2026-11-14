@@ -5,9 +5,11 @@ import { DASHBOARD_SNAPSHOT_ZH } from "./messages.dashboard-snapshot";
 import { NOTIFICATION_CONTENT_ZH } from "./messages.notification-content";
 import { REPORT_EXPORT_ZH } from "./messages.report-export";
 import type { MessageTree } from "./messages";
+import { IMPORT_RESULT_ZH } from "./messages.import-result";
 
 /** Simplified Chinese interface catalog. */
 const MESSAGES_ZH_BASE: MessageTree = {
+  importResult: IMPORT_RESULT_ZH,
   dashboardSnapshot: DASHBOARD_SNAPSHOT_ZH,
   reportExport: REPORT_EXPORT_ZH,
   nfc: {

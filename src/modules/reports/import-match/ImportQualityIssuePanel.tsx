@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { useT } from "@/shared/i18n/useT";
+import { isDuplicateCode } from "./import-match-model";
 import {
   useImportQualityIssues,
   type ImportQualityIssue,
@@ -16,7 +18,7 @@ function useIssueCopy() {
 
 function issueTone(issue: ImportQualityIssue) {
   return issue.severity.toUpperCase() === "WARNING" ||
-    issue.code.toUpperCase().includes("DUPLICATE")
+    isDuplicateCode(issue.code)
     ? "warning"
     : "error";
 }
@@ -29,6 +31,7 @@ function IssueDetail({
   sourceFile: string;
 }) {
   const copy = useIssueCopy();
+  const t = useT();
   return (
     <section
       className="hn-import-issues__detail"
@@ -38,11 +41,19 @@ function IssueDetail({
         `第 ${issue.rowNo} 行详情`,
       )}
     >
-      <h4>{copy("Chi tiết dòng cần kiểm tra", "Row details to review", "待检查行详情")}</h4>
+      <h4>
+        {copy(
+          "Chi tiết dòng cần kiểm tra",
+          "Row details to review",
+          "待检查行详情",
+        )}
+      </h4>
       <div className={`hn-import-issues__callout is-${issueTone(issue)}`}>
         <span>
           {issueTone(issue) === "warning"
-            ? copy("Chênh lệch", "Mismatch", "差异")
+            ? isDuplicateCode(issue.code)
+              ? t("importResult.duplicateIssue")
+              : t("importResult.warningIssue")
             : copy("Lỗi", "Error", "错误")}
         </span>
         <strong>{issue.message || issue.code}</strong>
@@ -83,6 +94,7 @@ function IssueDetail({
 
 export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
   const copy = useIssueCopy();
+  const t = useT();
   const [page, setPage] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const query = useImportQualityIssues(batchId, page);
@@ -94,7 +106,7 @@ export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
       aria-label={copy("Các dòng cần kiểm tra", "Rows to review", "待检查行")}
     >
       <div className="hn-import-issues__heading">
-        <h3>{copy("Dòng cần kiểm tra", "Rows to review", "待检查行")}</h3>
+        <h3>{t("importResult.issues")}</h3>
         <strong>{query.data?.total ?? "—"}</strong>
       </div>
       {query.isLoading ? (
@@ -112,13 +124,7 @@ export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
         </p>
       ) : null}
       {!query.isLoading && !query.error && rows.length === 0 ? (
-        <p>
-          {copy(
-            "Đợt nhập này không có dòng lỗi đã lưu.",
-            "This import has no saved error rows.",
-            "本次导入没有已保存的错误行。",
-          )}
-        </p>
+        <p>{t("importResult.noIssues")}</p>
       ) : null}
       {rows.length ? (
         <ol className="hn-import-issues__rows">
@@ -146,7 +152,9 @@ export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
                     className={`hn-import-issues__badge is-${issueTone(row)}`}
                   >
                     {issueTone(row) === "warning"
-                      ? copy("Chênh lệch", "Mismatch", "差异")
+                      ? isDuplicateCode(row.code)
+                        ? t("importResult.duplicateIssue")
+                        : t("importResult.warningIssue")
                       : copy("Lỗi", "Error", "错误")}
                   </span>
                 </span>

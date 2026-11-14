@@ -119,10 +119,92 @@
   border-radius: 6px;
 }
 .rpt04-batch-note {
-  margin: 20px 0 0;
+  margin: 8px 0 0;
   color: var(--ops-muted);
   font-size: 13px;
   line-height: 20px;
+}
+.rpt04-batch-section {
+  margin: 0 0 24px;
+  min-width: 0;
+}
+.rpt04-batch-section h3 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--ops-heading);
+}
+.rpt04-batch-full {
+  grid-column: 1 / -1;
+}
+.rpt04-batch-context small {
+  display: block;
+  color: var(--ops-muted);
+  font-weight: 400;
+}
+.rpt04-batch-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rpt04-batch-id > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rpt04-batch-id > button {
+  color: var(--ops-link);
+}
+.rpt04-batch-checksum {
+  color: var(--ops-muted);
+  font-size: 13px;
+}
+.rpt04-batch-checksum summary {
+  cursor: pointer;
+}
+.rpt04-batch-checksum p {
+  overflow-wrap: anywhere;
+}
+.rpt04-batch-writes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.rpt04-batch-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rpt04-batch-actions > button {
+  min-height: 44px;
+}
+.rpt04-batch-drawer
+  .rpt04-batch-actions
+  > .MuiButton-outlined:not(.Mui-disabled) {
+  color: var(--ops-link);
+  border-color: var(--ops-link);
+}
+.rpt04-batch-history {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.rpt04-batch-drawer .rpt04-batch-history > button {
+  color: var(--ops-text);
+  height: auto;
+  min-height: 96px;
+  min-width: 0;
+  padding: 12px;
+  text-align: left;
+  justify-content: flex-start;
+}
+.rpt04-batch-history > button > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+.rpt04-batch-history > button > span > span {
+  font-size: 13px;
+  font-weight: 400;
 }
 @container rpt04-batch (max-width: 560px) {
   .rpt04-batch-metrics {
@@ -131,5 +213,11 @@
   .rpt04-batch-context {
     grid-template-columns: minmax(0, 1fr);
     gap: 12px;
+  }
+  .rpt04-batch-history {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rpt04-batch-actions {
+    flex-direction: column;
   }
 }

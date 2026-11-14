@@ -1,5 +1,14 @@
 /** Simplified Chinese for BE lang/vi/validation.php and UserFacingMessageLocalizer::EXACT. */
 export const BACKEND_MESSAGES_ZH: Record<string, string> = {
+  "Không còn file gốc để kiểm tra lại.": "原始文件已无法用于重新检查。",
+  "Lần nhập cũ chưa lưu tùy chọn cập nhật; hãy tải file lên để kiểm tra mới.":
+    "旧导入未记录更新选项，请上传文件进行新检查。",
+  "Định dạng file gốc không được hỗ trợ.": "不支持原始文件的格式。",
+  "Nội dung file gốc không khớp lần tải lên.": "原始文件内容与上传时不一致。",
+  "Không còn file gốc để tải.": "原始文件已无法下载。",
+  "Không lưu được kết quả kiểm tra. Vui lòng thử lại.":
+    "无法保存检查结果，请重试。",
+  "Không tìm thấy báo cáo.": "未找到报告。",
   "Dữ liệu đầu vào không hợp lệ.": "提交的数据无效。",
   "Dữ liệu không hợp lệ.": "提交的数据无效。",
   "Dữ liệu không đáp ứng quy tắc nghiệp vụ.": "数据不符合业务规则。",

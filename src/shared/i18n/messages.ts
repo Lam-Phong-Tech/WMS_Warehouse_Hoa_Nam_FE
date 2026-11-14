@@ -9,6 +9,7 @@ import { PACKING_LABEL_REPORT_VI } from "./messages.packing-label-report";
 import { UI_AUDIT_VI } from "./messages.ui-audit";
 import { DASHBOARD_AUDIT_VI } from "./messages.dashboard-audit";
 import { GOODS_TRACE_AUDIT_VI } from "./messages.goods-trace-audit";
+import { IMPORT_RESULT_VI } from "./messages.import-result";
 /**
  * BẢNG CHUỖI GIAO DIỆN — nguồn duy nhất cho mọi text người dùng nhìn thấy.
  *
@@ -24,6 +25,7 @@ import { GOODS_TRACE_AUDIT_VI } from "./messages.goods-trace-audit";
  */
 
 export const MESSAGES_VI = {
+  importResult: IMPORT_RESULT_VI,
   uiAudit: UI_AUDIT_VI,
   dashboardAudit: DASHBOARD_AUDIT_VI,
   goodsTraceAudit: GOODS_TRACE_AUDIT_VI,

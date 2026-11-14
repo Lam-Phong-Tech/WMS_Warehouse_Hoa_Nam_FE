@@ -1,5 +1,18 @@
 /** Source contracts: BE lang/vi/validation.php and UserFacingMessageLocalizer::EXACT. */
 export const BACKEND_MESSAGES: Record<string, string> = {
+  "Không còn file gốc để kiểm tra lại.":
+    "The original file is no longer available for rechecking.",
+  "Lần nhập cũ chưa lưu tùy chọn cập nhật; hãy tải file lên để kiểm tra mới.":
+    "Update options were not recorded for this legacy import; upload the file to run a new check.",
+  "Định dạng file gốc không được hỗ trợ.":
+    "The original file format is not supported.",
+  "Nội dung file gốc không khớp lần tải lên.":
+    "The original file no longer matches the uploaded content.",
+  "Không còn file gốc để tải.":
+    "The original file is no longer available for download.",
+  "Không lưu được kết quả kiểm tra. Vui lòng thử lại.":
+    "Could not save the check result. Please try again.",
+  "Không tìm thấy báo cáo.": "Report not found.",
   "Dữ liệu đầu vào không hợp lệ.": "The submitted data is invalid.",
   "Dữ liệu không hợp lệ.": "The submitted data is invalid.",
   "Dữ liệu không đáp ứng quy tắc nghiệp vụ.":

@@ -98,9 +98,9 @@ const getdataTypeOptions = localizedUiValue(() => [
 
 const getresultOptions = localizedUiValue(() => [
   { value: "", label: tUi("dashboard.operations.filterAll") },
-  { value: "SUCCESS", label: tUi("reports.inventoryFlowReport.matched") },
-  { value: "DUPLICATE", label: tUi("inventory.balance.colVariance") },
-  { value: "FAILED", label: tUi("updatedUi.text_e557e75b43a7") },
+  { value: "SUCCESS", label: tUi("importResult.validRows") },
+  { value: "DUPLICATE", label: tUi("importResult.duplicateRows") },
+  { value: "FAILED", label: tUi("importResult.errorRows") },
 ]);
 
 function MetricCard({
@@ -215,9 +215,9 @@ function resultTone(row: ImportMatchBatch): "success" | "warning" | "error" {
 }
 
 function resultLabel(row: ImportMatchBatch): string {
-  if (row.failed > 0) return tUi("updatedUi.text_e557e75b43a7");
-  if (row.duplicate > 0) return tUi("inventory.balance.colVariance");
-  return tUi("reports.inventoryFlowReport.matched");
+  if (row.failed > 0) return tUi("importResult.errorRows");
+  if (row.duplicate > 0) return tUi("importResult.duplicateRows");
+  return tUi("importResult.validRows");
 }
 
 export default function ImportQualityBaseline() {
@@ -410,7 +410,7 @@ export default function ImportQualityBaseline() {
               lineHeight: 1.3,
             }}
           >
-            {tUi("updatedUi.text_1522bfe664ca")}
+            {tUi("importResult.subtitle")}
           </Box>
         </Box>
 
@@ -554,17 +554,17 @@ export default function ImportQualityBaseline() {
         }}
       >
         <MetricCard
-          label={tUi("updatedUi.text_fe86ff7f56fe")}
+          label={tUi("importResult.totalRows")}
           value={fmt(totals.total)}
           hint={t("reports.traceability.periodReport")}
           tone="primary"
           icon={<FileTextOutlined />}
         />
         <MetricCard
-          label={tUi("reports.inventoryFlowReport.matched")}
+          label={tUi("importResult.validRows")}
           value={fmt(totals.success)}
-          hint={tUi("updatedUi.text_0f576ef1ed56", {
-            value0: String(pct(totals.success, totals.total)),
+          hint={tUi("importResult.rateHint", {
+            rate: String(pct(totals.success, totals.total)),
           })}
           tone="success"
           icon={<CheckCircleOutlined />}
@@ -575,7 +575,7 @@ export default function ImportQualityBaseline() {
           }}
         />
         <MetricCard
-          label={tUi("inventory.balance.colVariance")}
+          label={tUi("importResult.duplicateRows")}
           value={fmt(totals.duplicate)}
           hint={t("reports.traceability.needsReview")}
           tone="warning"
@@ -587,9 +587,9 @@ export default function ImportQualityBaseline() {
           }}
         />
         <MetricCard
-          label={tUi("updatedUi.text_e557e75b43a7")}
+          label={tUi("importResult.errorRows")}
           value={fmt(totals.failed)}
-          hint={t("reports.importQuality.cannotReconcile")}
+          hint={t("importResult.dataErrorsHint")}
           tone="error"
           icon={<WarningOutlined />}
           onClick={() => {
@@ -626,7 +626,7 @@ export default function ImportQualityBaseline() {
                 fontWeight: 600,
               }}
             >
-              {tUi("updatedUi.text_9c5271fe15dc")}
+              {tUi("importResult.daily")}
             </Box>
             <Box sx={{ fontWeight: 700, color: C.navy, fontSize: 13 }}>
               {tUi("updatedUi.text_09caee89904d") + " "}
@@ -656,17 +656,17 @@ export default function ImportQualityBaseline() {
               categories={trend.map((point) => axisDayLabel(point.day))}
               series={[
                 {
-                  name: tUi("reports.inventoryFlowReport.matched"),
+                  name: tUi("importResult.validRows"),
                   data: trend.map((point) => point.success),
                   color: CHART_COLORS.success,
                 },
                 {
-                  name: tUi("inventory.balance.colVariance"),
+                  name: tUi("importResult.duplicateRows"),
                   data: trend.map((point) => point.duplicate),
                   color: CHART_COLORS.warning,
                 },
                 {
-                  name: tUi("updatedUi.text_e557e75b43a7"),
+                  name: tUi("importResult.errorRows"),
                   data: trend.map((point) => point.failed),
                   color: CHART_COLORS.danger,
                 },
@@ -716,7 +716,7 @@ export default function ImportQualityBaseline() {
           >
             <Box
               role="img"
-              aria-label={tUi("updatedUi.text_4cf91aedba2d", {
+              aria-label={tUi("importResult.rateAria", {
                 value0: String(qualityPct.toFixed(1)),
               })}
               sx={{
@@ -749,24 +749,20 @@ export default function ImportQualityBaseline() {
                   {qualityPct.toFixed(1).replace(".", ",")}%
                 </Box>
                 <Box sx={{ mt: 0.35, fontSize: 11.5 }}>
-                  {tUi("reports.inventoryFlowReport.matched")}
+                  {tUi("importResult.validRows")}
                 </Box>
               </Box>
             </Box>
 
             <Box sx={{ display: "grid", gap: 0.85 }}>
               {[
+                [tUi("importResult.validRows"), fmt(totals.success), C.green],
                 [
-                  tUi("reports.inventoryFlowReport.matched"),
-                  fmt(totals.success),
-                  C.green,
-                ],
-                [
-                  tUi("inventory.balance.colVariance"),
+                  tUi("importResult.duplicateRows"),
                   fmt(totals.duplicate),
                   C.orange,
                 ],
-                [tUi("updatedUi.text_e557e75b43a7"), fmt(totals.failed), C.red],
+                [tUi("importResult.errorRows"), fmt(totals.failed), C.red],
               ].map(([label, value, color]) => (
                 <Stack
                   key={label}
@@ -820,7 +816,9 @@ export default function ImportQualityBaseline() {
                   ?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
-              {t("reports.importQuality.viewRecords", { count: fmt(issueCount) })}
+              {t("reports.importQuality.viewRecords", {
+                count: fmt(issueCount),
+              })}
             </UiButton>
           </Stack>
         </Box>
@@ -850,14 +848,14 @@ export default function ImportQualityBaseline() {
               component="h2"
               sx={{ m: 0, color: C.navy, fontSize: 18, fontWeight: 600 }}
             >
-              {tUi("updatedUi.text_ff603e37b9df")}
+              {tUi("importResult.list")}
             </Box>
           </Stack>
           <Box sx={{ width: { xs: "100%", sm: 290, md: 330 } }}>
             <SearchInput
               width="100%"
               value={keyword}
-              aria-label={tUi("updatedUi.text_bddbe4bba7b5")}
+              aria-label={tUi("importResult.search")}
               placeholder={tUi("updatedUi.text_b4e6c9c5842a")}
               onChange={(value) => {
                 setKeyword(value);
@@ -953,7 +951,7 @@ export default function ImportQualityBaseline() {
               },
               {
                 key: "updated",
-                header: tUi("updatedUi.text_5293d03c5908"),
+                header: tUi("importResult.resultAt"),
                 width: "16%",
                 render: (row) => (row.at ? fmtDateTime(row.at) : "—"),
               },
@@ -965,7 +963,7 @@ export default function ImportQualityBaseline() {
             emptyText={
               keyword.trim() || result || issuesOnly
                 ? tUi("updatedUi.text_68e8bdb5a388")
-                : tUi("updatedUi.text_193f83e1a797")
+                : tUi("importResult.empty")
             }
             renderRowActions={(row) => (
               <RowActionGroup>
