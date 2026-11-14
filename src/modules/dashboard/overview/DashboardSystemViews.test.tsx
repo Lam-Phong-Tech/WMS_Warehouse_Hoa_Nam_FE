@@ -10,11 +10,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useStockReconcileSnapshot } from "@/modules/reports/stock-reconcile/stock-reconcile-api";
 import { DashboardSystemViews } from "./DashboardSystemViews";
 import { SnapshotThresholdSummary } from "./SnapshotThresholdSummary";
+import { buildDashboardThresholds } from "./dashboard-threshold-model";
 import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 
 vi.mock("@/modules/reports/stock-reconcile/stock-reconcile-api", () => ({
   useStockReconcileSnapshot: vi.fn(),
+}));
+vi.mock("./use-dashboard-threshold-source", () => ({
+  useDashboardThresholdSource: () => {
+    const current = useStockReconcileSnapshot({ asOf: "" });
+    return {
+      summary: buildDashboardThresholds(
+        current.snapshot.rows,
+        current.thresholds,
+      ),
+      loading: current.loading,
+      error: current.error,
+      hasSnapshot:
+        Boolean(current.snapshot.as_of) && current.thresholds.size > 0,
+      refetch: current.refetch,
+    };
+  },
 }));
 vi.mock("@/modules/reports/inventory-flow/inventory-flow-api", () => ({
   useInventoryFlowSnapshot: vi.fn(),

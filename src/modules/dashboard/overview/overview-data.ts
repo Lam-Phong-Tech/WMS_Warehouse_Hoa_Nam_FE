@@ -118,7 +118,11 @@ export function previousRange(range: DateRange): DateRange {
  * chỗ trong lúc render, mà mọi component gọi nó đều dùng `useT()` nên đã render
  * lại sẵn khi đổi ngôn ngữ.
  */
-const NUMBER_LOCALE: Record<string, string> = { vi: "vi-VN", en: "en-US", zh: "zh-CN" };
+const NUMBER_LOCALE: Record<string, string> = {
+  vi: "vi-VN",
+  en: "en-US",
+  zh: "zh-CN",
+};
 
 const numberFormats = new Map<string, Intl.NumberFormat>();
 
@@ -244,10 +248,10 @@ export function useOverviewSource(range: DateRange, enabled: boolean) {
   });
 
   const xnt = useQuery({
-    queryKey: ["dashboard", "overview-xnt", range.from, range.to],
+    queryKey: ["dashboard", "overview-xnt", range.from, range.to, "compact"],
     queryFn: () =>
       http.get<XntReport>(API_ENDPOINTS.REPORTS_XNT_ENHANCED, {
-        params: { from_date: range.from, to_date: range.to },
+        params: { from_date: range.from, to_date: range.to, view: "dashboard" },
       }),
     ...reportQueryOptions(enabled),
   });

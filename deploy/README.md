@@ -2,6 +2,26 @@
 
 Thư mục này chỉ có **cấu hình mẫu**, không có gì được nạp tự động.
 
+## Nén asset trên DEV reverse proxy (14/11/2026)
+
+`nginx/dev-assets-compression.conf` dành riêng cho HTTPS vhost
+`khohoanamfe.lptech.info.vn`, upstream `127.0.0.1:18083`. Include file này bên
+trong server HTTPS khi môi trường vẫn dùng upstream đó; không thay cả vhost bằng
+file mẫu static-root. Khối chỉ áp dụng `/assets/`, nén JS/CSS từ 1 KiB bằng gzip
+level 6 và phát `Vary: Accept-Encoding`. Giữ nguyên proxy `/`, `/app/`, API,
+header bảo mật và cache do upstream phát.
+
+Trên VPS, bản đã áp dụng nằm tại
+`/etc/nginx/snippets/hoanam-dev-assets-compression.conf`; vhost include file này.
+Bản sao trước thay đổi:
+`/var/backups/hoanam-static-compression-20261114T103515Z/vhost.before`.
+Nếu hoàn tác, khôi phục vhost từ bản sao, chạy `nginx -t`, rồi graceful reload.
+Kiểm chứng bằng GET thật (không chỉ HEAD): giải nén gzip phải khớp SHA-256 với
+GET `Accept-Encoding: identity`, giữ Cache-Control và các header bảo mật.
+
+Thay đổi Base64 trong mã nguồn được phát hành qua pipeline frontend SHA đã kiểm
+thử như các thay đổi FE khác; bật gzip trên proxy không tự triển khai bundle FE.
+
 ## Vì sao cần
 
 Toàn bộ phần tối ưu phía mã nguồn chỉ có tác dụng nếu máy chủ tĩnh làm đúng ba

@@ -1,4 +1,5 @@
 import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import { decodeBase64 as fromBase64 } from "./base64";
 
 type EncryptedBody = {
   v: number;
@@ -28,11 +29,6 @@ function keyPair(): Promise<CryptoKeyPair> {
     ["encrypt", "decrypt"],
   ) as Promise<CryptoKeyPair>;
   return keyPairPromise;
-}
-
-function fromBase64(value: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(value);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
 function toBase64(value: ArrayBuffer): string {

@@ -551,11 +551,13 @@ export function useInventoryBalance({
 export function useInventoryReconciliation({
   warehouseId,
   enabled = true,
+  view,
 }: {
   warehouseId?: string;
   enabled?: boolean;
+  view?: "dashboard-thresholds";
 }) {
-  const params = cleanParams({ warehouse_id: warehouseId });
+  const params = cleanParams({ warehouse_id: warehouseId, view });
   return useQuery({
     queryKey: ["rpt-ops", "inventory-reconciliation", params],
     queryFn: () =>

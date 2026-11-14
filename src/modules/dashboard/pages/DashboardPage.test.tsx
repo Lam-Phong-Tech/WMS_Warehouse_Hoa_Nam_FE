@@ -484,7 +484,9 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     await screen.findByText("Xuất sản phẩm đã ghi sổ");
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.REPORTS_XNT_ENHANCED,
-      expect.objectContaining({ params: { from_date: from, to_date: today } }),
+      expect.objectContaining({
+        params: { from_date: from, to_date: today, view: "dashboard" },
+      }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Hôm nay" }));
@@ -492,7 +494,7 @@ describe("DashboardPage — Tổng quan vận hành", () => {
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.REPORTS_XNT_ENHANCED,
       expect.objectContaining({
-        params: { from_date: today, to_date: today },
+        params: { from_date: today, to_date: today, view: "dashboard" },
       }),
     );
   });
@@ -607,7 +609,9 @@ describe("DashboardPage — biểu đồ theo kỳ KPI", () => {
     const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
     expect(mockedGet).toHaveBeenCalledWith(
       API_ENDPOINTS.REPORTS_XNT_ENHANCED,
-      expect.objectContaining({ params: { from_date: today, to_date: today } }),
+      expect.objectContaining({
+        params: { from_date: today, to_date: today, view: "dashboard" },
+      }),
     );
     expect(mockedGet).toHaveBeenCalledWith(
       OPERATIONS_REPORT_ENDPOINTS.XNT_DAILY,
@@ -761,12 +765,8 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Bảng số liệu" }));
-    fireEvent.mouseDown(
-      screen.getByLabelText("Số dòng mỗi trang"),
-    );
-    fireEvent.click(
-      screen.getByRole("option", { name: "10 / trang" }),
-    );
+    fireEvent.mouseDown(screen.getByLabelText("Số dòng mỗi trang"));
+    fireEvent.click(screen.getByRole("option", { name: "10 / trang" }));
     fireEvent.click(screen.getByRole("button", { name: /page 2|trang 2/i }));
     expect(screen.getByText("Hiển thị 11–14 / 14 bản ghi")).toBeInTheDocument();
     currentOverview = {
@@ -963,7 +963,7 @@ describe("DashboardPage MAP-01 — filter chart độc lập", () => {
     for (const [, config] of xntCalls) {
       expect(config).toEqual(
         expect.objectContaining({
-          params: { from_date: today, to_date: today },
+          params: { from_date: today, to_date: today, view: "dashboard" },
         }),
       );
     }

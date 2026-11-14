@@ -1,8 +1,7 @@
-import { useStockReconcileSnapshot } from "@/modules/reports/stock-reconcile/stock-reconcile-api";
+import { useDashboardThresholdSource } from "./use-dashboard-threshold-source";
 import { DashIcon } from "../components/DashIcon";
 import { fmt } from "./overview-data";
 import { useT } from "@/shared/i18n/useT";
-import { buildDashboardThresholds } from "./dashboard-threshold-model";
 import { ROUTES } from "@/shared/constants/routes";
 import "./dashboard-system-views.css";
 
@@ -14,13 +13,9 @@ export function SnapshotThresholdSummary({
   onNavigate: (route: string) => void;
 }) {
   const t = useT();
-  const source = useStockReconcileSnapshot({ asOf: "" });
-  const { configured, unconfigured, below, above } = buildDashboardThresholds(
-    source.snapshot.rows,
-    source.thresholds,
-  );
-  const hasCompleteSnapshot =
-    Boolean(source.snapshot.as_of) && source.thresholds.size > 0;
+  const source = useDashboardThresholdSource();
+  const { configured, unconfigured, below, above } = source.summary;
+  const hasCompleteSnapshot = source.hasSnapshot;
 
   return (
     <article className="snapshot-card snapshot-stock snapshot-thresholds">
