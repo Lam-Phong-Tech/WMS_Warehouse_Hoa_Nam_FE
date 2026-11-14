@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 import { resolveApiUrl, runtimeConfig } from "@/shared/config/env";
 import {
   getFieldErrors,
@@ -78,6 +79,7 @@ async function postRecovery(
         signal: controller.signal,
         headers: {
           Accept: "application/json",
+          "Accept-Language": useLanguageStore.getState().language,
           "Content-Type": "application/json",
           "X-WMS-Response-Key": await responsePublicKey(),
           ...(["local", "dev", "test"].includes(runtimeConfig.envName)

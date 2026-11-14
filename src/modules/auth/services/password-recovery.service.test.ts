@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 import {
   passwordRecoveryService,
   PasswordRecoveryError,
@@ -25,11 +26,22 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
 });
 afterEach(() => {
+  useLanguageStore.setState({ language: "vi" });
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
 describe("password recovery public transport", () => {
+  it("sends the selected language and reads it again when resending a code", async () => {
+    fetchMock.mockResolvedValue(response());
+    for (const language of ["vi", "en", "zh"] as const) {
+      useLanguageStore.setState({ language });
+      await passwordRecoveryService.forgotPassword({ email: EMAIL });
+      expect(fetchMock.mock.lastCall?.[1].headers["Accept-Language"]).toBe(
+        language,
+      );
+    }
+  });
   it("omits all cookies including same-origin, auth headers and caller-supplied extra fields", async () => {
     fetchMock.mockResolvedValue(response());
     await passwordRecoveryService.forgotPassword({

@@ -13,6 +13,7 @@ import {
 } from "@/shared/types/api-response";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { runtimeConfig } from "@/shared/config/env";
+import { useLanguageStore } from "@/shared/i18n/language.store";
 import {
   isOfflineMutationBlocked,
   OFFLINE_MUTATION_CODE,
@@ -210,6 +211,7 @@ api.interceptors.request.use((config) => {
   }
 
   if (/^\/?auth(?:\/|$)/.test(config.url ?? "")) {
+    config.headers["Accept-Language"] = useLanguageStore.getState().language;
     const deviceId = browserInstallationId();
     if (deviceId) config.headers["X-Device-Id"] = deviceId;
     config.headers["X-Client-Type"] = "web";

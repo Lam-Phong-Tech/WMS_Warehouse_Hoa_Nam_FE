@@ -5,6 +5,7 @@ import { useT } from "@/shared/i18n/useT";
 import { useAuthUatCopy } from "@/modules/auth/utils/auth-uat-copy";
 import type { LoginFeedback } from "@/modules/auth/utils/login-feedback";
 import type { SessionReplacementNotice } from "@/modules/auth/utils/session-replacement-notice";
+import { localizeReplacementDeviceLabel } from "@/modules/auth/utils/session-replacement-notice";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 
 export function AuthSessionReplacementNotice({ notice, onDismiss }: {
@@ -34,7 +35,7 @@ export function AuthSessionReplacementNotice({ notice, onDismiss }: {
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ fontWeight: 700 }}>{copy.title}</Box>
         <Box sx={{ marginTop: "3px" }}>{copy.prefix}</Box>
-        {notice.device_label && <Box>{copy.device}: {notice.device_label}{notice.ip_hint ? ` (IP ${notice.ip_hint})` : ""}</Box>}
+        {notice.device_label && <Box>{copy.device}: {localizeReplacementDeviceLabel(notice.device_label, language)}{notice.ip_hint ? ` (IP ${notice.ip_hint})` : ""}</Box>}
         {signedInAt && <Box>{copy.time}: {signedInAt}</Box>}
         <Box sx={{ marginTop: "3px" }}>{copy.advice}</Box>
       </Box>

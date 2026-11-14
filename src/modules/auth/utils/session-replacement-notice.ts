@@ -1,3 +1,5 @@
+import type { Language } from "@/shared/i18n/language.store";
+
 /** Only the safe, user-facing fields survive the redirect to the login page. */
 export interface SessionReplacementNotice {
   device_label?: string;
@@ -6,6 +8,20 @@ export interface SessionReplacementNotice {
 }
 
 const KEY = "hn-wms.session-replaced";
+
+/** Localize AccountSessionPolicy's generated labels at render time, preserving other names. */
+export function localizeReplacementDeviceLabel(label: string, language: Language): string {
+  const match = /^(?:(Chrome|Edge|Firefox|Safari) trên )?(iPhone|iPad|Android|Windows|macOS|Linux|Thiết bị khác)$/.exec(label);
+  if (!match) return label;
+  const browser = match[1];
+  const device = match[2] === "Thiết bị khác"
+    ? { vi: "Thiết bị khác", en: "Other device", zh: "其他设备" }[language]
+    : match[2];
+  if (!browser) return device;
+  if (language === "en") return `${browser} on ${device}`;
+  if (language === "zh") return `${device} 上的 ${browser}`;
+  return label;
+}
 
 /** Controller errors use `replacement`; auth middleware errors use `data.replacement`. */
 export function replacementDetailsFromResponse(body: unknown): unknown {
