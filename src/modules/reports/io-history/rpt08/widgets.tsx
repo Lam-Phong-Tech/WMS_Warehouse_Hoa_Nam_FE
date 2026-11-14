@@ -651,6 +651,7 @@ export function HistoryTable({
             </span>
             {onPageSizeChange ? (
               <UiSelect
+                kind="page-size"
                 value={pageSize}
                 aria-label={tUi("shared.table.rowsPerPageAria")}
                 minWidth={FILTER_WIDTH.pageSize}

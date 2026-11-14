@@ -76,7 +76,7 @@ describe("UiPagination", () => {
     );
     const selectRoot = screen
       .getByRole("combobox", { name: "Số bản ghi mỗi trang" })
-      .closest(".MuiInputBase-root");
+      .closest(".MuiFormControl-root");
     expect(selectRoot).not.toBeNull();
     expect(selectRoot).toHaveStyle({ minWidth: "128px" });
   });

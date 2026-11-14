@@ -1745,6 +1745,7 @@ export default function StockReconcileReport() {
                               </span>
                               <label className="rpt02-page-size">
                                 <UiSelect
+                                  kind="page-size"
                                   value={pageSize}
                                   aria-label={tUi(
                                     "shared.table.rowsPerPageAria",

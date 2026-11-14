@@ -258,6 +258,7 @@ export function OutboundNfcProducts({ documentId, onOpenDocument }: Props) {
                 {t("nfc.outboundShowing", { from: first, to: last, total })}
               </span>
               <UiSelect
+                kind="page-size"
                 value={perPage}
                 aria-label={t("outbound.list.pageSizeAria")}
                 minWidth={FILTER_WIDTH.pageSize}

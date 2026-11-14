@@ -1647,6 +1647,7 @@ export default function OutboundFlowReport() {
                 </span>
                 <label className="outbound-page-size">
                   <UiSelect
+                    kind="page-size"
                     value={pageSize}
                     onChange={(value) => {
                       setPageSize(Number(value));

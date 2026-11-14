@@ -468,11 +468,12 @@ describe("API-backed MVP master screens", () => {
       Array.from(table.querySelectorAll("thead th"), (header) =>
         header.textContent?.trim(),
       ),
-    ).toEqual(["#", "SKU", "Loại", "Hãng / Nhóm", "Trạng thái", ""]);
+    ).toEqual(["#", "SKU", "Loại", "Đơn vị", "Hãng / Nhóm", "Trạng thái", ""]);
     const row = within(table)
       .getByText("DCH-DRILL-DJZ10A-220V-V1")
       .closest("tr");
     expect(row).not.toBeNull();
+    expect((row as HTMLTableRowElement).cells[3]).toHaveTextContent("cái");
     expect(
       within(row as HTMLTableRowElement).getByText("Dongcheng"),
     ).toBeVisible();
@@ -542,8 +543,9 @@ describe("API-backed MVP master screens", () => {
     );
   });
 
-  it("tự tải lại danh sách và tự ẩn banner khi publish gặp 412", async () => {
-    const row = { ...DEFAULT_SKU_ROW };
+  it.each([false, true])("hiện toast và tải lại SKU khi đổi trạng thái ứng dụng gặp 412 (published=%s)", async (published) => {
+    const toastError = vi.spyOn(toast, "error");
+    const row = { ...DEFAULT_SKU_ROW, published_to_app: published };
     const refetch = vi.fn().mockResolvedValue({
       data: { data: [{ ...row, version: 4 }], meta: {} },
       isError: false,
@@ -581,26 +583,22 @@ describe("API-backed MVP master screens", () => {
       }),
     );
     const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
-    fireEvent.click(
-      within(drawer).getByRole("button", { name: "Đưa lên ứng dụng" }),
-    );
+    const actionLabel = published ? "Gỡ khỏi ứng dụng" : "Đưa lên ứng dụng";
+    fireEvent.click(within(drawer).getByRole("button", { name: actionLabel }));
     const confirm = screen.getByRole("dialog", {
-      name: "Đưa SKU lên ứng dụng phân vùng?",
+      name: published ? "Gỡ SKU khỏi ứng dụng phân vùng?" : "Đưa SKU lên ứng dụng phân vùng?",
     });
-    fireEvent.click(
-      within(confirm).getByRole("button", { name: "Đưa lên ứng dụng" }),
-    );
+    fireEvent.click(within(confirm).getByRole("button", { name: actionLabel }));
 
     const staleCopy =
       "Hồ sơ sản phẩm đã được cập nhật ở phiên khác. Danh sách vừa được tải lại; hãy kiểm tra rồi thao tác lại.";
     await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
-    await screen.findByText(staleCopy);
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith(staleCopy));
     expect(refetch).toHaveBeenCalledTimes(1);
-
-    await waitForElementToBeRemoved(() => screen.queryByText(staleCopy), {
-      timeout: 7000,
-    });
+    expect(toastError).toHaveBeenCalledTimes(1);
     expect(screen.queryByText(staleCopy)).not.toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "Chi tiết SKU" })).toBeInTheDocument();
+    toastError.mockRestore();
   });
 
   it("loads agency data and opens add/edit modal", () => {

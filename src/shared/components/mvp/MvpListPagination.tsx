@@ -1,4 +1,4 @@
-import { MenuItem, Select } from "@mui/material";
+import { UiSelect } from "@/shared/ui/components/UiSelect";
 import { UiPagination } from "@/shared/ui/components/UiPagination";
 import { MVP_PAGE_SIZE_OPTIONS } from "@/shared/components/mvp/mvp-pagination";
 import { useT } from "@/shared/i18n/useT";
@@ -45,23 +45,18 @@ export function MvpPageSizeSelector({
     // menu ăn theme và có hiệu ứng như mọi dropdown khác.
     // Theme lấy từ AppThemeProvider ở composition root — context xuyên qua portal.
     <div className="table-page-size">
-      <Select
-        MenuProps={
-          menuClassName
-            ? { slotProps: { paper: { className: menuClassName } } }
-            : undefined
-        }
+      <UiSelect
+        kind="page-size"
+        menuClassName={menuClassName}
         value={value}
-        sx={{ width: 130 }}
-        inputProps={{ "aria-label": t("shared.table.rowsPerPageAria") }}
-        onChange={(event) => onChange(Number(event.target.value))}
-      >
-        {options.map((size) => (
-          <MenuItem key={size} value={size}>
-            {t("shared.table.perPage", { size })}
-          </MenuItem>
-        ))}
-      </Select>
+        minWidth={130}
+        aria-label={t("shared.table.rowsPerPageAria")}
+        onChange={(value) => onChange(Number(value))}
+        options={options.map((size) => ({
+          value: size,
+          label: t("shared.table.perPage", { size }),
+        }))}
+      />
     </div>
   );
 }

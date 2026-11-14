@@ -92,6 +92,7 @@ export function InventoryRecordList<T>({
             })}
           </span>
           <UiSelect
+            kind="page-size"
             value={pageSize}
             aria-label={t("shared.table.perPageAria")}
             minWidth={FILTER_WIDTH.pageSize}

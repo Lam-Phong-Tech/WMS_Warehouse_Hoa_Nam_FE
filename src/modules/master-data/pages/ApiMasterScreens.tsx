@@ -67,7 +67,6 @@ import type {
   SkuType,
 } from "@/modules/master-data/types/mvp-master.types";
 import {
-  getApiErrorMessage,
   getMutationErrorMessage,
   extractFieldErrorsRaw,
   normalizeError,
@@ -444,21 +443,8 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [publishError, setPublishError] = useState<unknown>(null);
-  const [publishErrorStale, setPublishErrorStale] = useState(false);
   const [mutationNotice, setMutationNotice] =
     useState<SkuListMutationNoticeValue | null>(null);
-
-  useEffect(() => {
-    if (!publishError) return;
-    // Banner lỗi publish chỉ là phản hồi tạm thời; toast đã thông báo ngay.
-    // Tự ẩn sau 5 giây để không chiếm chỗ vĩnh viễn; nút Đóng vẫn giữ.
-    const timer = window.setTimeout(() => {
-      setPublishError(null);
-      setPublishErrorStale(false);
-    }, 5000);
-    return () => window.clearTimeout(timer);
-  }, [publishError]);
 
   const query = useMvpSkus(
     {
@@ -536,8 +522,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 
   const togglePublish = async (record: SkuRecord) => {
     if (!canPublish) return;
-    setPublishError(null);
-    setPublishErrorStale(false);
     const willPublish = !record.published_to_app;
     const skuCode = record.sku_code ?? record.code;
     const recordId = record.sku_id ?? record.id ?? "";
@@ -593,16 +577,13 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               null
             );
           });
-          setPublishErrorStale(true);
+          toast.error(t("pv.admin.publishStale"));
         } else {
-          setPublishErrorStale(false);
           toast.error(getMutationErrorMessage(error));
         }
       } else {
-        setPublishErrorStale(false);
         toast.error(getMutationErrorMessage(error));
       }
-      setPublishError(error);
     }
   };
 
@@ -1157,32 +1138,6 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           />
         ) : null}
 
-        {publishError ? (
-          <Box sx={{ mb: "14px" }}>
-            <UiAlert
-              tone="error"
-              action={
-                <ActionButton
-                  kind="close"
-                  onClick={() => {
-                    setPublishError(null);
-                    setPublishErrorStale(false);
-                  }}
-                >
-                  {t("common.close")}
-                </ActionButton>
-              }
-            >
-              {publishErrorStale
-                ? t("pv.admin.publishStale")
-                : getApiErrorMessage(
-                    publishError,
-                    t("masterData.sku.errPublishToggle"),
-                  )}
-            </UiAlert>
-          </Box>
-        ) : null}
-
         <section
           className="hn-sku-list-card"
           aria-label={copy("Bảng danh sách SKU", "SKU list table")}
@@ -1213,6 +1168,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     sortState={sortState}
                     onSort={requestSort}
                   />
+                  <th scope="col">{copy("Đơn vị", "Unit")}</th>
                   <SortableTh
                     label={copy("Hãng / Nhóm", "Brand / Category")}
                     sortKey="brand"
@@ -1232,7 +1188,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <tbody>
                 {query.isLoading ? (
                   <tr>
-                    <td colSpan={6} className="muted">
+                    <td colSpan={7} className="muted">
                       <SkuListEmptyState
                         loading
                         hasRows={false}
@@ -1307,6 +1263,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           </div>
                         </td>
                         <td>{skuTypeLabel(record.sku_type, t)}</td>
+                        <td>{record.unit?.trim() || EMPTY_TEXT}</td>
                         <td>
                           <div className="hn-sku-brand-category">
                             <span>{refLabel(brandIndex, record.brand_id)}</span>
@@ -1370,7 +1327,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={6} className="muted">
+                    <td colSpan={7} className="muted">
                       <SkuListEmptyState
                         error={query.error}
                         loading={false}
@@ -1405,6 +1362,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 SKU
               </span>
               <UiSelect
+                kind="page-size"
                 aria-label={t("masterData.common.pageSizeAria")}
                 value={perPage}
                 onChange={(value) => {
@@ -1414,7 +1372,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 menuClassName="hn-sku-menu"
                 options={perPageOptions.map((size) => ({
                   value: size,
-                  label: `${size} / ${copy("trang", "page")}`,
+                  label: t("shared.table.perPage", { size }),
                 }))}
               />
             </div>
@@ -2566,6 +2524,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 {t("masterData.recipient.itemLabel")}
               </span>
               <UiSelect
+                kind="page-size"
                 aria-label={t("masterData.common.pageSizeAria")}
                 value={perPage}
                 onChange={(value) => {
@@ -2576,7 +2535,7 @@ export function AgencyMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                 menuClassName="agy-select-menu"
                 options={perPageOptions.map((size) => ({
                   value: size,
-                  label: `${size} / ${copy("trang", "page")}`,
+                  label: t("shared.table.perPage", { size }),
                 }))}
               />
             </div>
@@ -3673,6 +3632,7 @@ export function DefectMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                   : copy("hồ sơ", "records")}
               </span>
               <UiSelect
+                kind="page-size"
                 aria-label={t("masterData.common.pageSizeAria")}
                 value={perPage}
                 disabled={busy}

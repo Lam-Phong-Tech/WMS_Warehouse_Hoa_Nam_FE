@@ -1120,12 +1120,13 @@ export default function PackingLabelPrintReport() {
                   <label>
                     {t("packingLabelReport.rows")}{" "}
                     <UiSelect
+                      kind="page-size"
                       aria-label={t("packingLabelReport.rowsPerPage")}
                       value={pageSize}
                       minWidth={FILTER_WIDTH.pageSize}
                       options={[10, 20, 50].map((n) => ({
                         value: n,
-                        label: t("packingLabelReport.perPage", { count: n }),
+                        label: t("shared.table.perPage", { size: n }),
                       }))}
                       onChange={(value) => setPageSize(Number(value))}
                     />

@@ -1603,6 +1603,7 @@ export default function MovementTraceReport() {
             </span>
             <label className="trace-page-size">
               <UiSelect
+                kind="page-size"
                 aria-label={t("shared.table.rowsPerPageAria")}
                 value={ledgerPageSize}
                 minWidth={FILTER_WIDTH.pageSize}

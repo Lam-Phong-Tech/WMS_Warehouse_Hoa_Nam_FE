@@ -185,6 +185,7 @@ export function ProfileTrustedDevices({ userId }: { userId?: string }) {
               })}
             </span>
             <UiSelect
+              kind="page-size"
               aria-label={t("shared.table.rowsPerPageAria")}
               value={pageSize}
               minWidth={FILTER_WIDTH.pageSize}

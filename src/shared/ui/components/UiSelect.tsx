@@ -32,6 +32,8 @@ export interface UiSelectChoice {
 }
 
 export interface UiSelectProps {
+  /** Pagination options always stay on one line; ordinary filters may wrap. */
+  kind?: "default" | "page-size";
   /** Connect a visible external label to the dropdown. */
   id?: string;
   /** Show an explicit empty-value choice without a placeholder row. */
@@ -82,6 +84,7 @@ export interface UiSelectProps {
 }
 
 export function UiSelect({
+  kind = "default",
   id,
   displayEmpty,
   value,
@@ -122,7 +125,9 @@ export function UiSelect({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  const searchableMode = resolveSearchable(options, searchable);
+  const pageSizeMode = kind === "page-size";
+  const searchableMode =
+    !pageSizeMode && resolveSearchable(options, searchable);
   /**
    * Bề rộng tối thiểu đi theo NHÃN chứ không theo con số từng màn đoán tay.
    * Dropdown thường tự nở theo chữ, nhưng ô gõ-để-tìm thì không — và ô này
@@ -130,13 +135,22 @@ export function UiSelect({
    * rỗng) cắt cụt placeholder trên máy thật ("Bệnh/lỗi: Tất c…"). Không áp
    * cho `fullWidth`: khi đó ô lọc do lưới của trang quyết bề rộng.
    */
-  const fittedMinWidth = fullWidth
-    ? undefined
-    : fitSelectMinWidth({
-        texts: [placeholder ?? "", measurableText(label)],
-        floor: minWidth ?? (searchableMode ? FILTER_WIDTH.select : 0),
-        searchable: searchableMode,
-      });
+  const fittedMinWidth =
+    fullWidth && !pageSizeMode
+      ? undefined
+      : fitSelectMinWidth({
+          texts: [
+            placeholder ?? "",
+            measurableText(label),
+            ...(pageSizeMode
+              ? options.map((option) => measurableText(option.label))
+              : []),
+          ],
+          floor: pageSizeMode
+            ? Math.max(FILTER_WIDTH.pageSize, minWidth ?? 0)
+            : (minWidth ?? (searchableMode ? FILTER_WIDTH.select : 0)),
+          searchable: searchableMode,
+        });
   if (searchableMode) {
     const clearValueString = clearValue === undefined ? "" : String(clearValue);
     return (
@@ -200,7 +214,20 @@ export function UiSelect({
       fullWidth={fullWidth}
       required={required}
       error={error}
-      sx={fittedMinWidth ? { minWidth: fittedMinWidth } : undefined}
+      data-ui-select-kind={kind}
+      // Screen filter rules often reset .MuiFormControl-root min-width to 0.
+      // Keep the pagination width contract above those scoped CSS selectors.
+      style={
+        pageSizeMode ? { minWidth: fittedMinWidth, flexShrink: 0 } : undefined
+      }
+      sx={
+        fittedMinWidth
+          ? {
+              minWidth: fittedMinWidth,
+              ...(pageSizeMode ? { flexShrink: 0 } : {}),
+            }
+          : undefined
+      }
     >
       {label ? (
         <InputLabel id={labelId} shrink={forceShrink}>
@@ -221,7 +248,10 @@ export function UiSelect({
         MenuProps={{
           slotProps: {
             paper: {
-              className: menuClassName,
+              className:
+                [menuClassName, pageSizeMode ? "hn-page-size-menu" : ""]
+                  .filter(Boolean)
+                  .join(" ") || undefined,
               /*
                * Trần bề rộng ĐẶT INLINE, không qua sx: các màn khai class riêng
                * cho menu (.hn-war04-menu…) có selector specificity cao hơn
@@ -276,6 +306,12 @@ export function UiSelect({
             // Menu không nở rộng hơn ô nữa nên nhãn dài ("Thu hồi phạm vi
             // vai trò") phải XUỐNG DÒNG trong lòng menu thay vì tràn/clip.
             sx={{ whiteSpace: "normal", overflowWrap: "anywhere" }}
+            // Page-specific menu classes must not reintroduce wrapping.
+            style={
+              pageSizeMode
+                ? { whiteSpace: "nowrap", overflowWrap: "normal" }
+                : undefined
+            }
           >
             {option.label}
           </MenuItem>

@@ -5462,7 +5462,7 @@ export const MESSAGES_VI = {
       selectPage: "Chọn tất cả BOX trên trang",
       boxCode: "Mã BOX",
       componentName: "Tên linh kiện",
-      quantity: "Số lượng",
+      quantity: "SL",
       status: "Trạng thái",
       plannedTray: "Khay dự kiến",
       updated: "Cập nhật",

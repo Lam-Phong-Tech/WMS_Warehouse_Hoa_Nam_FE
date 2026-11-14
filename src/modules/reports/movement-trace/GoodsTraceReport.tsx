@@ -883,12 +883,13 @@ export default function GoodsTraceReport() {
                         {Math.min(page * pageSize, rows.length)} / {rows.length}{" "}
                         {tUi("uiAudit.text_d167eae269")}{" "}
                         <UiSelect
+                          kind="page-size"
                           aria-label={tUi("dashboardAudit.pageSize")}
                           value={pageSize}
                           minWidth={FILTER_WIDTH.pageSize}
                           options={[10, 25, 50].map((n) => ({
                             value: n,
-                            label: tUi("goodsTraceAudit.pageSize", { size: n }),
+                            label: tUi("shared.table.perPage", { size: n }),
                           }))}
                           onChange={(value) => {
                             setPageSize(Number(value));

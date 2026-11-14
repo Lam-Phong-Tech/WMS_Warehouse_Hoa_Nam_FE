@@ -19,6 +19,8 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const STEPS = [
+  ["ui:page-sizes", "scripts/check-page-size-selectors.mjs"],
+  ["ui:page-sizes --self-test", "scripts/check-page-size-selectors.mjs", "--self-test"],
   ["ui:architecture", "scripts/check-ui-architecture.mjs"],
   ["ui:tokens", "scripts/check-ui-tokens.mjs"],
   ["ui:styles", "scripts/check-ui-styles.mjs"],

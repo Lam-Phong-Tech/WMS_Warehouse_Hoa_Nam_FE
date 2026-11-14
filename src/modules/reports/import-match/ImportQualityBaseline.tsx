@@ -1004,6 +1004,7 @@ export default function ImportQualityBaseline() {
               {" " + tUi("updatedUi.text_3c28fe9f81e1")}
             </Box>
             <UiSelect
+              kind="page-size"
               aria-label={tUi("shared.table.rowsPerPageAria")}
               minWidth={FILTER_WIDTH.pageSize}
               value={pagination.perPage}

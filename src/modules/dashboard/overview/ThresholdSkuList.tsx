@@ -221,12 +221,13 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
                 {fmt(filtered.length)} SKU
               </span>
               <UiSelect
+                kind="page-size"
                 value={pageSize}
                 aria-label={t("dashboardAudit.pageSize")}
                 minWidth={FILTER_WIDTH.pageSize}
                 options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
                   value: size,
-                  label: t("dashboardAudit.perPage", { size }),
+                  label: t("shared.table.perPage", { size }),
                 }))}
                 onChange={(value) => {
                   setPageSize(Number(value));

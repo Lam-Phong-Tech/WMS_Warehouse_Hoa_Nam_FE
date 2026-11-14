@@ -79,6 +79,7 @@
     "ui:chart-sweep": "node scripts/chart-overflow-sweep.mjs",
     "ui:foundation": "vitest run src/test/ui-foundation",
     "ui:guards": "node scripts/run-ui-guards.mjs",
+    "ui:page-sizes": "node scripts/check-page-size-selectors.mjs",
     "prepare": "husky",
     "postinstall": "patch-package",
     "verify:wwhn-242": "node scripts/verify-wwhn-242-closure.mjs",

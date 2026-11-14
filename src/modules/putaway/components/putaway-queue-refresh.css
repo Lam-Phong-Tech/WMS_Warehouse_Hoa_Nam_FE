@@ -154,13 +154,13 @@
   width: 4%;
 }
 .hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table .ptw-box-col {
-  width: 18%;
+  width: 16%;
 }
 .hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table .ptw-sku-col {
-  width: 10%;
+  width: 9%;
 }
 .hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table .ptw-name-col {
-  width: 17%;
+  width: 15%;
 }
 .hn-putaway-page
   .ptw-list[data-queue="orders"]
@@ -178,19 +178,31 @@
   .ptw-list[data-queue="orders"]
   table.ptw-table
   .ptw-status-col {
-  width: 10%;
+  width: 13%;
 }
 .hn-putaway-page
   .ptw-list[data-queue="orders"]
   table.ptw-table
   .ptw-updated-col {
-  width: 10%;
+  width: 13%;
+}
+/* Keep the status and planned-tray labels readable as the shell resizes.
+   Long translations can wrap instead of disappearing behind an ellipsis. */
+.hn-putaway-page
+  .ptw-list
+  table.ptw-table
+  :is(th.ptw-status-col, th.ptw-updated-col)
+  .hn-sortable-th
+  > span:first-child {
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: normal;
 }
 .hn-putaway-page
   .ptw-list[data-queue="orders"]
   table.ptw-table
   .ptw-action-col {
-  width: 9%;
+  width: 8%;
 }
 .hn-putaway-page .ptw-list .ptw-footer {
   justify-content: space-between;
@@ -209,4 +221,3 @@
 .hn-putaway-page .ptw-list .ptw-footer nav {
   margin-left: auto;
 }
-

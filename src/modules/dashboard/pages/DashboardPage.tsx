@@ -12,7 +12,7 @@ import { parseDateTime } from "@/shared/utils/date-time";
  *    Không có KPI nào được suy diễn; nguồn nào chưa trả thì widget hiện trạng
  *    thái tương ứng thay vì thay bằng 0.
  */
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import dayjs from "dayjs";
@@ -49,10 +49,8 @@ import {
   DashboardSnapshot,
   type ChartState,
 } from "../overview/DashboardSnapshot";
-import {
-  DashboardSystemViews,
-  type DashboardSystemView,
-} from "../overview/DashboardSystemViews";
+import type { DashboardSystemView } from "../overview/DashboardSystemViews";
+import { Loading } from "@/shared/components/feedback/Loading";
 import { useLazyReveal } from "../overview/use-lazy-reveal";
 import {
   PERIOD_NAME_KEYS,
@@ -82,6 +80,14 @@ import {
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
 const ISO = "YYYY-MM-DD";
+
+// Detail tables are only used by ?view=work/thresholds. Keeping them out of
+// the overview's static imports lets the greeting paint without loading them.
+const DashboardSystemViews = lazy(() =>
+  import("../overview/DashboardSystemViews").then((module) => ({
+    default: module.DashboardSystemViews,
+  })),
+);
 
 const SKU_TYPE_KEYS: Record<SkuTypeFilter, MessageKey> = {
   ALL: "dashboard.skuType.all",
@@ -750,12 +756,14 @@ export default function DashboardPage() {
   if (isMapReferenceScreen && referenceView)
     return (
       <div className="hn-dash" data-mvp-screen="MAP-01">
-        <DashboardSystemViews
-          view={referenceView}
-          overview={overviewData}
-          showWarranty={canViewWarranty}
-          onNavigate={navigate}
-        />
+        <Suspense fallback={<Loading />}>
+          <DashboardSystemViews
+            view={referenceView}
+            overview={overviewData}
+            showWarranty={canViewWarranty}
+            onNavigate={navigate}
+          />
+        </Suspense>
       </div>
     );
 

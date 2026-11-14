@@ -258,6 +258,7 @@ export function PutawayQueue(props: Props) {
                 />
                 <SortableTh
                   label={t("putaway.queue.quantity")}
+                  tooltipLabel={t("putaway.page.colQuantity")}
                   sortKey="quantity"
                   sortState={sortState}
                   onSort={sort}
@@ -474,6 +475,7 @@ export function PutawayQueue(props: Props) {
             <label className="ptw-page-size">
               <span>{t("putaway.queue.rows")}</span>
               <UiSelect
+                kind="page-size"
                 aria-label={t("putaway.queue.rowsPerPage")}
                 value={pageSize}
                 minWidth={FILTER_WIDTH.pageSize}

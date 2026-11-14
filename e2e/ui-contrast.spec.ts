@@ -151,13 +151,19 @@ for (const theme of ["light", "dark"]) {
       const informationFilter = page.getByRole("combobox", {
         name: "Lọc mức độ hoàn thiện thông tin",
       });
+      // Tablet moves this filter into the expandable panel.
+      if (!(await informationFilter.count())) {
+        await page.getByRole("button", { name: "Bộ lọc", exact: true }).click();
+      }
       for (const filter of [usageFilter, informationFilter]) {
         await expect(filter).toBeVisible();
         const bounds = await filter.boundingBox();
         expect(bounds!.x).toBeGreaterThanOrEqual(0);
         expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
       }
-      const statusCell = page.locator(".sku-table tbody td").nth(4);
+      const unitCell = page.locator(".sku-table tbody td").nth(3);
+      await expect(unitCell).toHaveText("cái");
+      const statusCell = page.locator(".sku-table tbody td").nth(5);
       await expect(statusCell).toContainText("Thiếu: Hãng, Nhóm hàng, Model");
       const badges = statusCell.locator(".MuiChip-root");
       const usageColor = await badges
@@ -178,7 +184,9 @@ for (const theme of ["light", "dark"]) {
       const headers = page
         .locator(".sku-table thead th")
         .filter({ hasText: /\S/ });
-      await expect(headers).toHaveCount(5);
+      await expect(headers).toHaveCount(6);
+      await expect(page.locator(".sku-table thead th").nth(2)).toHaveText("Loại");
+      await expect(page.locator(".sku-table thead th").nth(3)).toHaveText("Đơn vị");
       for (const header of await headers.all()) {
         await expect(header).toHaveCSS("color", headerColor);
         await expect(header).toHaveCSS("font-weight", "800");

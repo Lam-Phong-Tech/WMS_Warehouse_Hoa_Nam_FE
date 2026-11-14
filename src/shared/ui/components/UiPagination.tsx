@@ -4,9 +4,8 @@
  * component không giữ state, mọi thay đổi đi qua callback của caller.
  */
 import Box from "@mui/material/Box";
-import MenuItem from "@mui/material/MenuItem";
 import Pagination from "@mui/material/Pagination";
-import Select from "@mui/material/Select";
+import { UiSelect } from "./UiSelect";
 import { SPACING } from "@/shared/ui/tokens";
 import { FILTER_WIDTH } from "@/shared/ui/forms/control-width";
 import { UiText } from "./UiText";
@@ -84,20 +83,18 @@ export function UiPagination({
         }}
       >
         {onPageSizeChange ? (
-          <Select
-            size="small"
+          <UiSelect
+            kind="page-size"
             value={safeSize}
             disabled={disabled}
-            sx={{ minWidth: FILTER_WIDTH.pageSize }}
-            inputProps={{ "aria-label": t("shared.table.perPageAria") }}
-            onChange={(event) => onPageSizeChange(Number(event.target.value))}
-          >
-            {sizeOptions.map((size) => (
-              <MenuItem key={size} value={size}>
-                {t("shared.table.perPage", { size })}
-              </MenuItem>
-            ))}
-          </Select>
+            minWidth={FILTER_WIDTH.pageSize}
+            aria-label={t("shared.table.perPageAria")}
+            onChange={(value) => onPageSizeChange(Number(value))}
+            options={sizeOptions.map((size) => ({
+              value: size,
+              label: t("shared.table.perPage", { size }),
+            }))}
+          />
         ) : null}
         <Pagination
           size="small"

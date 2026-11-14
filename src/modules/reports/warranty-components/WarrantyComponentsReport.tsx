@@ -1435,6 +1435,7 @@ export default function WarrantyComponentsReport() {
                   }}
                 >
                   <UiSelect
+                    kind="page-size"
                     aria-label={tUi("shared.table.rowsPerPageAria")}
                     minWidth={FILTER_WIDTH.pageSize}
                     value={pagination.perPage}

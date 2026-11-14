@@ -5482,7 +5482,7 @@ export const MESSAGES_EN: MessageTree = {
       selectPage: "Select all boxes on this page",
       boxCode: "Box code",
       componentName: "Component name",
-      quantity: "Quantity",
+      quantity: "Qty",
       status: "Status",
       plannedTray: "Planned tray",
       updated: "Updated",

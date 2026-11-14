@@ -799,6 +799,7 @@ export function CatalogMasterScreen() {
                 })}
               </span>
               <UiSelect
+                kind="page-size"
                 aria-label={t("masterData.common.pageSizeAria")}
                 value={perPage}
                 menuClassName="hn-catalog-menu"
@@ -808,7 +809,7 @@ export function CatalogMasterScreen() {
                 }}
                 options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
                   value: size,
-                  label: size + text(" / trang", " / page"),
+                  label: t("shared.table.perPage", { size }),
                 }))}
               />
             </div>

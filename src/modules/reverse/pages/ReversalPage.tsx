@@ -364,6 +364,7 @@ export default function ReversalPage() {
                     })}
               </span>
               <UiSelect
+                kind="page-size"
                 value={perPage}
                 aria-label={t("shared.table.rowsPerPageAria")}
                 menuClassName="hn-reversal-menu"

@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 import type { PutawayTask } from "../services/putawayService";
 import { PutawayQueue } from "./PutawayQueue";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
 
 const task = (
   id: number,
@@ -54,6 +57,25 @@ function visibleBoxes() {
 afterEach(cleanupTestState);
 
 describe("PTW-00 queue interactions", () => {
+  it("updates the compact quantity header when switching Vietnamese, English and Chinese", async () => {
+    useLanguageStore.getState().setLanguage("vi");
+    renderWithProviders(<PutawayQueue {...props([task(1)])} />);
+    const header = () => document.querySelector("thead .ptw-quantity-col");
+    expect(header()).toHaveTextContent("SL");
+    await act(async () => {
+      await ensureEnglishMessages();
+      useLanguageStore.getState().setLanguage("en");
+    });
+    expect(header()).toHaveTextContent("Qty");
+    await act(async () => {
+      await ensureChineseMessages();
+      useLanguageStore.getState().setLanguage("zh");
+    });
+    expect(header()).toHaveTextContent("数量");
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    expect(header()).toHaveTextContent("SL");
+  });
+
   it("starts the pending BOX table directly after the filters without summary cards or a list heading", () => {
     renderWithProviders(<PutawayQueue {...props([task(1)])} />);
     expect(document.querySelector(".ptw-stats")).not.toBeInTheDocument();

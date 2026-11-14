@@ -28,6 +28,7 @@ import {
   type SupplierStatus,
 } from "../services/supplier.service";
 import { useSupplierCopy } from "./supplier-copy";
+import { useT } from "@/shared/i18n/useT";
 import "./supplier-list.css";
 
 const supplierKeys = ["mvp-master", "suppliers"] as const;
@@ -62,6 +63,7 @@ function UpdatedAt({ value, locale }: { value: string; locale: string }) {
 }
 
 export default function SupplierListPage() {
+  const t = useT();
   const visible = usePageVisible();
   const { copy, locale } = useSupplierCopy();
   const permissionCodes = useAuthStore((state) => state.permissionCodes);
@@ -385,6 +387,7 @@ export default function SupplierListPage() {
                 )}
               </span>
               <UiSelect
+                kind="page-size"
                 aria-label={copy.size}
                 value={perPage}
                 onChange={(value) => {
@@ -393,7 +396,7 @@ export default function SupplierListPage() {
                 }}
                 options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
                   value: size,
-                  label: `${size} / ${copy.page}`,
+                  label: t("shared.table.perPage", { size }),
                 }))}
               />
             </div>

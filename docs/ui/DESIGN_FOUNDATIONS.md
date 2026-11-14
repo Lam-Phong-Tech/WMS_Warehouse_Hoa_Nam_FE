@@ -17,6 +17,8 @@ Tài liệu chốt **chuẩn cần áp dụng**, không chứng minh toàn bộ 
 
 ## 1. Thứ tự áp dụng khi các nguồn khác nhau
 
+Quy tắc số dòng/trang áp dụng toàn hệ thống: dùng `UiSelect kind="page-size"` hoặc bộ phân trang dùng chung; cả nhãn đang chọn và mọi mục trong menu đều nằm trên một dòng ở tiếng Việt/Anh/Trung. Chi tiết và lệnh kiểm tra tại mục Phân trang của `sku-list-filter-table-style.md`.
+
 | Ưu tiên | Nguồn                                                                                           | Phạm vi quyết định                                                                                                          |
 | ------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | 1       | Yêu cầu cụ thể của người dùng và nghiệp vụ/API hiện hành                                        | Kết quả cần đạt, trường dữ liệu, quyền, luồng xử lý.                                                                        |

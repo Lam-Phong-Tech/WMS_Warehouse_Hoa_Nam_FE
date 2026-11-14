@@ -454,6 +454,7 @@ export function AuditLogsPage() {
               {t("audit.total", { count: pagination.total })}
             </Box>
             <UiSelect
+              kind="page-size"
               id="audit-log-page-size"
               menuClassName="hn-settings-menu"
               value={perPage}

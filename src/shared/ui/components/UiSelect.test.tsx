@@ -53,6 +53,45 @@ function Host({
 type UiSelectProps = Parameters<typeof UiSelect>[0];
 
 describe("UiSelect — ngưỡng tìm kiếm", () => {
+  it.each(["trang", "page", "页"])(
+    "keeps every page-size choice on one line (%s), including unselected choices",
+    async (unit) => {
+      const user = userEvent.setup();
+      render(
+        <Host
+          kind="page-size"
+          minWidth={76}
+          initial="10"
+          options={[
+            { value: 10, label: `10 / ${unit}` },
+            { value: 20, label: `20 / ${unit}` },
+            { value: 50, label: `50 / ${unit}` },
+          ]}
+        />,
+      );
+      const control = screen.getByRole("combobox");
+      await user.click(control);
+      for (const option of screen.getAllByRole("option")) {
+        expect(option).toHaveStyle({
+          whiteSpace: "nowrap",
+          overflowWrap: "normal",
+        });
+      }
+      await user.click(screen.getByRole("option", { name: `50 / ${unit}` }));
+      expect(screen.getByTestId("value")).toHaveTextContent("50");
+      expect(control).toHaveTextContent(`50 / ${unit}`);
+    },
+  );
+
+  it("still wraps long ordinary filter options", async () => {
+    const user = userEvent.setup();
+    render(<Host options={SHORT} />);
+    await user.click(screen.getByRole("combobox"));
+    expect(screen.getByRole("option", { name: "Kho A" })).toHaveStyle({
+      whiteSpace: "normal",
+    });
+  });
+
   it.each(["ALL", ""])(
     "keeps one All option and its closed label (value: %s)",
     async (allValue) => {

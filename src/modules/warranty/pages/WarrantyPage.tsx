@@ -614,13 +614,14 @@ export default function WarrantyPage() {
                 {" " + tUi("reports.warrantyReport.tableUnit")}
               </span>{" "}
               <UiSelect
+                kind="page-size"
                 menuClassName="hn-war-menu"
                 value={perPage}
                 aria-label={t("warranty.list.pageSizeAria")}
                 minWidth={FILTER_WIDTH.pageSize}
                 options={perPageOptions.map((size) => ({
                   value: size,
-                  label: `${size} / trang`,
+                  label: t("shared.table.perPage", { size }),
                 }))}
                 onChange={(value) => {
                   setPerPage(Number(value));

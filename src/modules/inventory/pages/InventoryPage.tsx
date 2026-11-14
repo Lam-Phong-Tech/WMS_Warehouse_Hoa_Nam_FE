@@ -860,6 +860,7 @@ export default function InventoryPage() {
                 })}
               </span>
               <UiSelect
+                kind="page-size"
                 id="inventory-page-size"
                 value={perPage}
                 aria-label={t("inventory.balance.pageSizeAria")}

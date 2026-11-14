@@ -703,13 +703,14 @@ export default function AlignedMvpOutboundPage() {
                       : tUi("updatedUi.text_324e2c9b114d")}
                 </span>
                 <UiSelect
+                  kind="page-size"
                   value={perPage}
                   aria-label={t("outbound.list.pageSizeAria")}
                   menuClassName="hn-outbound-menu"
                   minWidth={FILTER_WIDTH.pageSize}
                   options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
                     value: size,
-                    label: `${size} / trang`,
+                    label: t("shared.table.perPage", { size }),
                   }))}
                   onChange={(value) => {
                     setPerPage(Number(value));

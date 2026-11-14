@@ -536,18 +536,21 @@
   width: 6%;
 }
 .hn-sku-screen table.sku-table th:nth-child(2) {
-  width: 37%;
+  width: 29%;
 }
 .hn-sku-screen table.sku-table th:nth-child(3) {
   width: 10%;
 }
 .hn-sku-screen table.sku-table th:nth-child(4) {
-  width: 20%;
+  width: 8%;
 }
 .hn-sku-screen table.sku-table th:nth-child(5) {
   width: 20%;
 }
 .hn-sku-screen table.sku-table th:nth-child(6) {
+  width: 20%;
+}
+.hn-sku-screen table.sku-table th:nth-child(7) {
   width: 7%;
 }
 .hn-sku-screen table.sku-table th button {
@@ -653,15 +656,11 @@
   font-weight: 500;
   height: 24px;
 }
-.hn-sku-screen table.sku-table td:nth-child(5) .hn-sku-usage-status {
+.hn-sku-screen table.sku-table .hn-sku-usage-status {
   color: var(--sku-success);
   background: var(--sku-success-soft);
 }
-.hn-sku-screen
-  table.sku-table
-  td:nth-child(5)
-  .hn-sku-usage-status
-  .MuiChip-label::before {
+.hn-sku-screen table.sku-table .hn-sku-usage-status .MuiChip-label::before {
   content: "";
   display: inline-block;
   height: 7px;
@@ -670,11 +669,7 @@
   background: currentColor;
   margin-right: 6px;
 }
-.hn-sku-screen
-  table.sku-table
-  tr[data-status="INACTIVE"]
-  td:nth-child(5)
-  .hn-sku-usage-status {
+.hn-sku-screen table.sku-table tr[data-status="INACTIVE"] .hn-sku-usage-status {
   color: var(--sku-muted);
   background: var(--sku-pale);
 }

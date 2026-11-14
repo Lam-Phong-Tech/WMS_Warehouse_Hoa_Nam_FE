@@ -671,13 +671,14 @@ export default function WarrantyComponentIssueListPage() {
                     })}
             </span>
             <UiSelect
+              kind="page-size"
               value={perPage}
               aria-label={t("warranty.componentList.pageSizeAria")}
               menuClassName="hn-war04-menu"
               minWidth={FILTER_WIDTH.pageSize}
               options={MVP_PAGE_SIZE_OPTIONS.map((size) => ({
                 value: size,
-                label: `${size} / trang`,
+                label: t("shared.table.perPage", { size }),
               }))}
               onChange={(value) => {
                 setPerPage(Number(value));

@@ -1248,6 +1248,7 @@ export default function RecipientAgencyReport() {
                 )}
                 <label className="rpt07-page-size">
                   <UiSelect
+                    kind="page-size"
                     aria-label={tUi("shared.table.rowsPerPageAria")}
                     value={pageSize}
                     minWidth={FILTER_WIDTH.pageSize}

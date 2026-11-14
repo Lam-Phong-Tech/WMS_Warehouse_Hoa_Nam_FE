@@ -920,11 +920,12 @@ export default function MvpPutawayPage() {
               menuClassName="ptw-filter-menu"
             />
             <UiSelect
+              kind="page-size"
               value={historyPageSize}
               aria-label={t("putaway.page.pageSizeAria")}
               options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({
                 value: size,
-                label: t("putaway.page.pageSizeOption", { size }),
+                label: t("shared.table.perPage", { size }),
               }))}
               onChange={(value) => {
                 setHistoryPageSize(Number(value));
