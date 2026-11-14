@@ -243,7 +243,7 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
     vi.mocked(importSkuExcel).mockResolvedValue(cleanDryRun());
   });
   afterEach(cleanupTestState);
-  it("dùng nút tải tệp tiếng Việt, hướng dẫn theo hover và nút làm lại ở tiêu đề", async () => {
+  it("dùng nút tải tệp tiếng Việt, hướng dẫn theo hover và chỉ giữ nút đóng ở tiêu đề", async () => {
     renderModal();
     const input = screen.getByLabelText("Chọn tệp Excel chứa SKU") as HTMLInputElement;
     const upload = await screen.findByRole("button", { name: "Tải lên" });
@@ -260,12 +260,9 @@ describe("SkuImportModal — hiệu lực của kết quả dry-run (FE331-P1-01
 
     selectFile("danh-sach.xlsx");
     expect(screen.getByText("danh-sach.xlsx")).toBeInTheDocument();
-    const reset = screen.getByRole("button", { name: "Làm lại" });
-    expect(reset.closest(".MuiDialogTitle-root")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Làm lại" })).not.toBeInTheDocument();
     const close = screen.getByRole("button", { name: "Đóng" });
-    expect(close.parentElement).toBe(reset.parentElement);
-    fireEvent.click(reset);
-    expect(screen.getByText("Chưa chọn tệp")).toBeInTheDocument();
+    expect(close.closest(".MuiDialogTitle-root")).toBeInTheDocument();
   });
   it("bật update_existing sau khi dry-run (false → true): nút Import tắt và không commit payload chưa kiểm tra", async () => {
     renderModal(); selectFile(); await runDryRun();

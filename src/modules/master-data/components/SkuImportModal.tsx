@@ -774,18 +774,11 @@ export function SkuImportModal({
                 <InfoIcon />
               </UiIconButton>
             </Tooltip>
-            <ActionButton
-              kind="reset"
-              disabled={previewMutation.isPending || commitMutation.isPending}
-              onClick={resetAll}
-              sx={{ ml: "auto" }}
-            >
-              {t("masterData.import.reset")}
-            </ActionButton>
             <ActionIconButton
               kind="close"
               label={t("common.close")}
               onClick={close}
+              sx={{ ml: "auto" }}
             />
           </Box>
         }

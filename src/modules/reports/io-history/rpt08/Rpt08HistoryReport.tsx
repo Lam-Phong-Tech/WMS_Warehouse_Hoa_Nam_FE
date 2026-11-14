@@ -11,6 +11,7 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { Dayjs } from "dayjs";
@@ -57,6 +58,7 @@ function currentSevenDayRange(): [Dayjs, Dayjs] {
 
 export default function IoHistoryReport() {
   const tUi = useT();
+  const reportRef = useRef<HTMLElement | null>(null);
   useDateTimePreferences();
   const canExportPermission = useCan(WMS_PERMISSION_CATALOG.REPORT_EXPORT);
   const initialRange = useMemo<[Dayjs, Dayjs]>(
@@ -291,6 +293,7 @@ export default function IoHistoryReport() {
 
   return (
     <main
+      ref={reportRef}
       id="rpt08-history-report"
       className={"rpt08-report" + (initialLoading ? " is-loading" : "")}
       data-mvp-screen="RPT-08"
@@ -410,12 +413,12 @@ export default function IoHistoryReport() {
             onPageChange={setPage}
             onOpenRow={setDetailRow}
             onAdjustRange={() => {
-              changeRange(currentSevenDayRange());
-              window.requestAnimationFrame(() => {
-                document
-                  .querySelector<HTMLElement>(".rpt08-date-control")
-                  ?.focus();
-              });
+              const trigger =
+                reportRef.current?.querySelector<HTMLButtonElement>(
+                  '[data-date-field="from"]',
+                );
+              trigger?.focus();
+              trigger?.click();
             }}
           />
         </>

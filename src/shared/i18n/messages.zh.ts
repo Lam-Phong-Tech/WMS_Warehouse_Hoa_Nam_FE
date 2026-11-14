@@ -4486,6 +4486,8 @@ const MESSAGES_ZH_BASE: MessageTree = {
       movementsEmpty: "期间没有任何变动。",
     },
     stockReconcileReport: {
+      noFlowTitle: "此期间暂无出入库及库存数据",
+      noFlowCopy: "请选择其他时间范围查看出入库及库存数据。",
       collapseSection: "折叠 {title}",
       expandSection: "展开 {title}",
       detailTabsAria: "库存详细视图",

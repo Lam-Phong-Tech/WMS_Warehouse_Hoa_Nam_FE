@@ -232,6 +232,16 @@ describe("DashboardSnapshot MAP-01 parity", () => {
     ).toBeDisabled();
   });
 
+  it("opens the start-date calendar from the custom preset button", async () => {
+    renderSnapshot();
+    fireEvent.click(screen.getByRole("button", { name: /7 ngày gần nhất/i }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Tùy chỉnh" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tùy chỉnh" }));
+    expect(
+      await screen.findByRole("dialog", { name: "Từ ngày" }),
+    ).toBeInTheDocument();
+  });
+
   it("chặn custom range vượt quá 90 ngày và cho phép đúng 90 ngày", async () => {
     const { container } = renderSnapshot();
 

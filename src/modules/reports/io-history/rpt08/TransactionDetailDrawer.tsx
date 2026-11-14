@@ -11,6 +11,24 @@ import { displayDay, displayStamp, number, type HistoryRow } from "./model";
 import { TypePill } from "./widgets";
 import "./transaction-detail-drawer.css";
 
+const DOCUMENT_DETAILS = {
+  INBOUND: {
+    route: ROUTES.INBOUND,
+    screen: "IN-03",
+    label: "rpt08.detail.viewInboundDocument",
+  },
+  OUTBOUND: {
+    route: ROUTES.OUTBOUND,
+    screen: "OUT-02",
+    label: "rpt08.detail.viewOutboundDocument",
+  },
+  REVERSAL: {
+    route: ROUTES.REVERSE,
+    screen: "REV-02",
+    label: "rpt08.detail.viewReversalDocument",
+  },
+} as const;
+
 function DetailField({
   label,
   children,
@@ -29,7 +47,9 @@ function DetailField({
 /** Ngày chứng từ (chỉ có ngày) và thời điểm đầy đủ hiển thị khác nhau. */
 function documentDay(value: string): string {
   if (!value) return "—";
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? displayDay(value) : displayStamp(value);
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? displayDay(value)
+    : displayStamp(value);
 }
 
 export function TransactionDetailDrawer({
@@ -43,14 +63,12 @@ export function TransactionDetailDrawer({
   const drawer = useDialogExit(onClose);
   const navigate = useNavigate();
   const status = row.source?.status || "POSTED";
-  // Nút "Xem chi tiết phiếu": deep-link vào màn chi tiết phiếu nhập/xuất
-  // (cùng mẫu với thông báo hệ thống). Phiếu đảo không có target.
-  const documentTarget =
-    row.type === "INBOUND"
-      ? `${ROUTES.INBOUND}?screen=IN-03&id=${row.source?.id ?? ""}`
-      : row.type === "OUTBOUND"
-        ? `${ROUTES.OUTBOUND}?screen=OUT-02&id=${row.source?.id ?? ""}`
-        : null;
+  // Dùng cùng màn chi tiết phiếu với thông báo và danh sách nghiệp vụ.
+  const documentDetail = DOCUMENT_DETAILS[row.type];
+  const documentId = row.source?.id.trim() ?? "";
+  const documentTarget = documentId
+    ? `${documentDetail.route}?${new URLSearchParams({ screen: documentDetail.screen, id: documentId })}`
+    : null;
   return (
     <UiDrawer
       {...drawer.dialogProps}
@@ -99,7 +117,9 @@ export function TransactionDetailDrawer({
           {row.movementNo
             ? row.movementNo
             : row.movementCount > 1
-              ? t("rpt08.detail.movements", { count: String(row.movementCount) })
+              ? t("rpt08.detail.movements", {
+                  count: String(row.movementCount),
+                })
               : "—"}
         </DetailField>
         {row.type === "REVERSAL" ? (
@@ -121,11 +141,7 @@ export function TransactionDetailDrawer({
           className="rpt08-transaction-action"
           onClick={() => navigate(documentTarget)}
         >
-          <span>
-            {row.type === "INBOUND"
-              ? t("rpt08.detail.viewInboundDocument")
-              : t("rpt08.detail.viewOutboundDocument")}
-          </span>
+          <span>{t(documentDetail.label)}</span>
           <ArrowRightOutlined />
         </button>
       ) : null}
@@ -134,7 +150,11 @@ export function TransactionDetailDrawer({
         <div className="rpt08-lines">
           <div className="rpt08-lines__head">
             <h3>{t("rpt08.detail.linesTitle")}</h3>
-            <span>{t("rpt08.detail.linesCount", { count: String(row.lines.length) })}</span>
+            <span>
+              {t("rpt08.detail.linesCount", {
+                count: String(row.lines.length),
+              })}
+            </span>
           </div>
           <ul className="rpt08-lines__list">
             {row.lines.map((line, index) => (

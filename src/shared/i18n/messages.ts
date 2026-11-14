@@ -4119,6 +4119,8 @@ export const MESSAGES_VI = {
       movementsEmpty: "Không có biến động tồn trong kỳ.",
     },
     stockReconcileReport: {
+      noFlowTitle: "Chưa có dữ liệu Nhập – Xuất – Tồn trong kỳ này",
+      noFlowCopy: "Chọn khoảng thời gian khác để xem dữ liệu Nhập – Xuất – Tồn.",
       collapseSection: "Thu gọn {title}",
       expandSection: "Mở rộng {title}",
       detailTabsAria: "Chế độ xem chi tiết tồn kho",
@@ -6293,6 +6295,7 @@ export const MESSAGES_VI = {
       linesCount: "{count} dòng hàng",
       viewInboundDocument: "Xem chi tiết phiếu nhập",
       viewOutboundDocument: "Xem chi tiết phiếu xuất",
+      viewReversalDocument: "Xem chi tiết phiếu đảo",
     },
   },
 } as const;

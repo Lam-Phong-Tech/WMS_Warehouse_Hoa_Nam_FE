@@ -694,6 +694,7 @@ export default function StockReconcileReport() {
   const [detailView, setDetailView] = useState<ReconcileDetailView>("quantity");
   const pageRef = useRef<HTMLElement | null>(null);
   const tableRef = useRef<HTMLElement | null>(null);
+  const dateRangeRef = useRef<HTMLDivElement | null>(null);
 
   const flow = useInventoryFlowSnapshot({ from: applied.from, to: applied.to });
   const reconciliation = useStockReconcileSnapshot({ asOf: applied.to });
@@ -759,6 +760,10 @@ export default function StockReconcileReport() {
       : onlyReview
         ? filteredRows.filter((row) => row.mismatch)
         : filteredRows;
+  const hasDetailFilters =
+    normalized(query) !== "" ||
+    applied.reconcile !== "" ||
+    (detailTab === "reconcile" && onlyReview);
   const flowTotals = displayRows.reduce(
     (total, row) => ({
       opening: total.opening + row.opening,
@@ -806,9 +811,26 @@ export default function StockReconcileReport() {
     setDraft(next);
     setApplied(next);
     setQuery("");
+    setOnlyReview(false);
     setPage(1);
     setShowSuccess(true);
     window.requestAnimationFrame(() => scrollReportToTop(pageRef.current));
+  };
+
+  const clearDetailFilters = () => {
+    setQuery("");
+    setOnlyReview(false);
+    setDraft((current) => ({ ...current, reconcile: "" }));
+    setApplied((current) => ({ ...current, reconcile: "" }));
+    setPage(1);
+  };
+
+  const openDateRange = () => {
+    const trigger = dateRangeRef.current?.querySelector<HTMLButtonElement>(
+      '[data-date-field="from"]',
+    );
+    trigger?.focus();
+    trigger?.click();
   };
 
   const refresh = () => {
@@ -934,6 +956,7 @@ export default function StockReconcileReport() {
             aria-label={tUi("reports.recipientAgency.filterTitle")}
           >
             <div
+              ref={dateRangeRef}
               className={`rpt02-field rpt02-field--date${invalidRange ? " is-invalid" : ""}`}
             >
               <ReportDateRangePicker
@@ -1045,13 +1068,7 @@ export default function StockReconcileReport() {
               copy={tUi("uiAudit.text_6601302aa5")}
               code={`${dayjs(applied.from).format("DD/MM/YYYY")} – ${dayjs(applied.to).format("DD/MM/YYYY")}`}
               primaryLabel={tUi("uiAudit.text_1a38fb74a6")}
-              onPrimary={() => {
-                const input = document.querySelector<HTMLElement>(
-                  ".rpt02-date-range button, .rpt02-date-range input",
-                );
-                input?.focus();
-                input?.click();
-              }}
+              onPrimary={openDateRange}
               secondaryLabel={tUi("updatedUi.text_49ced19e7f1d")}
               onSecondary={resetFilters}
             />
@@ -1399,33 +1416,38 @@ export default function StockReconcileReport() {
                           >
                             <Icon name="search" />
                           </span>
-                          <h3>{tUi("updatedUi.text_6537d7653abe")}</h3>
-                          <p>{tUi("updatedUi.text_a39e88670393")}</p>
+                          <h3>
+                            {tUi(
+                              hasDetailFilters
+                                ? "updatedUi.text_6537d7653abe"
+                                : "reports.stockReconcileReport.noFlowTitle",
+                            )}
+                          </h3>
+                          <p>
+                            {tUi(
+                              hasDetailFilters
+                                ? "updatedUi.text_a39e88670393"
+                                : "reports.stockReconcileReport.noFlowCopy",
+                            )}
+                          </p>
                           <div className="rpt02-no-result__actions">
-                            <button
-                              className="rpt02-button rpt02-button--primary"
-                              type="button"
-                              onClick={() => {
-                                setQuery("");
-                                setOnlyReview(false);
-                                setApplied((current) => ({
-                                  ...current,
-                                  reconcile: "",
-                                }));
-                              }}
-                            >
-                              {tUi("updatedUi.text_816c89e8e46b")}
-                            </button>
+                            {hasDetailFilters ? (
+                              <button
+                                className="rpt02-button rpt02-button--primary"
+                                type="button"
+                                onClick={clearDetailFilters}
+                              >
+                                {tUi(
+                                  normalized(query) !== ""
+                                    ? "updatedUi.text_816c89e8e46b"
+                                    : "reports.filters.clearFilters",
+                                )}
+                              </button>
+                            ) : null}
                             <button
                               className="rpt02-button rpt02-button--ghost"
                               type="button"
-                              onClick={() =>
-                                document
-                                  .querySelector<HTMLElement>(
-                                    ".rpt02-date-range button, .rpt02-date-range input",
-                                  )
-                                  ?.click()
-                              }
+                              onClick={openDateRange}
                             >
                               {tUi("uiAudit.text_1a38fb74a6")}{" "}
                             </button>

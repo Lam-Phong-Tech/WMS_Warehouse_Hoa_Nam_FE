@@ -757,9 +757,7 @@ export function DashboardSnapshot({
                   </button>
                   <button
                     type="button"
-                    onClick={() =>
-                      onNavigate(stockReportRoute)
-                    }
+                    onClick={() => onNavigate(stockReportRoute)}
                   >
                     <span className="is-green">
                       <DashIcon name="chart-column-big" />
@@ -812,9 +810,7 @@ export function DashboardSnapshot({
                       <h2>{t("dashboard.snapshot.stockCompositionTitle")}</h2>
                       <button
                         type="button"
-                        onClick={() =>
-                          onNavigate(stockReportRoute)
-                        }
+                        onClick={() => onNavigate(stockReportRoute)}
                       >
                         {t("dashboard.snapshot.viewDetail")}{" "}
                         <DashIcon name="arrow-right" />
@@ -909,7 +905,19 @@ export function DashboardSnapshot({
               <button type="button" onClick={() => selectDays(30)}>
                 {t("dashboard.snapshot.periodLast30")}
               </button>
-              <button type="button" className="is-selected">
+              <button
+                type="button"
+                className="is-selected"
+                onClick={() => {
+                  setRangePickMode("from");
+                  const trigger =
+                    customDialogRef.current?.querySelector<HTMLButtonElement>(
+                      '[data-date-field="snapshot-date-from"]',
+                    );
+                  trigger?.focus();
+                  trigger?.click();
+                }}
+              >
                 {t("dashboard.snapshot.custom")}
               </button>
             </div>

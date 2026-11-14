@@ -39,3 +39,22 @@ it("applies dates automatically without an Apply button", async () => {
     expect.objectContaining({ from: yesterday, to: yesterday }),
   );
 });
+
+it("opens the date picker from the empty table without resetting the current range", async () => {
+  renderWithProviders(<Rpt08HistoryReport />);
+  fireEvent.click(screen.getByRole("button", { name: "Từ ngày" }));
+  fireEvent.click(screen.getByRole("button", { name: "Hôm qua" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Điều chỉnh khoảng thời gian" }),
+  );
+  const panel = await screen.findByRole("dialog");
+  const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+  expect(useIoHistorySnapshot).toHaveBeenLastCalledWith(
+    expect.objectContaining({ from: yesterday, to: yesterday }),
+  );
+  fireEvent.click(within(panel).getByRole("button", { name: "Hôm nay" }));
+  const today = dayjs().format("YYYY-MM-DD");
+  expect(useIoHistorySnapshot).toHaveBeenLastCalledWith(
+    expect.objectContaining({ from: today, to: today }),
+  );
+});

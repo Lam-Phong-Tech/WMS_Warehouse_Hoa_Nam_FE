@@ -340,6 +340,7 @@ export const ZH_AUDIT = {
   "rpt08.detail.linesCount": "{count} 行货品",
   "rpt08.detail.viewInboundDocument": "查看入库单详情",
   "rpt08.detail.viewOutboundDocument": "查看出库单详情",
+  "rpt08.detail.viewReversalDocument": "查看冲销单详情",
   "reportExport.allHint": "跨页导出所有匹配结果",
   "reportExport.pageHint": "仅当前页的项目",
   "reportExport.summaryHint": "数量与合计",

@@ -38,6 +38,7 @@ export const MESSAGES_EN: MessageTree = {
       linesCount: "{count} line items",
       viewInboundDocument: "View receipt details",
       viewOutboundDocument: "View issue note details",
+      viewReversalDocument: "View reversal details",
     },
   },
   dashboardSnapshot: DASHBOARD_SNAPSHOT_EN,
@@ -4135,6 +4136,8 @@ export const MESSAGES_EN: MessageTree = {
       movementsEmpty: "No movement in the period.",
     },
     stockReconcileReport: {
+      noFlowTitle: "No In – Out – Stock data for this period",
+      noFlowCopy: "Choose another date range to view In – Out – Stock data.",
       collapseSection: "Collapse {title}",
       expandSection: "Expand {title}",
       detailTabsAria: "Stock detail view",
