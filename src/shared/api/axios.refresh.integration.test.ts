@@ -24,7 +24,11 @@ vi.mock("@/shared/store/auth.store", async () => {
     ...actual,
     useAuthStore: {
       ...actual.useAuthStore,
-      getState: () => ({ logout: logoutMock, setToken: setTokenMock }),
+      getState: () => ({
+        ...actual.useAuthStore.getState(),
+        logout: logoutMock,
+        setToken: setTokenMock,
+      }),
       persist: { clearStorage: clearStorageMock },
     },
   };
@@ -34,9 +38,18 @@ import { api, refreshSession } from "@/shared/api/axios";
 import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { memoryStorage } from "@/shared/lib/memory-storage";
 import { authService } from "@/modules/auth/services/auth.service";
+import { useAuthStore } from "@/shared/store/auth.store";
 
 const EXPIRED_ACCESS_TOKEN_PLACEHOLDER = "<EXPIRED_ACCESS_TOKEN>";
 const FRESH_ACCESS_TOKEN_PLACEHOLDER = "<FRESH_ACCESS_TOKEN>";
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
 
 describe("axios refresh interceptor — integration (mock ở tầng HTTP adapter)", () => {
   let mock: MockAdapter;
@@ -48,6 +61,7 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
     logoutMock.mockReset();
     clearStorageMock.mockReset();
     memoryStorage.clear();
+    useAuthStore.setState((state) => ({ authEpoch: state.authEpoch + 1 }));
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...originalLocation, pathname: "/employees", assign: vi.fn() },
@@ -98,23 +112,55 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
     let finishRefresh!: () => void;
     let loginRequests = 0;
     const order: string[] = [];
-    mock.onPost(API_ENDPOINTS.REFRESH).reply(() => new Promise((resolve) => {
-      finishRefresh = () => { order.push("refresh-response"); resolve([200, { success: true, data: {
-        access_token: "old-refreshed", token_type: "bearer", expires_in: 900,
-      } }]); };
-    }));
+    mock.onPost(API_ENDPOINTS.REFRESH).reply(
+      () =>
+        new Promise((resolve) => {
+          finishRefresh = () => {
+            order.push("refresh-response");
+            resolve([
+              200,
+              {
+                success: true,
+                data: {
+                  access_token: "old-refreshed",
+                  token_type: "bearer",
+                  expires_in: 900,
+                },
+              },
+            ]);
+          };
+        }),
+    );
     mock.onPost(API_ENDPOINTS.LOGIN).reply(() => {
       loginRequests += 1;
       order.push("login-request");
-      return [200, { success: true, data: {
-        access_token: "new-login", token_type: "bearer", expires_in: 900,
-        user: { user_id: "user-1", email: "qa@example.com", username: "qa", roles: [], permissions: [], warehouse_scope_ids: [] },
-      } }];
+      return [
+        200,
+        {
+          success: true,
+          data: {
+            access_token: "new-login",
+            token_type: "bearer",
+            expires_in: 900,
+            user: {
+              user_id: "user-1",
+              email: "qa@example.com",
+              username: "qa",
+              roles: [],
+              permissions: [],
+              warehouse_scope_ids: [],
+            },
+          },
+        },
+      ];
     });
 
     const refresh = refreshSession();
     await vi.waitFor(() => expect(finishRefresh).toBeTypeOf("function"));
-    const login = authService.login({ email: "qa@example.com", password: "secret" });
+    const login = authService.login({
+      email: "qa@example.com",
+      password: "<TEST_PASSWORD>",
+    });
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(loginRequests).toBe(0);
     finishRefresh();
@@ -124,13 +170,21 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
 
   it("MFA sai mã trả lỗi ngay, không kẹt khóa chờ refresh", async () => {
     mock.onPost(API_ENDPOINTS.MFA_VERIFY).reply(401, {
-      success: false, error_code: "MFA_CODE_INVALID", message: "Mã xác thực không đúng.",
+      success: false,
+      error_code: "MFA_CODE_INVALID",
+      message: "Mã xác thực không đúng.",
     });
 
-    await expect(authService.verifyMfa("challenge", "000000")).rejects.toMatchObject({
+    await expect(
+      authService.verifyMfa("challenge", "000000"),
+    ).rejects.toMatchObject({
       response: { status: 401 },
     });
-    expect(mock.history.post.filter((request) => request.url === API_ENDPOINTS.REFRESH)).toHaveLength(0);
+    expect(
+      mock.history.post.filter(
+        (request) => request.url === API_ENDPOINTS.REFRESH,
+      ),
+    ).toHaveLength(0);
   });
 
   it("access token hết hạn + refresh cũng 401 → logout, redirect login, không retry", async () => {
@@ -207,4 +261,108 @@ describe("axios refresh interceptor — integration (mock ở tầng HTTP adapte
     expect(setTokenMock).toHaveBeenCalledTimes(1);
     expect(setTokenMock).toHaveBeenCalledWith(FRESH_ACCESS_TOKEN_PLACEHOLDER);
   });
+
+  it.each([200, 401])(
+    "401 đến sau khi refresh hoàn tất → retry đúng một lần (HTTP %i)",
+    async (retryStatus) => {
+      memoryStorage.setItem(EXPIRED_ACCESS_TOKEN_PLACEHOLDER);
+      const departmentStarted = deferred<void>();
+      const departmentResponse = deferred<[number, unknown]>();
+      mock.onGet("/departments").replyOnce(() => {
+        departmentStarted.resolve();
+        return departmentResponse.promise;
+      });
+      mock
+        .onGet("/departments")
+        .reply(retryStatus, { success: retryStatus === 200 });
+      mock.onGet("/employees").replyOnce(401);
+      mock.onGet("/employees").reply(200, { success: true });
+      mock.onPost(API_ENDPOINTS.REFRESH).reply(200, {
+        success: true,
+        data: {
+          access_token: FRESH_ACCESS_TOKEN_PLACEHOLDER,
+          token_type: "bearer",
+          expires_in: 900,
+        },
+      });
+
+      const department = api.get("/departments").then(
+        (response) => ({ status: response.status }),
+        (error) => ({ status: error.response?.status }),
+      );
+      await departmentStarted.promise;
+      await api.get("/employees");
+      expect(memoryStorage.getToken()).toBe(FRESH_ACCESS_TOKEN_PLACEHOLDER);
+      departmentResponse.resolve([
+        401,
+        { success: false, message: "Token expired" },
+      ]);
+
+      expect(await department).toEqual({ status: retryStatus });
+      const requests = mock.history.get.filter(
+        (request) => request.url === "/departments",
+      );
+      expect(requests).toHaveLength(2);
+      expect(requests[1].headers?.Authorization).toBe(
+        `Bearer ${FRESH_ACCESS_TOKEN_PLACEHOLDER}`,
+      );
+      expect(
+        mock.history.post.filter(
+          (request) => request.url === API_ENDPOINTS.REFRESH,
+        ),
+      ).toHaveLength(1);
+      expect(logoutMock).toHaveBeenCalledTimes(retryStatus === 401 ? 1 : 0);
+    },
+  );
+
+  it.each(["<NEW_LOGIN_ACCESS_TOKEN>", FRESH_ACCESS_TOKEN_PLACEHOLDER])(
+    "không retry request cũ sau logout/login, kể cả khi token trùng (%s)",
+    async (loginToken) => {
+      memoryStorage.setItem(EXPIRED_ACCESS_TOKEN_PLACEHOLDER);
+      const departmentStarted = deferred<void>();
+      const departmentResponse = deferred<[number, unknown]>();
+      mock.onGet("/departments").replyOnce(() => {
+        departmentStarted.resolve();
+        return departmentResponse.promise;
+      });
+      mock.onGet("/departments").reply(200);
+      mock.onGet("/employees").replyOnce(401);
+      mock.onGet("/employees").reply(200);
+      mock.onPost(API_ENDPOINTS.REFRESH).reply(200, {
+        success: true,
+        data: {
+          access_token: FRESH_ACCESS_TOKEN_PLACEHOLDER,
+          token_type: "bearer",
+          expires_in: 900,
+        },
+      });
+
+      const department = api.get("/departments");
+      const rejected = expect(department).rejects.toMatchObject({
+        response: { status: 401 },
+      });
+      await departmentStarted.promise;
+      await api.get("/employees");
+      memoryStorage.clear();
+      memoryStorage.setItem(loginToken);
+      useAuthStore.setState((state) => ({ authEpoch: state.authEpoch + 1 }));
+      departmentResponse.resolve([
+        401,
+        { error_code: "AUTH_SESSION_REPLACED" },
+      ]);
+      await rejected;
+
+      expect(
+        mock.history.get.filter((request) => request.url === "/departments"),
+      ).toHaveLength(1);
+      expect(
+        mock.history.post.filter(
+          (request) => request.url === API_ENDPOINTS.REFRESH,
+        ),
+      ).toHaveLength(1);
+      expect(memoryStorage.getToken()).toBe(loginToken);
+      expect(logoutMock).not.toHaveBeenCalled();
+      expect(window.location.assign).not.toHaveBeenCalled();
+    },
+  );
 });

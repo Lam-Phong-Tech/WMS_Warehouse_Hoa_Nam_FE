@@ -42,6 +42,7 @@ declare module "axios" {
   }
   interface InternalAxiosRequestConfig {
     _isRetryAfterRefresh?: boolean;
+    _authEpoch?: number;
   }
 }
 
@@ -161,18 +162,35 @@ export function refreshSession(): Promise<RefreshSessionPayload> {
 }
 
 let accessTokenRefresh: Promise<string> | null = null;
+let completedTokenRefresh: {
+  previousAuthorization: string;
+  token: string;
+  authEpoch: number;
+} | null = null;
 
 function refreshAccessToken(): Promise<string> {
   if (!accessTokenRefresh) {
     const tokenBeforeRefresh = memoryStorage.getToken();
+    const authEpoch = useAuthStore.getState().authEpoch;
     accessTokenRefresh = refreshSession()
       .then(({ access_token }) => {
-        if (memoryStorage.getToken() !== tokenBeforeRefresh) {
+        if (
+          memoryStorage.getToken() !== tokenBeforeRefresh ||
+          useAuthStore.getState().authEpoch !== authEpoch
+        ) {
           throw new Error("AUTH_REFRESH_SUPERSEDED");
         }
         memoryStorage.setItem(access_token);
         // setToken revokes stale permission/profile before retrying the request.
         useAuthStore.getState().setToken(access_token);
+        completedTokenRefresh =
+          tokenBeforeRefresh === null
+            ? null
+            : {
+                previousAuthorization: `Bearer ${tokenBeforeRefresh}`,
+                token: access_token,
+                authEpoch,
+              };
         return access_token;
       })
       .finally(() => {
@@ -220,6 +238,7 @@ api.interceptors.request.use((config) => {
     config.headers["X-Client-Platform"] = metadata.platform;
   }
   const token = memoryStorage.getToken();
+  config._authEpoch = useAuthStore.getState().authEpoch;
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
   const url = config.url || "";
@@ -255,9 +274,32 @@ api.interceptors.response.use(
       // refreshing its 401 here would wait on that same lock forever.
       if (isAuthEndpoint) return Promise.reject(error);
 
+      const authEpoch = useAuthStore.getState().authEpoch;
+      if (config?._authEpoch !== undefined && config._authEpoch !== authEpoch) {
+        return Promise.reject(error);
+      }
+
       // An older in-flight request can finish after this tab completed a new
       // login. Its 401 must not clear the newer access token or show a stale notice.
-      if (isStaleAuthResponse(config)) return Promise.reject(error);
+      if (isStaleAuthResponse(config)) {
+        // A late 401 from the token we just refreshed still belongs to this
+        // login. Reuse that refresh once; never replay across a login/logout.
+        if (
+          config &&
+          !config._isRetryAfterRefresh &&
+          completedTokenRefresh &&
+          config._authEpoch === authEpoch &&
+          completedTokenRefresh.authEpoch === authEpoch &&
+          config.headers.Authorization ===
+            completedTokenRefresh.previousAuthorization &&
+          memoryStorage.getToken() === completedTokenRefresh.token
+        ) {
+          config._isRetryAfterRefresh = true;
+          config.headers.Authorization = `Bearer ${completedTokenRefresh.token}`;
+          return api.request(config);
+        }
+        return Promise.reject(error);
+      }
 
       if (getErrorCode(data) === "AUTH_SESSION_REPLACED") {
         redirectToLogin(replacementDetailsFromResponse(data));
@@ -275,7 +317,8 @@ api.interceptors.response.use(
           const refreshStatus = responseStatus(refreshError);
           if (
             (refreshStatus === 401 || refreshStatus === 403) &&
-            memoryStorage.getToken() === tokenBeforeRefresh
+            memoryStorage.getToken() === tokenBeforeRefresh &&
+            useAuthStore.getState().authEpoch === authEpoch
           ) {
             const refreshData = (refreshError as AxiosError<ApiErrorResponse>)
               ?.response?.data;
