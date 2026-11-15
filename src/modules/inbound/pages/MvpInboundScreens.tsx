@@ -1115,7 +1115,7 @@ export function InboundScanModal({
     },
     {
       key: "quantity",
-      header: t("catalog.common.qty"),
+      header: t("inbound.detail.colScannedQty"),
       width: 40,
       align: "center",
       render: (entry) => entry.quantity,

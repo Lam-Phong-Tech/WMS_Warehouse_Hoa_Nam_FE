@@ -855,7 +855,7 @@ export const MESSAGES_EN: MessageTree = {
       sessionEmpty:
         "No scan in this session yet — the result of each scan will appear here.",
       colNameType: "Name / type",
-      colScannedQty: "Scanned quantity",
+      colScannedQty: "Qty",
       colCode: "Code",
       colResult: "Result",
       colSource: "Source",

@@ -1431,7 +1431,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       sessionTitle: "扫描此会话中的活动",
       sessionEmpty: "此会话中尚未进行扫描 — 每次扫描的结果将显示在此处。",
       colNameType: "名称/类型",
-      colScannedQty: "扫描数量",
+      colScannedQty: "数量",
       colCode: "代码",
       colResult: "结果",
       colSource: "来源",
