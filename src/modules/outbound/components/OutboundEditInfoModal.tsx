@@ -365,7 +365,7 @@ export function OutboundEditInfoModal({
             <UiTextField
               fullWidth
               label={t("outbound.intake.fieldPhone")}
-              placeholder="VD: 0901234567"
+              placeholder="0901234567"
               value={recipientPhone}
               onChange={(event) => {
                 setRecipientPhone(

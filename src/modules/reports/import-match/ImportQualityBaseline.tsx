@@ -46,6 +46,8 @@ import {
 } from "@/modules/reports/operations/report-format";
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
+import { getApiErrorMessage } from "@/shared/api/api-error";
 import { useReportRefresh } from "@/modules/reports/operations/report-refresh";
 import {
   downloadImportQualityExport,
@@ -328,11 +330,7 @@ export default function ImportQualityBaseline() {
         ),
       );
     } catch (error) {
-      setExportError(
-        error instanceof Error
-          ? error.message
-          : "Không thể tải báo cáo nhập liệu.",
-      );
+      setExportError(getApiErrorMessage(error, t("reportExport.failed")));
       throw error;
     } finally {
       setExporting(false);
@@ -538,7 +536,9 @@ export default function ImportQualityBaseline() {
           onRetry={refresh}
         />
       ) : null}
-      {exportError ? <UiAlert tone="error">{exportError}</UiAlert> : null}
+      {exportError ? (
+        <UiAlert tone="error">{localizeMessage(exportError)}</UiAlert>
+      ) : null}
 
       <Box
         component="section"
@@ -974,7 +974,7 @@ export default function ImportQualityBaseline() {
                   })}
                   onClick={() => setOpenBatch(row)}
                 >
-                  Xem
+                  {t("inbound.list.view")}
                 </RowActionButton>
               </RowActionGroup>
             )}

@@ -8,6 +8,7 @@ import {
   WMS_ACTION_PERMISSIONS,
 } from "@/shared/constants/wms-permissions";
 import { getApiErrorMessage } from "@/shared/api/api-error";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import type { ReportExportChoice, ExportScope } from "./report-export-workbook";
 import "./report-export.css";
 
@@ -334,7 +335,7 @@ export function ReportExportDrawer({
         ) : null}
         {error ? (
           <div role="alert" className="hn-report-export-error">
-            {error}
+            {localizeMessage(error)}
           </div>
         ) : null}
       </div>

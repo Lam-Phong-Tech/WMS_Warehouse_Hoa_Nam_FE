@@ -2,6 +2,7 @@ import { localizedValue as localizedUiValue } from "@/shared/i18n/localized-valu
 import type { ReactNode } from "react";
 import "./io-history-feedback.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 
 export type IoHistoryFeedbackState =
   | "stale"
@@ -223,7 +224,7 @@ export function IoHistoryFeedback({
 }: IoHistoryFeedbackProps) {
   const copy = getCOPY()[state];
   const description =
-    message ??
+    (message == null ? undefined : localizeMessage(message)) ??
     (state === "stale" && updatedAt
       ? tUi("updatedUi.text_e6100fcb8e0e", {
           value0: String(copy.description),

@@ -1,6 +1,7 @@
 import { withFlatOverrides } from "./merge-flat-messages";
 import { ZH_SUPPLEMENT } from "./messages.zh-supplement";
 import { ZH_AUDIT } from "./messages.zh-audit";
+import { ZH_TERMINOLOGY } from "./messages.zh-terminology";
 import { DASHBOARD_SNAPSHOT_ZH } from "./messages.dashboard-snapshot";
 import { NOTIFICATION_CONTENT_ZH } from "./messages.notification-content";
 import { REPORT_EXPORT_ZH } from "./messages.report-export";
@@ -484,7 +485,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
     text_a808b9e33648: "报告导出成功。",
     text_a84e8e7a2a07: "这些是最新的可用结果，而不是新应用的过滤器的数据。",
     text_a8888f21db98:
-      "货物在扫描仪应用程序中进行扫描。 Web应用程序用于管理和监控；只有收到库存的文件才会增加库存水平。",
+      "货物在扫描应用中扫描。网页用于管理和监控；只有已入库的单据才会增加库存。",
     text_a8c4ecd17312: "选择重试以重新加载数据。",
     text_a9a7bcf8d30a: "滤波器组件跟踪",
     text_aa051eef2028: "搜索标签列表...",
@@ -670,6 +671,8 @@ const MESSAGES_ZH_BASE: MessageTree = {
     viewDetail: "查看详情",
   },
   topbar: {
+    enableDarkTheme: "启用深色主题",
+    enableLightTheme: "启用浅色主题",
     language: "语言",
     languageVietnamese: "Tiếng Việt",
     languageEnglish: "English",
@@ -730,6 +733,8 @@ const MESSAGES_ZH_BASE: MessageTree = {
     themeChanged: "主题更改为",
   },
   nav: {
+    pin: "固定导航栏",
+    unpin: "取消固定并折叠导航栏",
     primary: "主导航",
     collapse: "折叠导航栏",
     expand: "展开导航栏",
@@ -3203,7 +3208,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       colItemKind: "项目类型",
       colVariance: "方差",
       colReconcileStatus: "调节状态",
-      mismatchTooltip: "不匹配：{reason}。 “方差”列仅测量 Ledger ↔ 余额。",
+      mismatchTooltip: "不匹配：{reason}。“差异”列仅比较库存流水与库存余额。",
       mismatchAt: "不匹配：{reason}",
       colThresholdStatus: "阈值状态",
       colUpdatedAt: "最后更新",
@@ -3715,7 +3720,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       drillEmpty: "此数据片没有源事务。",
       exportOk: "根据正在查看的确切切片创建了 {format} 文件。",
       snapshotExpiredDrill: "切片已过期。协调之前刷新报告。",
-      drillKeyInvalid: "rill_key不属于当前切片。",
+      drillKeyInvalid: "drill_key 不属于当前切片。",
       snapshotExpiredExport: "切片已过期。刷新报告并再次导出。",
       csvNotSupported: "后端尚未启用此报告的包含个人数据的 CSV 导出功能。",
       pageTablistAria: "收件人出库报告的查看模式",
@@ -4975,6 +4980,8 @@ const MESSAGES_ZH_BASE: MessageTree = {
   },
   shared: {
     table: {
+      pageLabel: "第 {page} 页",
+      topCount: "前 {count} 项",
       loading: "加载中...",
       empty: "没有数据",
       rowNumber: "#",
@@ -5005,6 +5012,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       rowsPerPageAria: "每页行数",
     },
     apiError: {
+      invalidAuthResponse: "服务器返回的身份验证响应无效，请重试。",
       requestFailed: "请求失败",
       noPermission: "您无权执行此操作。请联系管理员以获得访问权限。",
       default:
@@ -5175,7 +5183,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       noDetector:
         "此浏览器不支持 BarcodeDetector。关闭相机并手动输入条形码/QR。",
       insecureContext:
-        "Web WMS 摄像头需要 HTTPS/安全上下文。关闭相机并手动输入代码。",
+        "网页仓库系统的摄像头需要 HTTPS 安全连接。请关闭摄像头并手动输入编码。",
       noCameraApi: "此设备/浏览器不提供相机 API。手动输入代码。",
       cameraReady: "相机准备就绪",
       cameraStarting: "启动相机...",
@@ -5278,6 +5286,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       confirmNewPasswordPlaceholder: "重新输入新密码",
     },
     login: {
+      registeredEmailFallback: "注册邮箱",
       identifierLabel: "用户名",
       identifierPlaceholder: "输入您的用户名",
       accessNoticeTitle: "根据您分配的帐户授予访问权限。",
@@ -5497,7 +5506,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       fieldStatus: "状态",
     },
     productCatalog: {
-      lead: "当前在PV App上显示的产品。添加产品、更新图像和客户看到的显示信息。",
+      lead: "当前在 PV 应用中展示的产品。可添加产品、更新图片和客户看到的信息。",
       statTotal: "{count} 产品总数",
       statNoImage: "{count} 没有图像的产品",
       addAction: "添加产品",
@@ -5509,12 +5518,12 @@ const MESSAGES_ZH_BASE: MessageTree = {
       publishedAll: "所有可见性状态",
       cardNoImage: "还没有图片",
       cardImageBroken: "图片加载失败",
-      emptyTitle: "PV App 上还没有产品",
+      emptyTitle: "PV 应用中暂无产品",
       emptyHint: "使用“添加产品”选择仓库 SKU 并将其发布到应用程序。",
       dialogCreateTitle: "将产品添加到PV应用程序",
-      dialogEditTitle: "编辑PV App产品",
+      dialogEditTitle: "编辑 PV 应用产品",
       created: "产品已添加至 PV 应用程序。",
-      updated: "PV App产品更新。",
+      updated: "PV 应用产品已更新。",
       skuField: "仓库 SKU",
       skuHint:
         "输入要搜索的代码或名称。还没有 SKU 吗？首先在 SKU 列表屏幕上创建它。",
@@ -5961,7 +5970,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       legendUsed: "正在使用（仍然可选）",
       selectedPanelTitle: "选定的纸盘",
       noneSelected: "未选择纸盘",
-      pendingQty: "入库数量：{qty} PCS",
+      pendingQty: "待上架数量：{qty} 件",
     },
   },
   scan: {
@@ -6233,6 +6242,9 @@ const MESSAGES_ZH_BASE: MessageTree = {
       readonlyNote:
         "只读模式：该账户不能创建、确认、过帐或取消库存调整单。您仍然可以浏览列表并打开详细信息。",
       colTotalQty: "总量",
+      colType: "类型",
+      typeOutbound: "出库冲销",
+      typeInbound: "入库冲销",
       searchPlaceholder: "调整代码、源文件、原因...",
       searchAria: "搜索库存调整文件",
       statusFilterAria: "按状态过滤调整文档",
@@ -6362,6 +6374,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
     },
   },
   catalog: {
+    title: "基础界面目录（Vuexy 基准）",
     common: {
       qty: "数量",
       recipient: "收件人",
@@ -6374,6 +6387,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       sectionTitle: "标记 — 基线颜色 (DEC-UI-BASELINE-01)",
     },
     typography: {
+      sectionTitle: "字体排版",
       pageTitle: "页面标题 24/500",
       cardTitle: "卡牌标题 18/600",
       body: "正文 15px — {text}",
@@ -6428,6 +6442,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       draft: "草案",
     },
     kpi: {
+      sectionTitle: "KPI 卡片",
       available: "可用库存\n过滤器范围内的",
       availableHint: "更新于 5 分钟前",
       pendingDocs: "等待批准的文件",
@@ -6486,7 +6501,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
     },
     layout: {
       sectionTitle:
-        "布局 — UiAppShell / UiSidebarNav / UiTopbar (Vuexy light, 260px)",
+        "布局 — UiAppShell / UiSidebarNav / UiTopbar（Vuexy 浅色，260px）",
       groupOperations: "操作",
       groupAdmin: "管理",
       navDashboard: "仪表板",
@@ -6495,19 +6510,21 @@ const MESSAGES_ZH_BASE: MessageTree = {
       navMasterData: "SKU目录及全国经销机构",
       navUsers: "用户",
       collapseSidebar: "折叠侧边栏",
-      footer: "Hoa Nam Tools — 内部",
+      footer: "Hoa Nam 工具 — 内部",
       breadcrumbHome: "首页",
       pageSubtitle: "固定人物 — 目录夹具",
     },
     states: {
+      sectionTitle: "界面状态",
       emptyDesc: "当前过滤器中还没有文档。",
       emptyAction: "创建一个新文档",
       noPermission: "需要 inventory.view 权限。",
     },
     formField: {
-      sectionTitle: "FormField shell（任何控件）",
+      label: "表单字段容器",
+      sectionTitle: "FormField 容器（任意控件）",
       helper: "当控件不是 TextField 时使用它。",
-      placeholder: "shell内的控制",
+      placeholder: "容器内的控件",
     },
   },
 };
@@ -6515,4 +6532,5 @@ const MESSAGES_ZH_BASE: MessageTree = {
 export const MESSAGES_ZH: MessageTree = withFlatOverrides(MESSAGES_ZH_BASE, {
   ...ZH_SUPPLEMENT,
   ...ZH_AUDIT,
+  ...ZH_TERMINOLOGY,
 });

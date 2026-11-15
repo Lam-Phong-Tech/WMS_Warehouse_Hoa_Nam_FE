@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { http } from "@/shared/api/http";
-import { updateMvpAgency, updateMvpDefect } from "./mvp-master.service";
+import {
+  setMvpSkuPublished,
+  updateMvpAgency,
+  updateMvpDefect,
+} from "./mvp-master.service";
 
 vi.mock("@/shared/api/http", () => ({
   http: { getPage: vi.fn(), post: vi.fn(), patch: vi.fn() },
@@ -31,6 +35,25 @@ const defectPayload = {
   defect_name: "Không chạy motor",
   status: "ACTIVE" as const,
 };
+
+describe("SKU app visibility transport", () => {
+  it("accepts profile version zero for the first publication", async () => {
+    vi.mocked(http.patch).mockResolvedValue({
+      published_to_app: true,
+      pv_profile_version: 1,
+    });
+    await expect(setMvpSkuPublished("sku-1", 0, true)).resolves.toMatchObject({
+      published_to_app: true,
+    });
+    expect(http.patch).toHaveBeenLastCalledWith(
+      "/pv/products/sku-1/publish",
+      { published: true },
+      {
+        headers: { "If-Match": "0", "Idempotency-Key": expect.any(String) },
+      },
+    );
+  });
+});
 
 describe("agency/defect transport", () => {
   beforeEach(() => vi.clearAllMocks());

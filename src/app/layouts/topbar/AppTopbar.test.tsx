@@ -240,7 +240,7 @@ describe("AppTopbar", () => {
     expect(
       screen.queryByRole("button", { name: "Lối tắt nghiệp vụ" }),
     ).not.toBeInTheDocument();
-    const breadcrumb = screen.getByRole("navigation", { name: "Breadcrumb" });
+    const breadcrumb = screen.getByRole("navigation", { name: "Đường dẫn" });
     expect(breadcrumb).toHaveTextContent("Danh mục");
     expect(breadcrumb).toHaveTextContent("Danh sách SKU");
   });
@@ -249,7 +249,7 @@ describe("AppTopbar", () => {
     const { container } = renderTopbar(true);
     expect(container.querySelector(".hn-topbar-content")).toBeNull();
     expect(
-      screen.queryByRole("navigation", { name: "Breadcrumb" }),
+      screen.queryByRole("navigation", { name: "Đường dẫn" }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Lối tắt nghiệp vụ" }),

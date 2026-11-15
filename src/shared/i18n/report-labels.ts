@@ -1,0 +1,182 @@
+import { useLanguageStore } from "./language.store";
+
+/** Fixed export captions only; never apply this lookup to user-supplied cell values. */
+const REPORT_LABELS: Readonly<Record<string, readonly [string, string]>> = {
+  "SKU / Model": ["SKU / Model", "SKU／型号"],
+  Trang: ["Page", "页"],
+  "Mã phiếu nhập": ["Inbound document code", "入库单编码"],
+  "Mã quét / serial": ["Scan code / serial", "扫描编码／序列号"],
+  "Mã SKU": ["SKU code", "SKU 编码"],
+  "Đơn vị tính": ["Unit", "单位"],
+  "Ngày ghi nhận": ["Recorded at", "记录时间"],
+  "Đã ghi nhận": ["Recorded", "已记录"],
+  "Thời gian": ["Time", "时间"],
+  Tăng: ["Increase", "增加"],
+  Giảm: ["Decrease", "减少"],
+  "Tồn sổ sau": ["Ledger stock after", "变动后账面库存"],
+  Kho: ["Warehouse", "仓库"],
+  Mã: ["Code", "编码"],
+  Loại: ["Type", "类型"],
+  "Ngày nhận": ["Received at", "接收时间"],
+  "BÁO CÁO BẢO HÀNH & LINH KIỆN": [
+    "Warranty & components report",
+    "保修与配件报表",
+  ],
+  "BÁO CÁO TRUY VẾT HÀNG HÓA": ["Goods traceability report", "货物追溯报告"],
+  "BÁO CÁO NHẬP – XUẤT – TỒN": [
+    "Inbound, outbound & stock report",
+    "入库、出库与库存报表",
+  ],
+  "Mã phiếu bảo hành": ["Warranty case code", "保修工单编码"],
+  "Phiếu xuất": ["Outbound document", "出库单"],
+  "Mã nhãn": ["Label code", "标签代码"],
+  "Bản lưu nhãn": ["Label snapshot", "标签快照"],
+  "Nơi nhận": ["Recipient", "收货方"],
+  SĐT: ["Phone", "电话"],
+  "Số sản phẩm": ["Item count", "实物数量"],
+  "Số SKU": ["SKU count", "SKU 数量"],
+  "Chi tiết SKU": ["SKU detail", "SKU 详细信息"],
+  "Trạng thái": ["Status", "状态"],
+  "Máy in": ["Printer", "打印机"],
+  "Người in": ["Printed by", "打印人"],
+  "Số lần in": ["Print attempts", "打印次数"],
+  "Lần in lỗi": ["Failed print attempts", "打印失败次数"],
+  "Lần in lại": ["Reprints", "补打次数"],
+  "Ngày tạo": ["Created on", "创建于"],
+  "Mã lần nhập": ["Import ID", "导入编号"],
+  "Mã biến động": ["Movement code", "库存流水编码"],
+  "Loại biến động": ["Movement type", "库存变动类型"],
+  "Trạng thái tồn": ["Stock status", "库存状态"],
+  "Mã sản phẩm": ["Product code", "产品代码"],
+  "Mã vật lý": ["Physical code", "物理代码"],
+  "Ngày ghi sổ": ["Posted at", "过账时间"],
+  "Giá trị": ["Value", "值"],
+  "Báo cáo tồn kho & đối soát": [
+    "Stock & reconciliation report",
+    "库存与对账报表",
+  ],
+  "Kỳ báo cáo": ["Reporting period", "报表期间"],
+  "Phạm vi": ["Scope", "范围"],
+  "SKU cần kiểm tra": ["SKUs to review", "要审核的 SKU"],
+  "Tổng hợp tồn": ["Stock summary", "库存汇总"],
+  "Tồn sổ": ["Ledger stock", "账面库存"],
+  "Tồn ghi nhận": ["Recorded stock", "已记录库存"],
+  "Chênh lệch": ["Difference", "差异"],
+  "Tên hàng": ["Product name", "货品名称"],
+  "Tồn đầu": ["Opening stock", "期初库存"],
+  Nhập: ["Inbound", "入库"],
+  "Xuất SP": ["Product out", "产品出库"],
+  "Xuất LK BH": ["Warranty component issues", "保修配件出库"],
+  "Hoàn tác": ["Reversal", "冲销"],
+  "Tồn cuối": ["Closing stock", "期末库存"],
+  "Chi tiết đối soát": ["Reconciliation details", "核对明细"],
+  "Đối soát": ["Reconciliation", "对账"],
+  "Cần kiểm tra": ["Needs review", "待核查"],
+  Khớp: ["Matched", "一致"],
+  "Mã hàng": ["Item code", "货品编码"],
+  "Loại hàng": ["Item type", "货品类型"],
+  "Sản phẩm": ["Product", "产品"],
+  "Linh kiện": ["Component", "配件"],
+  "Thời điểm": ["Time", "时间"],
+  "Thời điểm ghi nhận": ["Recorded at", "记录时间"],
+  "Vị trí trước": ["Location before", "变更前位置"],
+  "Vị trí sau": ["Location after", "变更后位置"],
+  "Số lượng": ["Quantity", "数量"],
+  "Số lượng mã đang xem": ["Quantity for the selected code", "当前编码数量"],
+  "Sự kiện": ["Event", "事件"],
+  "Chứng từ": ["Document", "单据"],
+  "Người thực hiện": ["Performed by", "操作人"],
+  "Mã cha": ["Parent code", "父级编码"],
+  "Vị trí": ["Location", "位置"],
+  "Thời điểm dữ liệu": ["Data as of", "数据截至时间"],
+  "Sự kiện tác động tồn": ["Stock-affecting events", "影响库存的事件"],
+  "Ảnh hưởng thuần": ["Net impact", "净影响"],
+  "Mã liên quan": ["Related codes", "相关编码"],
+  "BÁO CÁO ĐÓNG GÓI & IN NHÃN": [
+    "Packing & label printing report",
+    "包装与标签打印报表",
+  ],
+  "BÁO CÁO LỊCH SỬ NHẬP – XUẤT": [
+    "Inbound & outbound history report",
+    "入库与出库历史报表",
+  ],
+  "BÁO CÁO NGƯỜI NHẬN & ĐẠI LÝ": [
+    "Recipient & agency report",
+    "收货方与代理商报表",
+  ],
+  "BÁO CÁO CHẤT LƯỢNG NHẬP LIỆU": ["Import quality report", "导入质量报表"],
+  "BÁO CÁO TỒN KHO": ["Stock report", "库存报表"],
+  "BÁO CÁO SỔ KHO": ["Inventory ledger report", "库存流水报表"],
+  "Turnaround (ngày)": ["Turnaround (days)", "处理时长（天）"],
+  "Thời gian xử lý (ngày)": ["Turnaround (days)", "处理时长（天）"],
+  "Ngày phiếu": ["Document date", "单据日期"],
+  "Số nhãn": ["Label count", "标签数量"],
+  "Đã áp dụng": ["Applied", "已应用"],
+  "Mã máy in": ["Printer code", "打印机编码"],
+  "Lần in gần nhất": ["Last print attempt", "最近打印尝试"],
+  "Biến động số lượng": ["Quantity change", "数量变动"],
+  "Mã thùng": ["Container code", "容器编码"],
+  "Loại chứng từ nguồn": ["Source document type", "来源单据类型"],
+  "Định danh nguồn": ["Source ID", "来源标识"],
+  "Biến động gốc": ["Original movement", "原始库存流水"],
+  "Chuỗi điều chỉnh": ["Correction chain", "调整链"],
+  "Ngày hủy": ["Cancelled at", "取消时间"],
+  "Báo cáo Hoa Nam": ["Hoa Nam report", "Hoa Nam 报表"],
+  "Chỉ tiêu": ["Metric", "指标"],
+  "HOA NAM — BÁO CÁO BẢO HÀNH": [
+    "HOA NAM — Warranty report",
+    "HOA NAM — 保修报表",
+  ],
+  "HOA NAM — BÁO CÁO": ["HOA NAM — Report", "HOA NAM — 报表"],
+  " dòng": [" rows", " 行"],
+  "Thời gian Việt Nam (UTC+7)": ["Vietnam time (UTC+7)", "越南时间（UTC+7）"],
+  "Không có dữ liệu để xuất báo cáo.": [
+    "No data is available to export.",
+    "没有可导出的数据。",
+  ],
+  "Mốc dữ liệu": ["Data as of", "数据截至时间"],
+  "Toàn bộ kết quả": ["All results", "全部结果"],
+  "Số mặt hàng": ["SKU count", "SKU 数量"],
+  "Nhập Xuất Tồn": ["Inbound, outbound & stock", "入库、出库与库存"],
+  "HOA NAM — BÁO CÁO TỒN KHO & ĐỐI SOÁT": [
+    "HOA NAM — Stock & reconciliation report",
+    "HOA NAM — 库存与对账报表",
+  ],
+  "Số lượng trên phiếu": ["Document quantity", "单据数量"],
+  "Biến động tồn mã đang xem": [
+    "Selected code stock change",
+    "当前编码库存变动",
+  ],
+  "Biến động sổ kho nguồn": ["Source ledger change", "来源库存流水变动"],
+  "Tồn trước": ["Stock before", "变动前库存"],
+  "Tồn sau": ["Stock after", "变动后库存"],
+  "Mã con": ["Child code", "子级编码"],
+  "Chỉ tác động tồn": ["Stock-affecting only", "仅影响库存"],
+  "Số sự kiện xuất": ["Exported event count", "导出事件数量"],
+  "Su kien": ["Events", "事件"],
+  "Chung tu": ["Documents", "单据"],
+  "BOX TRAY": ["Boxes & trays", "箱与托盘"],
+  "Thong tin truy van": ["Query information", "查询信息"],
+  "Bao hanh": ["Warranty", "保修"],
+  Source: ["Data", "数据"],
+};
+
+export function reportLabel(source: string): string {
+  const language = useLanguageStore.getState().language;
+  if (language === "vi") return source;
+  const value = REPORT_LABELS[source];
+  return value ? value[language === "zh" ? 1 : 0] : source;
+}
+
+/** Recover the caption's semantic role before date, quantity and status styling. */
+export function canonicalReportLabel(label: string): string {
+  const normalized = label.toLocaleLowerCase();
+  for (const [source, translations] of Object.entries(REPORT_LABELS)) {
+    if (
+      source.toLocaleLowerCase() === normalized ||
+      translations.some((value) => value.toLocaleLowerCase() === normalized)
+    )
+      return source;
+  }
+  return label;
+}

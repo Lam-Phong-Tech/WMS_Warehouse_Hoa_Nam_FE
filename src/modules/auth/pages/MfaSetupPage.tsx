@@ -3,7 +3,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useMfaRecoveryStore } from "@/shared/store/mfa-recovery.store";
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { isAxiosError } from "axios";
+import { getApiErrorMessage } from "@/shared/api/api-error";
 import QRCode from "qrcode";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -20,20 +20,7 @@ import "@/shared/ui/sku-aligned-settings.css";
 import "./mfa-setup-page.css";
 
 function errorMessageOf(error: unknown, fallback: string): string {
-  if (isAxiosError(error)) {
-    const data = error.response?.data;
-    if (
-      data &&
-      typeof data === "object" &&
-      "message" in data &&
-      typeof data.message === "string" &&
-      data.message.trim() !== ""
-    ) {
-      return data.message;
-    }
-  }
-
-  return error instanceof Error && error.message ? error.message : fallback;
+  return getApiErrorMessage(error, fallback);
 }
 
 /**

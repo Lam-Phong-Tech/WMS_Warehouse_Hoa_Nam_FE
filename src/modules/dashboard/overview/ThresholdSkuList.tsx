@@ -173,7 +173,7 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
               },
               {
                 key: "min",
-                header: "Min",
+                header: t("reports.stockReconcileReport.colMin"),
                 width: "9%",
                 align: "right",
                 truncate: 0,
@@ -181,7 +181,7 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
               },
               {
                 key: "max",
-                header: "Max",
+                header: t("reports.stockReconcileReport.colMax"),
                 width: "9%",
                 align: "right",
                 truncate: 0,

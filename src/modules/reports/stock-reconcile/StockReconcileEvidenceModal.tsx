@@ -70,7 +70,7 @@ export function StockReconcileEvidenceModal({
             <strong>{skuName || "—"}</strong>
           </div>
           <div>
-            <span>Kho</span>
+            <span>{tUi("updatedUi.text_19c608bfa103")}</span>
             <strong>{warehouse || "—"}</strong>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function StockReconcileEvidenceModal({
                     <th>{tUi("uiAudit.text_e70daaa5e7")}</th>
                     <th>{tUi("packingLabelReport.time")}</th>
                     <th>{tUi("dashboardSnapshot.type")}</th>
-                    <th>Kho</th>
+                    <th>{tUi("updatedUi.text_19c608bfa103")}</th>
                     <th className="num">{tUi("uiAudit.text_2d141c1485")}</th>
                   </tr>
                 </thead>

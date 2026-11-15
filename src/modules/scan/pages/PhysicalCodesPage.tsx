@@ -65,6 +65,7 @@ import type { ReactNode } from "react";
 import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
 
 // Tông soft-tint theo UiStatusBadge — "processing"/"default" (antd cũ) ⇒ info/neutral.
@@ -638,7 +639,8 @@ export default function PhysicalCodesPage() {
       key: "message",
       header: t("scan.physical.colMessage"),
       sortAccessor: (row) => row.message ?? "",
-      render: (row) => row.message ?? EMPTY_TEXT,
+      render: (row) =>
+        row.message == null ? EMPTY_TEXT : localizeMessage(row.message),
     },
     {
       key: "scanned_at",

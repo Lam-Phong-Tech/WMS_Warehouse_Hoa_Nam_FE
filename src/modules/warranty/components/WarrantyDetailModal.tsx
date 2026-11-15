@@ -1710,7 +1710,7 @@ export function WarrantyDetailModal({
                           }
                         />
                         <DetailField
-                          label="SKU / model"
+                          label={`SKU / ${t("masterData.catalog.model")}`}
                           value={
                             detail.sku ? (
                               <SkuLink code={detail.sku} />

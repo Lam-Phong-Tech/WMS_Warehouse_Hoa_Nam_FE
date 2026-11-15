@@ -1,6 +1,7 @@
 import { ErrorState } from "@/shared/components/ui-states/ErrorState";
 import { UiText } from "@/shared/ui";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import type { PublicApiError } from "@/shared/api/public-http";
 
 /**
@@ -55,7 +56,9 @@ export function PvErrorState({
       title={t("pv.error.genericTitle")}
       description={
         <>
-          {publicError?.message ?? t("pv.error.genericDesc")}
+          {publicError?.message
+            ? localizeMessage(publicError.message)
+            : t("pv.error.genericDesc")}
           {publicError?.requestId ? (
             <>
               <br />

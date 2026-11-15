@@ -1614,7 +1614,7 @@ export default function OutboundFlowReport() {
                                 onClick={() => openDocument(document)}
                               >
                                 {normalizeStatus(document.status) === "POSTED"
-                                  ? "Xem"
+                                  ? tUi("inbound.list.view")
                                   : tUi("outbound.list.open")}
                               </RowActionButton>
                             </RowActionGroup>
@@ -1695,7 +1695,7 @@ export default function OutboundFlowReport() {
                 {pageCount > 3 ? <span>…</span> : null}
                 <button
                   type="button"
-                  aria-label="Trang sau"
+                  aria-label={tUi("pv.catalog.nextPage")}
                   disabled={
                     safePage >= pageCount || searchedDocuments.length === 0
                   }

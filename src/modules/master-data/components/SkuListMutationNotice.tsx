@@ -1,6 +1,7 @@
 import "./sku-list-mutation-notice.css";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 
 export interface SkuListMutationNoticeValue {
   kind: "success" | "duplicate" | "failed" | "unknown";
@@ -22,7 +23,8 @@ export function SkuListMutationNotice({
   onCheck,
   onRetry,
 }: SkuListMutationNoticeProps) {
-  const english = useLanguageStore((state) => state.language === "en");
+  const language = useLanguageStore((state) => state.language);
+  const english = language === "en";
   if (!notice) return null;
   const content = {
     success: {
@@ -103,7 +105,7 @@ export function SkuListMutationNotice({
       </svg>
       <div className="hn-sku-mutation-copy">
         <strong>{content.title}</strong>
-        <p>{notice.message || content.description}</p>
+        <p>{localizeMessage(notice.message ?? "") || content.description}</p>
       </div>
       <button
         type="button"

@@ -14,7 +14,7 @@ function renderUi(node: React.ReactElement) {
 }
 
 describe("UiBreadcrumb", () => {
-  it("nav có aria-label='Breadcrumb', phần tử cuối aria-current='page'", () => {
+  it("nav có nhãn tiếng Việt, phần tử cuối aria-current='page'", () => {
     renderUi(
       <UiBreadcrumb
         items={[
@@ -25,7 +25,7 @@ describe("UiBreadcrumb", () => {
       />,
     );
     expect(
-      screen.getByRole("navigation", { name: "Breadcrumb" }),
+      screen.getByRole("navigation", { name: "Đường dẫn" }),
     ).toBeInTheDocument();
     const current = screen.getByText("Chi tiết phiếu");
     expect(current).toHaveAttribute("aria-current", "page");

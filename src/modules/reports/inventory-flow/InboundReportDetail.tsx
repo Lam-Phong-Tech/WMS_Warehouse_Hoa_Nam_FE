@@ -1,4 +1,5 @@
 import { useT } from "@/shared/i18n/useT";
+import { reportLabel } from "@/shared/i18n/report-labels";
 import { bilingual } from "@/shared/constants/business-labels";
 import { parseDateTime } from "@/shared/utils/date-time";
 import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
@@ -135,7 +136,7 @@ export function InboundReportDetail({
         "Số lượng",
         "Trạng thái",
         "Ngày ghi nhận",
-      ],
+      ].map(reportLabel),
       entries.length > 0
         ? entries.map((entry) => {
             const line = lines.find(
@@ -153,7 +154,7 @@ export function InboundReportDetail({
               entry.skuName,
               line?.productUnit || "—",
               entry.quantity,
-              "Đã ghi nhận",
+              reportLabel("Đã ghi nhận"),
               formatDateTime(entry.capturedAt),
             ];
           })

@@ -1,5 +1,98 @@
 /** Simplified Chinese for BE lang/vi/validation.php and UserFacingMessageLocalizer::EXACT. */
 export const BACKEND_MESSAGES_ZH: Record<string, string> = {
+  "Sửa giá trị theo mô tả ở cột message rồi import lại.":
+    "请按 message 列中的说明修正数值，然后重新导入。",
+  "Không tìm thấy movement.": "未找到库存流水。",
+  "Không tìm thấy mã vật lý.": "未找到实物编码。",
+  "Không thể kết nối tới máy in. Kiểm tra máy in đã bật và đã kết nối mạng, sau đó thử lại.":
+    "无法连接打印机。请检查打印机是否已开启并连接网络，然后重试。",
+  "Không thể gửi lệnh in tới máy in.": "无法向打印机发送打印任务。",
+  "Label snapshot đã bị thay đổi bởi lệnh in khác; tải lại rồi thử lại.":
+    "标签已被其他打印任务修改。请刷新后重试。",
+  "Không tìm thấy Packing Label của phiếu xuất này.":
+    "未找到此出库单的包装标签。",
+  "Không tìm thấy mã tra cứu (physical code / item / container / SKU).":
+    "未找到匹配的实物编码、物品、容器或 SKU。",
+  "Không tìm thấy hồ sơ bảo hành của phiếu xuất linh kiện.":
+    "未找到此配件出库单关联的保修单。",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện.":
+    "只有处于检测中或维修中的保修单才能领用配件。",
+  "Kiểm tra mã danh mục (brand/category/model) đã tồn tại và đang ACTIVE.":
+    "请检查品牌、类别或型号编码是否存在且已启用。",
+  "Sửa sku_code: chỉ chữ HOA/số, dấu . _ - ở giữa, tối đa 100 ký tự.":
+    "请修正 sku_code：仅使用大写字母或数字，中间可用 . _ -，最多 100 个字符。",
+  "Nhập sku_name (bắt buộc), tối đa 255 ký tự.":
+    "请输入 sku_name（必填），最多 255 个字符。",
+  "Xoá hoặc gộp dòng trùng sku_code ngay trong file trước khi import lại.":
+    "重新导入前，请在文件中删除或合并 sku_code 重复的行。",
+  'SKU đã tồn tại: bật tùy chọn "cập nhật SKU đã tồn tại" nếu thực sự muốn ghi đè.':
+    "SKU 已存在。如需覆盖，请启用“更新已有 SKU”选项。",
+  "SKU đang INACTIVE: kích hoạt lại bằng chức năng sửa SKU, import không tự kích hoạt.":
+    "SKU 已停用。请通过编辑 SKU 重新启用；导入不会自动启用。",
+  "Chọn đúng một trong các giá trị hợp lệ được liệt kê ở cột message.":
+    "请选择 message 列中列出的有效值之一。",
+  "Dùng 1/0, true/false, yes/no hoặc để trống.":
+    "请使用 1/0、true/false、yes/no，或留空。",
+  "Rút gọn version_code xuống tối đa 30 ký tự.":
+    "请将 version_code 缩短至最多 30 个字符。",
+  "sku_code không hợp lệ.": "SKU 编码无效。",
+  "sku_name bắt buộc và tối đa 255 ký tự.":
+    "SKU 名称为必填项，且不能超过 255 个字符。",
+  "version_code tối đa 30 ký tự.": "版本编码不能超过 30 个字符。",
+  "SKU không ACTIVE, import không được tự kích hoạt.":
+    "SKU 未启用；导入不能将其自动启用。",
+  "SKU đã tồn tại; cần bật update_existing.":
+    "SKU 已存在，请启用更新已有 SKU 的选项。",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi tạo phiếu.":
+    "创建单据时，只有处于检测中或维修中的保修单才能领用配件。",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi tạo phiếu.":
+    "创建单据时，已关闭的保修单不能领用配件。",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi quét linh kiện.":
+    "扫描配件时，只有处于检测中或维修中的保修单才能领用配件。",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi quét linh kiện.":
+    "扫描配件时，已关闭的保修单不能领用配件。",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi gỡ dòng quét.":
+    "移除扫描记录时，只有处于检测中或维修中的保修单才能领用配件。",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi gỡ dòng quét.":
+    "移除扫描记录时，已关闭的保修单不能领用配件。",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi thêm dòng linh kiện.":
+    "添加配件行时，只有处于检测中或维修中的保修单才能领用配件。",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi thêm dòng linh kiện.":
+    "添加配件行时，已关闭的保修单不能领用配件。",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi sửa dòng linh kiện.":
+    "编辑配件行时，只有处于检测中或维修中的保修单才能领用配件。",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi sửa dòng linh kiện.":
+    "编辑配件行时，已关闭的保修单不能领用配件。",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi xoá dòng linh kiện.":
+    "删除配件行时，只有处于检测中或维修中的保修单才能领用配件。",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi xoá dòng linh kiện.":
+    "删除配件行时，已关闭的保修单不能领用配件。",
+  "Máy in chưa được cấu hình hoặc đang ở trạng thái không hoạt động.":
+    "打印机尚未配置或已停用。",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện tại thời điểm Post.":
+    "完成出库时，只有处于检测中或维修中的保修单才能领用配件。",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được tại thời điểm Post.":
+    "完成出库时，已关闭的保修单不能领用配件。",
+  "Kiểm tra mã danh mục (brand/category/model) đã tồn tại và đang Đang hoạt động.":
+    "请检查品牌、类别或型号编码是否存在且已启用。",
+  "SKU đang Ngừng hoạt động: kích hoạt lại bằng chức năng sửa SKU, import không tự kích hoạt.":
+    "SKU 已停用。请通过编辑 SKU 重新启用；导入不会自动启用。",
+  "SKU không Đang hoạt động, import không được tự kích hoạt.":
+    "SKU 未启用；导入不能将其自动启用。",
+  "Barcode/QR không tồn tại hoặc không ACTIVE.":
+    "条形码/二维码不存在或未启用。",
+  "Barcode/QR không tồn tại hoặc không Đang hoạt động.":
+    "条形码/二维码不存在或未启用。",
+  "Mọi phiếu linh kiện phải POSTED trước khi bàn giao.":
+    "交接前，所有配件出库单必须已过账。",
+  "Mọi phiếu linh kiện phải Đã ghi nhận trước khi bàn giao.":
+    "交接前，所有配件出库单必须已过账。",
+  "Nguồn phiếu xuất linh kiện chưa sẵn sàng để xác minh bàn giao.":
+    "配件出库记录暂不可用，无法核验交接。",
+  "Có phiếu linh kiện không thuộc kho sở hữu hồ sơ.":
+    "某配件出库单不属于保修单所属仓库。",
+  "SKU không tồn tại hoặc không ACTIVE.": "SKU 不存在或未启用。",
+  "SKU không tồn tại hoặc không Đang hoạt động.": "SKU 不存在或未启用。",
   "Không còn file gốc để kiểm tra lại.": "原始文件已无法用于重新检查。",
   "Lần nhập cũ chưa lưu tùy chọn cập nhật; hãy tải file lên để kiểm tra mới.":
     "旧导入未记录更新选项，请上传文件进行新检查。",
@@ -292,6 +385,82 @@ export const VALIDATION_ATTRIBUTES_ZH: Record<string, string> = {
 };
 export const VALIDATION_MESSAGES_ZH: ReadonlyArray<readonly [string, string]> =
   [
+    [
+      "Trường {attribute} chứa ký tự không hợp lệ (không phải UTF-8).",
+      "字段 {attribute} 包含无效字符（非 UTF-8）。",
+    ],
+    [
+      "Máy in phản hồi lỗi khi nhận lệnh in (HTTP {status}).",
+      "打印机接收打印任务时返回错误（HTTP {status}）。",
+    ],
+    ["Trùng dòng {row}.", "与第 {row} 行重复。"],
+    [
+      "Không tìm thấy BRAND ACTIVE với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+      "未找到编码为 {code} 的已启用品牌。请先创建主数据再导入。",
+    ],
+    [
+      "Không tìm thấy BRAND ACTIVE với code {code}.",
+      "未找到编码为 {code} 的已启用品牌。",
+    ],
+    [
+      "Không tìm thấy BRAND Đang hoạt động với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+      "未找到编码为 {code} 的已启用品牌。请先创建主数据再导入。",
+    ],
+    [
+      "Không tìm thấy BRAND Đang hoạt động với code {code}.",
+      "未找到编码为 {code} 的已启用品牌。",
+    ],
+    [
+      "Không tìm thấy CATEGORY ACTIVE với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+      "未找到编码为 {code} 的已启用类别。请先创建主数据再导入。",
+    ],
+    [
+      "Không tìm thấy CATEGORY ACTIVE với code {code}.",
+      "未找到编码为 {code} 的已启用类别。",
+    ],
+    [
+      "Không tìm thấy CATEGORY Đang hoạt động với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+      "未找到编码为 {code} 的已启用类别。请先创建主数据再导入。",
+    ],
+    [
+      "Không tìm thấy CATEGORY Đang hoạt động với code {code}.",
+      "未找到编码为 {code} 的已启用类别。",
+    ],
+    [
+      "Không tìm thấy MODEL ACTIVE với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+      "未找到编码为 {code} 的已启用型号。请先创建主数据再导入。",
+    ],
+    [
+      "Không tìm thấy MODEL ACTIVE với code {code}.",
+      "未找到编码为 {code} 的已启用型号。",
+    ],
+    [
+      "Không tìm thấy MODEL Đang hoạt động với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+      "未找到编码为 {code} 的已启用型号。请先创建主数据再导入。",
+    ],
+    [
+      "Không tìm thấy MODEL Đang hoạt động với code {code}.",
+      "未找到编码为 {code} 的已启用型号。",
+    ],
+    ["sku_type phải thuộc {values}.", "sku_type 必须为以下值之一：{values}。"],
+    ["sku_type không hợp lệ.", "sku_type 无效。"],
+    ["status phải thuộc {values}.", "status 必须为以下值之一：{values}。"],
+    ["status không hợp lệ.", "status 无效。"],
+    [
+      "published_to_app phải thuộc {values}.",
+      "published_to_app 必须为以下值之一：{values}。",
+    ],
+    ["published_to_app không hợp lệ.", "published_to_app 无效。"],
+    [
+      "is_serial_tracked phải thuộc {values}.",
+      "is_serial_tracked 必须为以下值之一：{values}。",
+    ],
+    ["is_serial_tracked không hợp lệ.", "is_serial_tracked 无效。"],
+    [
+      "package_variant phải thuộc {values}.",
+      "package_variant 必须为以下值之一：{values}。",
+    ],
+    ["package_variant không hợp lệ.", "package_variant 无效。"],
     ["Vui lòng nhập {attribute}.", "请输入{attribute}。"],
     [
       "{attribute} phải có ít nhất {min} ký tự.",

@@ -7,6 +7,11 @@
     "**/*.css"
   ],
   "scripts": {
+    "i18n:audit": "node scripts/check-i18n.mjs",
+    "i18n:audit:backend": "node scripts/check-backend-i18n.mjs",
+    "i18n:audit:jsx": "node scripts/check-i18n-jsx-literals.mjs",
+    "i18n:audit:self-test": "node scripts/check-i18n.mjs --self-test",
+    "test:i18n": "node scripts/run-i18n-tests.mjs",
     "brand:icons": "node scripts/generate-brand-icons.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/write-build-manifest.mjs",

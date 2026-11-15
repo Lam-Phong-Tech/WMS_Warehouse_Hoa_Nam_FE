@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { localizedEnglish } from "@/shared/i18n/localized-english";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 
 export interface DefectMutationNoticeValue {
   kind:
@@ -79,7 +80,8 @@ export function DefectMutationNotice({
   onReload,
   onRetry,
 }: DefectMutationNoticeProps) {
-  const english = useLanguageStore((state) => state.language !== "vi");
+  const language = useLanguageStore((state) => state.language);
+  const english = language !== "vi";
   const titleId = useId();
   const text = (vi: string, en: string) =>
     english ? localizedEnglish(en) : vi;
@@ -105,7 +107,7 @@ export function DefectMutationNotice({
     success: [[notice.code, notice.name].filter(Boolean).join(" · ")].filter(
       Boolean,
     ),
-    validation: notice.message ? [notice.message] : [],
+    validation: notice.message ? [localizeMessage(notice.message)] : [],
     duplicate: [
       text(
         "Vui lòng kiểm tra mã lỗi trước khi lưu.",
@@ -123,7 +125,7 @@ export function DefectMutationNotice({
       ),
     ],
     failed: [
-      notice.message ||
+      localizeMessage(notice.message ?? "") ||
         text("Thông tin chưa được lưu.", "The information has not been saved."),
     ],
     unknown: [

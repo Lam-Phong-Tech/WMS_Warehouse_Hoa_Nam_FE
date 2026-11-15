@@ -17,6 +17,7 @@ import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { OPTION_LIST_MAX_HEIGHT, useOptionWindow } from "./option-window";
 
 export interface UiAutocompleteOption {
@@ -200,7 +201,11 @@ export function UiFormAutocomplete<T extends FieldValues>({
                 required={required}
                 placeholder={placeholder}
                 error={Boolean(fieldState.error)}
-                helperText={fieldState.error?.message ?? helperText}
+                helperText={
+                  fieldState.error?.message == null
+                    ? helperText
+                    : localizeMessage(fieldState.error.message)
+                }
                 inputRef={field.ref}
                 slotProps={{
                   ...params.slotProps,

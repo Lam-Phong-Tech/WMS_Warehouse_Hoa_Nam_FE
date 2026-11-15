@@ -98,8 +98,14 @@ export function ComponentIssueFilters({
             menuClassName="hn-war04-menu"
             options={[
               { value: "", label: `${trackingLabel}: ${allLabel}` },
-              { value: "SERIAL", label: `${trackingLabel}: Serial` },
-              { value: "QUANTITY", label: `${trackingLabel}: Box + SL` },
+              {
+                value: "SERIAL",
+                label: `${trackingLabel}: ${t("scan.issue.fieldSerial")}`,
+              },
+              {
+                value: "QUANTITY",
+                label: `${trackingLabel}: BOX + ${t("catalog.common.qty")}`,
+              },
             ]}
             onChange={(value) => onTrackingChange(value as Tracking)}
           />

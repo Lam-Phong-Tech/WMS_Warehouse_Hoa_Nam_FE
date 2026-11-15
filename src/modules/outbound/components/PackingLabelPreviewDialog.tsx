@@ -337,7 +337,9 @@ export function PackingLabelPreviewDialog({
                     {t("outbound.label.colProductName")}
                   </Box>
                   <Box sx={headerCellSx}>SKU</Box>
-                  <Box sx={{ ...headerCellSx, textAlign: "right" }}>SL</Box>
+                  <Box sx={{ ...headerCellSx, textAlign: "right" }}>
+                    {t("catalog.common.qty")}
+                  </Box>
                   {label.skuSummary.map((item) => (
                     // display:"contents" giữ 3 ô là item trực tiếp của grid
                     // cha thay vì bị bọc thêm một hàng — cần để 3 cột thẳng

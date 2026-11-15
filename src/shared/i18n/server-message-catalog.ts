@@ -1,5 +1,102 @@
 /** Source contracts: BE lang/vi/validation.php and UserFacingMessageLocalizer::EXACT. */
 export const BACKEND_MESSAGES: Record<string, string> = {
+  "Sửa giá trị theo mô tả ở cột message rồi import lại.":
+    "Correct the value as described in the message column, then import again.",
+  "Không tìm thấy movement.": "Stock movement not found.",
+  "Không tìm thấy mã vật lý.": "Physical code not found.",
+  "Không thể kết nối tới máy in. Kiểm tra máy in đã bật và đã kết nối mạng, sau đó thử lại.":
+    "Cannot connect to the printer. Check that it is turned on and connected to the network, then try again.",
+  "Không thể gửi lệnh in tới máy in.":
+    "Could not send the print job to the printer.",
+  "Label snapshot đã bị thay đổi bởi lệnh in khác; tải lại rồi thử lại.":
+    "The label was changed by another print job. Reload and try again.",
+  "Không tìm thấy Packing Label của phiếu xuất này.":
+    "No packing label was found for this issue note.",
+  "Không tìm thấy mã tra cứu (physical code / item / container / SKU).":
+    "No matching physical code, item, container or SKU was found.",
+  "Không tìm thấy hồ sơ bảo hành của phiếu xuất linh kiện.":
+    "The warranty case linked to this component issue document was not found.",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện.":
+    "Components can only be issued for warranty cases that are being checked or repaired.",
+  "Kiểm tra mã danh mục (brand/category/model) đã tồn tại và đang ACTIVE.":
+    "Check that the brand, category or model code exists and is active.",
+  "Sửa sku_code: chỉ chữ HOA/số, dấu . _ - ở giữa, tối đa 100 ký tự.":
+    "Correct sku_code: use uppercase letters or digits, with . _ - between them, up to 100 characters.",
+  "Nhập sku_name (bắt buộc), tối đa 255 ký tự.":
+    "Enter sku_name (required), up to 255 characters.",
+  "Xoá hoặc gộp dòng trùng sku_code ngay trong file trước khi import lại.":
+    "Delete or merge duplicate sku_code rows in the file before importing again.",
+  'SKU đã tồn tại: bật tùy chọn "cập nhật SKU đã tồn tại" nếu thực sự muốn ghi đè.':
+    "The SKU already exists. Enable the option to update existing SKUs if you intend to overwrite it.",
+  "SKU đang INACTIVE: kích hoạt lại bằng chức năng sửa SKU, import không tự kích hoạt.":
+    "The SKU is inactive. Reactivate it by editing the SKU; importing does not reactivate it automatically.",
+  "Chọn đúng một trong các giá trị hợp lệ được liệt kê ở cột message.":
+    "Choose one of the valid values listed in the message column.",
+  "Dùng 1/0, true/false, yes/no hoặc để trống.":
+    "Use 1/0, true/false, yes/no, or leave blank.",
+  "Rút gọn version_code xuống tối đa 30 ký tự.":
+    "Shorten version_code to at most 30 characters.",
+  "sku_code không hợp lệ.": "The SKU code is invalid.",
+  "sku_name bắt buộc và tối đa 255 ký tự.":
+    "The SKU name is required and must not exceed 255 characters.",
+  "version_code tối đa 30 ký tự.":
+    "The version code must not exceed 30 characters.",
+  "SKU không ACTIVE, import không được tự kích hoạt.":
+    "The SKU is inactive; importing cannot reactivate it.",
+  "SKU đã tồn tại; cần bật update_existing.":
+    "The SKU already exists. Enable updating existing SKUs.",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi tạo phiếu.":
+    "Components can only be issued for warranty cases that are being checked or repaired when creating the document.",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi tạo phiếu.":
+    "Components cannot be issued for a closed warranty case when creating the document.",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi quét linh kiện.":
+    "Components can only be issued for warranty cases that are being checked or repaired when scanning components.",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi quét linh kiện.":
+    "Components cannot be issued for a closed warranty case when scanning components.",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi gỡ dòng quét.":
+    "Components can only be issued for warranty cases that are being checked or repaired when removing a scan.",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi gỡ dòng quét.":
+    "Components cannot be issued for a closed warranty case when removing a scan.",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi thêm dòng linh kiện.":
+    "Components can only be issued for warranty cases that are being checked or repaired when adding a component line.",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi thêm dòng linh kiện.":
+    "Components cannot be issued for a closed warranty case when adding a component line.",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi sửa dòng linh kiện.":
+    "Components can only be issued for warranty cases that are being checked or repaired when editing a component line.",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi sửa dòng linh kiện.":
+    "Components cannot be issued for a closed warranty case when editing a component line.",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện khi xoá dòng linh kiện.":
+    "Components can only be issued for warranty cases that are being checked or repaired when deleting a component line.",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được khi xoá dòng linh kiện.":
+    "Components cannot be issued for a closed warranty case when deleting a component line.",
+  "Máy in chưa được cấu hình hoặc đang ở trạng thái không hoạt động.":
+    "The printer is not configured or is inactive.",
+  "Chỉ hồ sơ bảo hành đang kiểm tra hoặc đang sửa chữa mới được xuất linh kiện tại thời điểm Post.":
+    "Components can only be issued for warranty cases that are being checked or repaired when posting.",
+  "Hồ sơ bảo hành đã đóng nên không xuất linh kiện được tại thời điểm Post.":
+    "Components cannot be issued for a closed warranty case when posting.",
+  "Kiểm tra mã danh mục (brand/category/model) đã tồn tại và đang Đang hoạt động.":
+    "Check that the brand, category or model code exists and is active.",
+  "SKU đang Ngừng hoạt động: kích hoạt lại bằng chức năng sửa SKU, import không tự kích hoạt.":
+    "The SKU is inactive. Reactivate it by editing the SKU; importing does not reactivate it automatically.",
+  "SKU không Đang hoạt động, import không được tự kích hoạt.":
+    "The SKU is inactive; importing cannot reactivate it.",
+  "Barcode/QR không tồn tại hoặc không ACTIVE.":
+    "The barcode/QR code does not exist or is inactive.",
+  "Barcode/QR không tồn tại hoặc không Đang hoạt động.":
+    "The barcode/QR code does not exist or is inactive.",
+  "Mọi phiếu linh kiện phải POSTED trước khi bàn giao.":
+    "All component issue documents must be posted before handover.",
+  "Mọi phiếu linh kiện phải Đã ghi nhận trước khi bàn giao.":
+    "All component issue documents must be posted before handover.",
+  "Nguồn phiếu xuất linh kiện chưa sẵn sàng để xác minh bàn giao.":
+    "Component issue records are unavailable for handover verification.",
+  "Có phiếu linh kiện không thuộc kho sở hữu hồ sơ.":
+    "A component issue document belongs to a different warehouse than the warranty case.",
+  "SKU không tồn tại hoặc không ACTIVE.":
+    "The SKU does not exist or is inactive.",
+  "SKU không tồn tại hoặc không Đang hoạt động.":
+    "The SKU does not exist or is inactive.",
   "Không còn file gốc để kiểm tra lại.":
     "The original file is no longer available for rechecking.",
   "Lần nhập cũ chưa lưu tùy chọn cập nhật; hãy tải file lên để kiểm tra mới.":
@@ -301,6 +398,82 @@ export const VALIDATION_ATTRIBUTES: Record<string, string> = {
   "thông tin cá nhân đã thay đổi": "pii fields changed",
 };
 export const VALIDATION_MESSAGES: ReadonlyArray<readonly [string, string]> = [
+  [
+    "Trường {attribute} chứa ký tự không hợp lệ (không phải UTF-8).",
+    "Field {attribute} contains invalid characters (not UTF-8).",
+  ],
+  [
+    "Máy in phản hồi lỗi khi nhận lệnh in (HTTP {status}).",
+    "The printer returned an error while receiving the print job (HTTP {status}).",
+  ],
+  ["Trùng dòng {row}.", "Duplicate of row {row}."],
+  [
+    "Không tìm thấy BRAND ACTIVE với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+    "No active brand was found with code {code}. Create the master data before importing.",
+  ],
+  [
+    "Không tìm thấy BRAND ACTIVE với code {code}.",
+    "No active brand was found with code {code}.",
+  ],
+  [
+    "Không tìm thấy BRAND Đang hoạt động với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+    "No active brand was found with code {code}. Create the master data before importing.",
+  ],
+  [
+    "Không tìm thấy BRAND Đang hoạt động với code {code}.",
+    "No active brand was found with code {code}.",
+  ],
+  [
+    "Không tìm thấy CATEGORY ACTIVE với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+    "No active category was found with code {code}. Create the master data before importing.",
+  ],
+  [
+    "Không tìm thấy CATEGORY ACTIVE với code {code}.",
+    "No active category was found with code {code}.",
+  ],
+  [
+    "Không tìm thấy CATEGORY Đang hoạt động với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+    "No active category was found with code {code}. Create the master data before importing.",
+  ],
+  [
+    "Không tìm thấy CATEGORY Đang hoạt động với code {code}.",
+    "No active category was found with code {code}.",
+  ],
+  [
+    "Không tìm thấy MODEL ACTIVE với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+    "No active model was found with code {code}. Create the master data before importing.",
+  ],
+  [
+    "Không tìm thấy MODEL ACTIVE với code {code}.",
+    "No active model was found with code {code}.",
+  ],
+  [
+    "Không tìm thấy MODEL Đang hoạt động với code {code}. Master data phải được tạo trước qua POST /api/v1/brands hoặc /api/v1/product-categories.",
+    "No active model was found with code {code}. Create the master data before importing.",
+  ],
+  [
+    "Không tìm thấy MODEL Đang hoạt động với code {code}.",
+    "No active model was found with code {code}.",
+  ],
+  ["sku_type phải thuộc {values}.", "sku_type must be one of: {values}."],
+  ["sku_type không hợp lệ.", "sku_type is invalid."],
+  ["status phải thuộc {values}.", "status must be one of: {values}."],
+  ["status không hợp lệ.", "status is invalid."],
+  [
+    "published_to_app phải thuộc {values}.",
+    "published_to_app must be one of: {values}.",
+  ],
+  ["published_to_app không hợp lệ.", "published_to_app is invalid."],
+  [
+    "is_serial_tracked phải thuộc {values}.",
+    "is_serial_tracked must be one of: {values}.",
+  ],
+  ["is_serial_tracked không hợp lệ.", "is_serial_tracked is invalid."],
+  [
+    "package_variant phải thuộc {values}.",
+    "package_variant must be one of: {values}.",
+  ],
+  ["package_variant không hợp lệ.", "package_variant is invalid."],
   ["Vui lòng nhập {attribute}.", "Enter {attribute}."],
   [
     "{attribute} phải có ít nhất {min} ký tự.",

@@ -29,6 +29,7 @@ import { acceptAttribute as acceptFromRule } from "@/shared/validation/file-rule
 import { WmsContractError } from "@/shared/api/wms-contract";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, tStatic, type TranslateFn } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { ResponsiveDataTable } from "@/shared/components";
@@ -189,7 +190,7 @@ const rowErrorColumns = (
   {
     key: "message",
     header: t("masterData.import.colErrorMessage"),
-    render: (record) => record.message,
+    render: (record) => localizeMessage(record.message),
   },
   {
     key: "value",

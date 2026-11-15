@@ -8,7 +8,8 @@ import { localizedEnglish } from "@/shared/i18n/localized-english";
 import "./sku-list-feedback.css";
 
 function useSkuFeedbackText() {
-  const english = useLanguageStore((state) => state.language !== "vi");
+  const language = useLanguageStore((state) => state.language);
+  const english = language !== "vi";
   return (vi: string, en: string) => (english ? localizedEnglish(en) : vi);
 }
 

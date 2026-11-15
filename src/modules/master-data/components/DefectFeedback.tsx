@@ -28,7 +28,8 @@ export interface DefectFeedbackProps {
 }
 
 function useFeedbackText() {
-  const english = useLanguageStore((state) => state.language !== "vi");
+  const language = useLanguageStore((state) => state.language);
+  const english = language !== "vi";
   return (vi: string, en: string) => (english ? localizedEnglish(en) : vi);
 }
 

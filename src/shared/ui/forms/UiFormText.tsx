@@ -25,6 +25,7 @@ import { UiIconButton } from "../components/UiButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import { SEMANTIC_LIGHT as S, inkAlphaVar } from "../tokens";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 
 /**
  * MUI (bản đang dùng trong dự án) tự sinh/gỡ CSS động cho biến thể
@@ -146,7 +147,11 @@ export function UiFormText<T extends FieldValues>({
             autoFocus={autoFocus}
             error={Boolean(fieldState.error)}
             sx={fieldState.error ? ERROR_FIELD_SX : undefined}
-            helperText={fieldState.error?.message ?? helperText}
+            helperText={
+              fieldState.error?.message == null
+                ? helperText
+                : localizeMessage(fieldState.error.message)
+            }
             name={field.name}
             value={(field.value as string | undefined) ?? ""}
             onChange={(event) => {

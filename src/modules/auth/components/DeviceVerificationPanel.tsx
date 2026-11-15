@@ -4,7 +4,10 @@ import { AUTH_BASELINE } from "@/shared/ui/tokens";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthLoginFeedback } from "@/modules/auth/components/AuthLoginFeedback";
 import { AUTH_UAT_FORM_SX } from "@/modules/auth/components/AuthLoginFormSx";
-import { MfaOtpInput, MFA_OTP_LENGTH } from "@/modules/auth/components/MfaOtpInput";
+import {
+  MfaOtpInput,
+  MFA_OTP_LENGTH,
+} from "@/modules/auth/components/MfaOtpInput";
 import type { DeviceVerificationRequired } from "@/modules/auth/types/auth.types";
 import type { LoginFeedback } from "@/modules/auth/utils/login-feedback";
 import { useAuthUatCopy } from "@/modules/auth/utils/auth-uat-copy";
@@ -100,7 +103,8 @@ export function DeviceVerificationPanel({
       titleId="login-device-title"
       title={t("auth.login.deviceTitle")}
       subtitle={t("auth.login.deviceSubtitle", {
-        email: challenge.masked_email || "email đăng ký",
+        email:
+          challenge.masked_email || t("auth.login.registeredEmailFallback"),
       })}
       showBaselineHeading
     >

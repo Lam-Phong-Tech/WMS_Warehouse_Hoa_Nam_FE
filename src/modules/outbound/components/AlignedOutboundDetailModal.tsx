@@ -67,6 +67,7 @@ import type { ReactNode } from "react";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import type { MessageKey } from "@/shared/i18n/messages";
 import { PackingLabelPreviewDialog } from "@/modules/outbound/components/PackingLabelPreviewDialog";
 import { validatePhone } from "@/shared/constants/validation.constants";
@@ -1227,7 +1228,9 @@ export function AlignedOutboundDetailModal({
                   </Box>
                   <Stack spacing={1.5}>
                     {labelWarning ? (
-                      <UiAlert tone="warning">{labelWarning}</UiAlert>
+                      <UiAlert tone="warning">
+                        {localizeMessage(labelWarning)}
+                      </UiAlert>
                     ) : null}
                     {!posted ? (
                       <Box

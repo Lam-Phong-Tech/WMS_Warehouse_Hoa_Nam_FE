@@ -525,15 +525,19 @@ export function PvProductCatalogPage() {
 
   // Chỉ nạp danh sách SKU khi đang ở chế độ THÊM: màn này mở ra chủ yếu để xem
   // lưới, không có lý do gọi /products mỗi lần vào trang.
-  const skuQuery = useMvpSkus({
-    keyword: skuKeyword,
-    status: "ACTIVE",
-    per_page: 20,
-  });
+  const skuQuery = useMvpSkus(
+    {
+      keyword: skuKeyword,
+      status: "ACTIVE",
+      without_pv_profile: 1,
+      per_page: 20,
+    },
+    { enabled: dialogMode === "create" },
+  );
   const skuOptions = useMemo(() => {
-    if (dialogMode !== "create") return [];
-    // SKU đã có hồ sơ ở TRANG hiện tại thì loại khỏi ô chọn để bớt va vào 409;
-    // BE vẫn là chốt chặn thật (STATE_CONFLICT) vì trang khác có thể đã dùng.
+    if (dialogMode !== "create" || skuQuery.isFetching) return [];
+    // API excludes profiles across all pages, including hidden products.
+    // Keep a local guard for profiles already present in this query snapshot.
     const taken = new Set(rows.map((row) => row.sku_id));
     return (skuQuery.data?.data ?? [])
       .filter((sku) => !taken.has(sku.sku_id))
@@ -541,7 +545,7 @@ export function PvProductCatalogPage() {
         value: sku.sku_id,
         label: `${sku.sku_code} — ${sku.sku_name}`,
       }));
-  }, [dialogMode, rows, skuQuery.data]);
+  }, [dialogMode, rows, skuQuery.data, skuQuery.isFetching]);
 
   function openCreate() {
     setEditing(null);

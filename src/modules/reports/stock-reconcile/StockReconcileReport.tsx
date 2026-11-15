@@ -1810,7 +1810,7 @@ export default function StockReconcileReport() {
                               )}
                               <button
                                 type="button"
-                                aria-label="Trang sau"
+                                aria-label={tUi("pv.catalog.nextPage")}
                                 onClick={() =>
                                   setPage((value) =>
                                     Math.min(totalPages, value + 1),

@@ -378,7 +378,8 @@ export default function SupplierListPage() {
                     {copy.showing}{" "}
                     {result.total ? (result.page - 1) * result.perPage + 1 : 0}–
                     {Math.min(result.page * result.perPage, result.total)} /{" "}
-                    {result.total.toLocaleString(locale)} NCC
+                    {result.total.toLocaleString(locale)}{" "}
+                    {t("inbound.list.colSupplier")}
                   </>
                 ) : online ? (
                   copy.loading

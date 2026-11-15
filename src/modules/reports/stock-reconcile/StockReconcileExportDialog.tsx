@@ -1,3 +1,4 @@
+import { reportLabel } from "@/shared/i18n/report-labels";
 import { saveStyledReportWorkbook } from "@/shared/utils/report-excel-style";
 import { BUSINESS_TIMEZONE, parseDateTime } from "@/shared/utils/date-time";
 import { ReportExportDrawer } from "../components/ReportExportAction";
@@ -82,21 +83,26 @@ export function StockReconcileExportDialog({
     const recorded = selected.reduce((sum, row) => sum + row.actual, 0);
     const workbook = XLSX.utils.book_new();
     const metadata: (string | number)[][] = [
-      ["Báo cáo tồn kho & đối soát"],
-      ["Kỳ báo cáo", `${from} – ${to}`],
-      ["Mốc dữ liệu", asOf || to],
-      ["Phạm vi", scope === "review" ? "SKU cần kiểm tra" : "Toàn bộ kết quả"],
+      [reportLabel("Báo cáo tồn kho & đối soát")],
+      [reportLabel("Kỳ báo cáo"), `${from} – ${to}`],
+      [reportLabel("Mốc dữ liệu"), asOf || to],
+      [
+        reportLabel("Phạm vi"),
+        scope === "review"
+          ? reportLabel("SKU cần kiểm tra")
+          : reportLabel("Toàn bộ kết quả"),
+      ],
     ];
     if (sheets.summary)
-      appendSheet(workbook, "Tổng hợp tồn", [
+      appendSheet(workbook, reportLabel("Tổng hợp tồn"), [
         ...metadata,
         [],
         [
-          "Số mặt hàng",
-          "Tồn sổ",
-          "Tồn ghi nhận",
-          "Chênh lệch",
-          "SKU cần kiểm tra",
+          reportLabel("Số mặt hàng"),
+          reportLabel("Tồn sổ"),
+          reportLabel("Tồn ghi nhận"),
+          reportLabel("Chênh lệch"),
+          reportLabel("SKU cần kiểm tra"),
         ],
         [
           selected.length,
@@ -107,19 +113,19 @@ export function StockReconcileExportDialog({
         ],
       ]);
     if (sheets.flow)
-      appendSheet(workbook, "Nhập Xuất Tồn", [
+      appendSheet(workbook, reportLabel("Nhập Xuất Tồn"), [
         ...metadata,
         [],
         [
           "SKU",
-          "Tên hàng",
-          "Kho",
-          "Tồn đầu",
-          "Nhập",
-          "Xuất SP",
-          "Xuất LK BH",
-          "Hoàn tác",
-          "Tồn cuối",
+          reportLabel("Tên hàng"),
+          reportLabel("Kho"),
+          reportLabel("Tồn đầu"),
+          reportLabel("Nhập"),
+          reportLabel("Xuất SP"),
+          reportLabel("Xuất LK BH"),
+          reportLabel("Hoàn tác"),
+          reportLabel("Tồn cuối"),
         ],
         ...selected.map((row) => [
           row.skuCode,
@@ -134,17 +140,17 @@ export function StockReconcileExportDialog({
         ]),
       ]);
     if (sheets.reconcile)
-      appendSheet(workbook, "Chi tiết đối soát", [
+      appendSheet(workbook, reportLabel("Chi tiết đối soát"), [
         ...metadata,
         [],
         [
           "SKU",
-          "Tên hàng",
-          "Kho",
-          "Tồn sổ",
-          "Tồn ghi nhận",
-          "Chênh lệch",
-          "Đối soát",
+          reportLabel("Tên hàng"),
+          reportLabel("Kho"),
+          reportLabel("Tồn sổ"),
+          reportLabel("Tồn ghi nhận"),
+          reportLabel("Chênh lệch"),
+          reportLabel("Đối soát"),
         ],
         ...selected.map((row) => [
           row.skuCode,
@@ -153,21 +159,21 @@ export function StockReconcileExportDialog({
           row.ledgerStock,
           row.actual,
           row.delta,
-          row.mismatch ? "Cần kiểm tra" : "Khớp",
+          row.mismatch ? reportLabel("Cần kiểm tra") : reportLabel("Khớp"),
         ]),
       ]);
     if (sheets.sku)
-      appendSheet(workbook, "Mã hàng", [
+      appendSheet(workbook, reportLabel("Mã hàng"), [
         ...metadata,
         [],
-        ["SKU", "Tên hàng", "Loại hàng", "Kho"],
+        ["SKU", reportLabel("Tên hàng"), reportLabel("Loại hàng"), "Kho"],
         ...selected.map((row) => [
           row.skuCode,
           row.skuName,
           row.kind === "PRODUCT"
-            ? "Sản phẩm"
+            ? reportLabel("Sản phẩm")
             : row.kind === "COMPONENT"
-              ? "Linh kiện"
+              ? reportLabel("Linh kiện")
               : "—",
           row.warehouse,
         ]),
@@ -179,7 +185,7 @@ export function StockReconcileExportDialog({
     await saveStyledReportWorkbook(
       workbook,
       safeExportFilename(safeName, "xlsx"),
-      { title: "HOA NAM — BÁO CÁO TỒN KHO & ĐỐI SOÁT" },
+      { title: reportLabel("HOA NAM — BÁO CÁO TỒN KHO & ĐỐI SOÁT") },
     );
   };
 

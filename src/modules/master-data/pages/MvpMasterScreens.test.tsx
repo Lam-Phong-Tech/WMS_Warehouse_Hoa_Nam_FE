@@ -156,15 +156,12 @@ describe("API-backed MVP master screens", () => {
     vi.mocked(useMvpSkus).mockImplementation(
       () => defaultSkusResult() as never,
     );
-    vi.mocked(useSetMvpSkuPublished).mockImplementation(
-      (() => mutation()) as never,
-    );
-    vi.mocked(useUpdateMvpAgency).mockImplementation(
-      (() => mutation()) as never,
-    );
-    vi.mocked(useUpdateMvpDefect).mockImplementation(
-      (() => mutation()) as never,
-    );
+    vi.mocked(useSetMvpSkuPublished).mockImplementation((() =>
+      mutation()) as never);
+    vi.mocked(useUpdateMvpAgency).mockImplementation((() =>
+      mutation()) as never);
+    vi.mocked(useUpdateMvpDefect).mockImplementation((() =>
+      mutation()) as never);
   });
 
   it("opens the agency editor from anywhere on an editable row", async () => {
@@ -362,14 +359,22 @@ describe("API-backed MVP master screens", () => {
       "true",
     );
     expect(
-      vi.mocked(useMvpSkus).mock.calls
-        .filter(([params]) => params?.per_page === 10).at(-1)?.[0],
-    ).toEqual(expect.objectContaining({
-      status: "ACTIVE", information_status: "PENDING", page: 1,
-    }));
+      vi
+        .mocked(useMvpSkus)
+        .mock.calls.filter(([params]) => params?.per_page === 10)
+        .at(-1)?.[0],
+    ).toEqual(
+      expect.objectContaining({
+        status: "ACTIVE",
+        information_status: "PENDING",
+        page: 1,
+      }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
     expect(screen.getByTestId("sku-location")).toHaveTextContent("?keep=1");
-    expect(screen.getByTestId("sku-location")).not.toHaveTextContent("pending_info");
+    expect(screen.getByTestId("sku-location")).not.toHaveTextContent(
+      "pending_info",
+    );
   });
 
   it("applies dashboard filters when navigating to the same mounted SKU screen", () => {
@@ -393,25 +398,39 @@ describe("API-backed MVP master screens", () => {
     ).toHaveTextContent("Thông tin: Chờ hoàn thiện");
     const usage = screen.getByRole("combobox", { name: "Lọc theo trạng thái" });
     fireEvent.mouseDown(usage);
-    fireEvent.click(screen.getByRole("option", {
-      name: "Trạng thái: Ngừng sử dụng",
-    }));
-    fireEvent.click(screen.getByRole("link", { name: "Dashboard pending SKUs" }));
+    fireEvent.click(
+      screen.getByRole("option", {
+        name: "Trạng thái: Ngừng sử dụng",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("link", { name: "Dashboard pending SKUs" }),
+    );
     expect(usage).toHaveTextContent("Trạng thái: Đang sử dụng");
     const information = screen.getByRole("combobox", {
       name: "Lọc mức độ hoàn thiện thông tin",
     });
     fireEvent.mouseDown(information);
     fireEvent.click(screen.getByRole("option", { name: "Thông tin: Đầy đủ" }));
-    expect(screen.getByTestId("sku-location")).not.toHaveTextContent("pending_info");
-    fireEvent.click(screen.getByRole("link", { name: "Dashboard pending SKUs" }));
+    expect(screen.getByTestId("sku-location")).not.toHaveTextContent(
+      "pending_info",
+    );
+    fireEvent.click(
+      screen.getByRole("link", { name: "Dashboard pending SKUs" }),
+    );
     expect(information).toHaveTextContent("Thông tin: Chờ hoàn thiện");
     expect(
-      vi.mocked(useMvpSkus).mock.calls
-        .filter(([params]) => params?.per_page === 10).at(-1)?.[0],
-    ).toEqual(expect.objectContaining({
-      status: "ACTIVE", information_status: "PENDING", page: 1,
-    }));
+      vi
+        .mocked(useMvpSkus)
+        .mock.calls.filter(([params]) => params?.per_page === 10)
+        .at(-1)?.[0],
+    ).toEqual(
+      expect.objectContaining({
+        status: "ACTIVE",
+        information_status: "PENDING",
+        page: 1,
+      }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
     expect(
       screen.getByRole("combobox", { name: "Lọc theo trạng thái" }),
@@ -543,63 +562,127 @@ describe("API-backed MVP master screens", () => {
     );
   });
 
-  it.each([false, true])("hiện toast và tải lại SKU khi đổi trạng thái ứng dụng gặp 412 (published=%s)", async (published) => {
-    const toastError = vi.spyOn(toast, "error");
-    const row = { ...DEFAULT_SKU_ROW, published_to_app: published };
-    const refetch = vi.fn().mockResolvedValue({
-      data: { data: [{ ...row, version: 4 }], meta: {} },
-      isError: false,
-    });
-    vi.mocked(useMvpSkus).mockReturnValue({
-      data: { data: [row], meta: {} },
-      isLoading: false,
-      error: null,
-      refetch,
-    } as never);
-    vi.mocked(useSetMvpSkuPublished).mockReturnValue({
-      isPending: false,
-      mutateAsync: vi.fn().mockRejectedValue({
-        isAxiosError: true,
-        response: {
-          status: 412,
-          data: {
-            error_code: "STALE_VERSION",
-            message: "Hồ sơ App PV đã được cập nhật bởi phiên khác.",
-          },
+  it.each([false, true])(
+    "uses the PV profile version for the detail visibility action (published=%s)",
+    async (published) => {
+      const row = {
+        ...DEFAULT_SKU_ROW,
+        published_to_app: published,
+        pv_profile_version: published ? 7 : 0,
+      };
+      vi.mocked(useMvpSkus).mockReturnValue({
+        ...defaultSkusResult(),
+        data: { data: [row], meta: {} },
+      } as never);
+      vi.mocked(useSetMvpSkuPublished).mockReturnValue({
+        ...mutation(),
+        mutateAsync: async (input: { version: number }) => {
+          if (input.version !== row.pv_profile_version)
+            throw { status: 412, code: "STALE_VERSION" };
+          return {
+            ...row,
+            published_to_app: !published,
+            pv_profile_version: row.pv_profile_version + 1,
+          };
         },
-      }),
-    } as never);
+      } as never);
+      render(
+        <MemoryRouter>
+          <SkuMasterScreen />
+        </MemoryRouter>,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Xem chi tiết" }));
+      const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+      const actionLabel = published ? "Gỡ khỏi ứng dụng" : "Đưa lên ứng dụng";
+      fireEvent.click(
+        within(drawer).getByRole("button", { name: actionLabel }),
+      );
+      const confirm = screen.getByRole("dialog", {
+        name: published
+          ? "Gỡ SKU khỏi ứng dụng phân vùng?"
+          : "Đưa SKU lên ứng dụng phân vùng?",
+      });
+      fireEvent.click(
+        within(confirm).getByRole("button", { name: actionLabel }),
+      );
+      await waitFor(() =>
+        expect(
+          within(drawer).getByRole("button", {
+            name: published ? "Đưa lên ứng dụng" : "Gỡ khỏi ứng dụng",
+          }),
+        ).toBeInTheDocument(),
+      );
+    },
+  );
 
-    render(
-      <MemoryRouter>
-        <SkuMasterScreen />
-      </MemoryRouter>,
-    );
+  it.each([false, true])(
+    "hiện toast và tải lại SKU khi đổi trạng thái ứng dụng gặp 412 (published=%s)",
+    async (published) => {
+      const toastError = vi.spyOn(toast, "error");
+      const row = { ...DEFAULT_SKU_ROW, published_to_app: published };
+      const refetch = vi.fn().mockResolvedValue({
+        data: { data: [{ ...row, version: 4 }], meta: {} },
+        isError: false,
+      });
+      vi.mocked(useMvpSkus).mockReturnValue({
+        data: { data: [row], meta: {} },
+        isLoading: false,
+        error: null,
+        refetch,
+      } as never);
+      vi.mocked(useSetMvpSkuPublished).mockReturnValue({
+        isPending: false,
+        mutateAsync: vi.fn().mockRejectedValue({
+          isAxiosError: true,
+          response: {
+            status: 412,
+            data: {
+              error_code: "STALE_VERSION",
+              message: "Hồ sơ App PV đã được cập nhật bởi phiên khác.",
+            },
+          },
+        }),
+      } as never);
 
-    const tableRow = screen.getByText(row.sku_code).closest("tr");
-    fireEvent.click(
-      within(tableRow as HTMLTableRowElement).getByRole("button", {
-        name: "Xem chi tiết",
-      }),
-    );
-    const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
-    const actionLabel = published ? "Gỡ khỏi ứng dụng" : "Đưa lên ứng dụng";
-    fireEvent.click(within(drawer).getByRole("button", { name: actionLabel }));
-    const confirm = screen.getByRole("dialog", {
-      name: published ? "Gỡ SKU khỏi ứng dụng phân vùng?" : "Đưa SKU lên ứng dụng phân vùng?",
-    });
-    fireEvent.click(within(confirm).getByRole("button", { name: actionLabel }));
+      render(
+        <MemoryRouter>
+          <SkuMasterScreen />
+        </MemoryRouter>,
+      );
 
-    const staleCopy =
-      "Hồ sơ sản phẩm đã được cập nhật ở phiên khác. Danh sách vừa được tải lại; hãy kiểm tra rồi thao tác lại.";
-    await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith(staleCopy));
-    expect(refetch).toHaveBeenCalledTimes(1);
-    expect(toastError).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText(staleCopy)).not.toBeInTheDocument();
-    expect(await screen.findByRole("dialog", { name: "Chi tiết SKU" })).toBeInTheDocument();
-    toastError.mockRestore();
-  });
+      const tableRow = screen.getByText(row.sku_code).closest("tr");
+      fireEvent.click(
+        within(tableRow as HTMLTableRowElement).getByRole("button", {
+          name: "Xem chi tiết",
+        }),
+      );
+      const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+      const actionLabel = published ? "Gỡ khỏi ứng dụng" : "Đưa lên ứng dụng";
+      fireEvent.click(
+        within(drawer).getByRole("button", { name: actionLabel }),
+      );
+      const confirm = screen.getByRole("dialog", {
+        name: published
+          ? "Gỡ SKU khỏi ứng dụng phân vùng?"
+          : "Đưa SKU lên ứng dụng phân vùng?",
+      });
+      fireEvent.click(
+        within(confirm).getByRole("button", { name: actionLabel }),
+      );
+
+      const staleCopy =
+        "Hồ sơ sản phẩm đã được cập nhật ở phiên khác. Danh sách vừa được tải lại; hãy kiểm tra rồi thao tác lại.";
+      await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(toastError).toHaveBeenCalledWith(staleCopy));
+      expect(refetch).toHaveBeenCalledTimes(1);
+      expect(toastError).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(staleCopy)).not.toBeInTheDocument();
+      expect(
+        await screen.findByRole("dialog", { name: "Chi tiết SKU" }),
+      ).toBeInTheDocument();
+      toastError.mockRestore();
+    },
+  );
 
   it("loads agency data and opens add/edit modal", () => {
     render(
@@ -734,9 +817,7 @@ describe("API-backed MVP master screens", () => {
     );
     fireEvent.click(await screen.findByText("Không chạy motor"));
     await screen.findByRole("dialog");
-    fireEvent.click(
-      screen.getByRole("button", { name: "Lưu danh mục lỗi" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Lưu danh mục lỗi" }));
 
     expect(await screen.findByText(message)).toBeInTheDocument();
     // Chỉ khối DefectMutationNotice, không thêm banner formError thứ hai.

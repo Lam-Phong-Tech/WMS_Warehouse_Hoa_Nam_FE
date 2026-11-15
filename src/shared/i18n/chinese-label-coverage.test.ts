@@ -97,9 +97,9 @@ describe("Simplified Chinese business and legacy label coverage", () => {
           }
           if (
             source.includes("localizedEnglish") &&
-            (name === "text" || name === "localizedEnglish")
+            (name === "copy" || name === "text" || name === "localizedEnglish")
           ) {
-            const label = node.arguments[name === "text" ? 1 : 0];
+            const label = node.arguments[name === "localizedEnglish" ? 0 : 1];
             if (label && ts.isStringLiteralLike(label)) check(label.text, true);
           }
         }

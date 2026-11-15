@@ -10,6 +10,8 @@ export interface MasterListParams {
   /** MST-01 toolbar "Hãng" — gửi kèm GET /products để lọc theo Brand. */
   brand_id?: string;
   information_status?: "PENDING" | "COMPLETE" | "";
+  /** Exclude every SKU already assigned an App PV profile, before pagination. */
+  without_pv_profile?: 0 | 1;
   /** REQ-001 màn Nơi nhận — lọc GET /agencies theo loại nơi nhận. */
   recipient_type?: RecipientType | "";
   page?: number;
@@ -59,6 +61,8 @@ export interface SkuRecord {
   version_code?: string | null;
   status: MasterStatus;
   published_to_app?: boolean;
+  /** App PV publish precondition; zero means no profile, separate from SKU version. */
+  pv_profile_version?: number;
   /** ERD bảng 16 skus.version — dùng cho If-Match. */
   version: number;
   /** GĐ1 Dashboard "tồn dưới/vượt định mức" — theo SKU, toàn hệ thống (không

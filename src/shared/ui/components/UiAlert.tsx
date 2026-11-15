@@ -7,6 +7,8 @@ import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import type { ReactNode } from "react";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 
 export type UiAlertTone = "success" | "info" | "warning" | "error";
 
@@ -37,6 +39,7 @@ export function UiAlert({
   onClose,
   action,
 }: UiAlertProps) {
+  useLanguageStore((state) => state.language);
   const style = TONE_STYLES[tone];
   return (
     <Alert
@@ -49,8 +52,16 @@ export function UiAlert({
         "& .MuiAlert-icon": { color: style.icon },
       }}
     >
-      {title ? <AlertTitle>{title}</AlertTitle> : null}
-      {children}
+      {title ? (
+        <AlertTitle>
+          {tone === "error" && typeof title === "string"
+            ? localizeMessage(title)
+            : title}
+        </AlertTitle>
+      ) : null}
+      {tone === "error" && typeof children === "string"
+        ? localizeMessage(children)
+        : children}
     </Alert>
   );
 }

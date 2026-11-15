@@ -730,7 +730,7 @@ function LegacyInventoryFlowXntReport({ variant }: { variant: FlowVariant }) {
             <span className="chip chip-primary">{warehouseLabel}</span>
             <span className="chip chip-neutral">
               {isSuperAdmin
-                ? "Super Admin"
+                ? t("dashboard.scope.roleSuperAdmin")
                 : t("reports.inventoryFlowReport.roleOperator")}
             </span>
             {error !== null && error !== undefined ? (

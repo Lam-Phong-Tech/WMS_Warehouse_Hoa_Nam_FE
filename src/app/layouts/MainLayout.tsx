@@ -223,6 +223,7 @@ export function MainLayout() {
           <SideNav
             // Lúc "he mở", nội dung sidebar hiển thị y như khi đang mở rộng.
             collapsed={sidebarCollapsed && !sidebarPeek}
+            pinned={!sidebarCollapsed}
             onExpand={expandSidebar}
             onToggle={toggleSidebar}
           />

@@ -60,6 +60,12 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
+      - name: Verify English and Chinese translation coverage
+        run: pnpm i18n:audit
+      - name: Verify localized UI source literals
+        run: pnpm i18n:audit:jsx
+      - name: Verify translation regressions
+        run: pnpm test:i18n
       - name: Run the local core regression command
         run: pnpm test:ci
       - name: Verify operational realtime and automatic dashboard updates

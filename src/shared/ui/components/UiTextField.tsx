@@ -11,6 +11,8 @@ import FormHelperText from "@mui/material/FormHelperText";
 import FormLabel from "@mui/material/FormLabel";
 import type { TextFieldProps } from "@mui/material/TextField";
 import type { ReactNode } from "react";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 
 export type UiTextFieldProps = TextFieldProps;
 
@@ -24,11 +26,17 @@ export type UiTextFieldProps = TextFieldProps;
 const FALLBACK_MAX_LENGTH = 2000;
 
 export function UiTextField({ slotProps, ...props }: UiTextFieldProps) {
+  useLanguageStore((state) => state.language);
   const htmlInput = (slotProps?.htmlInput ?? {}) as Record<string, unknown>;
   return (
     <TextField
       size="small"
       {...props}
+      helperText={
+        props.error && typeof props.helperText === "string"
+          ? localizeMessage(props.helperText)
+          : props.helperText
+      }
       slotProps={{
         ...slotProps,
         htmlInput: { maxLength: FALLBACK_MAX_LENGTH, ...htmlInput },
@@ -59,13 +67,20 @@ export function UiFormField({
   children,
   htmlFor,
 }: UiFormFieldProps) {
+  useLanguageStore((state) => state.language);
   return (
     <FormControl fullWidth error={error} required={required}>
       <FormLabel htmlFor={htmlFor} sx={{ mb: 0.5 }}>
         {label}
       </FormLabel>
       {children}
-      {helperText ? <FormHelperText>{helperText}</FormHelperText> : null}
+      {helperText ? (
+        <FormHelperText>
+          {error && typeof helperText === "string"
+            ? localizeMessage(helperText)
+            : helperText}
+        </FormHelperText>
+      ) : null}
     </FormControl>
   );
 }

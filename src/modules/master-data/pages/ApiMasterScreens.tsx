@@ -541,7 +541,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
     try {
       const updatedRecord = await publishMutation.mutateAsync({
         id: recordId,
-        version: record.version,
+        version: record.pv_profile_version,
         publishedToApp: willPublish,
       });
       setViewing((current) =>
@@ -1207,7 +1207,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     const missingFields = [
                       !record.brand_id && copy("Hãng", "Brand"),
                       !record.category_id && copy("Nhóm hàng", "Category"),
-                      !record.model_id && "Model",
+                      !record.model_id && copy("Model", "Model"),
                     ].filter(Boolean);
                     return (
                       <tr
@@ -1457,7 +1457,10 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                           t("masterData.sku.colCategory"),
                           refLabel(categoryIndex, viewing.category_id),
                         ],
-                        ["Model", refLabel(modelIndex, viewing.model_id)],
+                        [
+                          copy("Model", "Model"),
+                          refLabel(modelIndex, viewing.model_id),
+                        ],
                         [
                           t("masterData.sku.fieldPowerSource"),
                           viewing.power_source_id
@@ -1817,7 +1820,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                         />
                         <SkuCatalogSelect
                           id="sku-model"
-                          label="Model"
+                          label={t("masterData.catalog.model")}
                           required
                           value={form.modelId}
                           options={catalogs.models}

@@ -37,6 +37,7 @@ import { useAuthStore } from "@/shared/store/auth.store";
 import { useNavLabel } from "@/shared/i18n/nav-labels";
 import { useT } from "@/shared/i18n/useT";
 import { tStatic as tUi } from "@/shared/i18n/useT";
+import { localizedEnglish } from "@/shared/i18n/localized-english";
 
 const NAV = COMPONENT_TOKENS.nav;
 const C = NAV.color;
@@ -189,6 +190,8 @@ const liveRegionSx = {
 export interface SideNavProps {
   /** true khi thanh bên đang ở chế độ thu gọn (chỉ còn dải icon). */
   collapsed?: boolean;
+  /** Persistent pin state; a temporary hover preview is not pinned. */
+  pinned?: boolean;
   /** Yêu cầu mở lại thanh bên đầy đủ (bấm logo, hoặc bấm icon nhóm ở rail). */
   onExpand?: () => void;
   /** Đảo trạng thái thu gọn — nút tròn nằm ngay trong khối brand. */
@@ -197,6 +200,7 @@ export interface SideNavProps {
 
 export function SideNav({
   collapsed = false,
+  pinned = !collapsed,
   onExpand,
   onToggle,
 }: SideNavProps) {
@@ -557,7 +561,7 @@ export function SideNav({
               whiteSpace: "nowrap",
             }}
           >
-            HOA NAM SCANNER
+            {localizedEnglish("HOA NAM SCANNER")}
             <Box
               component="span"
               className="hn-sidebar-brand-subtitle"
@@ -568,7 +572,7 @@ export function SideNav({
 
         {!collapsed && onToggle ? (
           <Tooltip
-            title={t("nav.collapse")}
+            title={t(pinned ? "nav.unpin" : "nav.pin")}
             placement="right"
             enterDelay={TOOLTIP_ENTER_DELAY}
             enterNextDelay={TOOLTIP_ENTER_NEXT_DELAY}
@@ -578,8 +582,8 @@ export function SideNav({
               type="button"
               className="hn-mvp-aside-toggle"
               onClick={onToggle}
-              aria-label={t("nav.collapse")}
-              aria-pressed={false}
+              aria-label={t("nav.pin")}
+              aria-pressed={pinned}
               sx={{
                 display: "grid",
                 placeItems: "center",
@@ -664,7 +668,7 @@ export function SideNav({
                   <UiIcon name="home" size="md" />
                 </Box>
                 <Box className="hn-sidebar-warehouse-copy">
-                  <strong>Kho Hoa Nam</strong>
+                  <strong>{t("reports.traceability.warehouseName")}</strong>
                   <small>
                     <span
                       className="hn-sidebar-status-dot"

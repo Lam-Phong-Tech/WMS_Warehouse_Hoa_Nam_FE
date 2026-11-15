@@ -1377,7 +1377,7 @@ export default function WarrantyComponentsReport() {
                                 onClick={() => openDetail(row)}
                                 loading={effectiveBusyId === row.id}
                               >
-                                Xem
+                                {t("inbound.list.view")}
                               </RowActionButton>
                             </RowActionGroup>
                           </td>

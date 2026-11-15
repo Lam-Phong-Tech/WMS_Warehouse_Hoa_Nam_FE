@@ -13,12 +13,103 @@ import {
   getApiErrorMessage,
   getMutationErrorMessage,
   normalizeError,
+  resolveFormErrors,
 } from "./api-error";
 
 beforeAll(ensureEnglishMessages);
 afterEach(() => act(() => useLanguageStore.getState().setLanguage("vi")));
 
 describe("localized API errors", () => {
+  it.each([
+    "Barcode/QR không tồn tại hoặc không ACTIVE.",
+    "Barcode/QR không tồn tại hoặc không Đang hoạt động.",
+  ])("localizes outbound scan errors: %s", (message) => {
+    const errors = [
+      new ApiEnvelopeError({
+        message,
+        error: { code: "PHYSICAL_CODE_NOT_FOUND" },
+      }),
+      createMockAxiosError({
+        status: 422,
+        data: { message, error_code: "PHYSICAL_CODE_NOT_FOUND" },
+      }),
+    ];
+    useLanguageStore.getState().setLanguage("en");
+    for (const error of errors) {
+      expect(getApiErrorMessage(error)).toBe(
+        "The barcode/QR code does not exist or is inactive.",
+      );
+    }
+    useLanguageStore.getState().setLanguage("vi");
+    for (const error of errors) {
+      expect(getApiErrorMessage(error)).toBe(message);
+    }
+  });
+
+  it.each([
+    [
+      "Mọi phiếu linh kiện phải POSTED trước khi bàn giao.",
+      "All component issue documents must be posted before handover.",
+    ],
+    [
+      "Mọi phiếu linh kiện phải Đã ghi nhận trước khi bàn giao.",
+      "All component issue documents must be posted before handover.",
+    ],
+    [
+      "Nguồn phiếu xuất linh kiện chưa sẵn sàng để xác minh bàn giao.",
+      "Component issue records are unavailable for handover verification.",
+    ],
+    [
+      "Có phiếu linh kiện không thuộc kho sở hữu hồ sơ.",
+      "A component issue document belongs to a different warehouse than the warranty case.",
+    ],
+  ])("localizes warranty handover errors: %s", (message, translated) => {
+    const error = createMockAxiosError({
+      status: 409,
+      data: {
+        message,
+        error: {
+          code: "WARRANTY_COMPONENT_ISSUES_NOT_POSTED",
+          details: { not_posted_count: "2" },
+        },
+      },
+    });
+    useLanguageStore.getState().setLanguage("en");
+    expect(getMutationErrorMessage(error)).toBe(translated);
+    expect(getApiErrorDetails(error)).toEqual([]);
+    useLanguageStore.getState().setLanguage("vi");
+    expect(getMutationErrorMessage(error)).toBe(message);
+  });
+
+  it.each([
+    "SKU không tồn tại hoặc không ACTIVE.",
+    "SKU không tồn tại hoặc không Đang hoạt động.",
+  ])("localizes the PV product SKU error: %s", (message) => {
+    const errors = [
+      new ApiEnvelopeError({
+        message,
+        error: { code: "BUSINESS_RULE_VIOLATION" },
+      }),
+      createMockAxiosError({
+        status: 422,
+        data: { message, error_code: "BUSINESS_RULE_VIOLATION" },
+      }),
+    ];
+    useLanguageStore.getState().setLanguage("en");
+    for (const error of errors) {
+      expect(getMutationErrorMessage(error)).toBe(
+        "The SKU does not exist or is inactive.",
+      );
+      expect(resolveFormErrors(error, ["sku_id", "display_name"]).message).toBe(
+        "The SKU does not exist or is inactive.",
+      );
+    }
+    useLanguageStore.getState().setLanguage("vi");
+    for (const error of errors) {
+      expect(getMutationErrorMessage(error)).toBe(message);
+    }
+  });
+
   it("localizes both API envelope shapes and inline field errors without changing metadata", () => {
     useLanguageStore.getState().setLanguage("en");
     // The UI catalog also contains universal `{code}` / `{label}` templates.

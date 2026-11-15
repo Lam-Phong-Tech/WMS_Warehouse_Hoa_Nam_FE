@@ -112,8 +112,12 @@ export function HoaNamAuthShell({
           borderRadius: "9px",
           backgroundColor: "var(--auth-field)",
           color: "var(--auth-ink)",
-          "& .MuiOutlinedInput-notchedOutline": { borderColor: "var(--auth-border)" },
-          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--ops-link)" },
+          "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: "var(--auth-border)",
+          },
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: "var(--ops-link)",
+          },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "var(--ops-link)",
             borderWidth: "2px",
@@ -126,7 +130,10 @@ export function HoaNamAuthShell({
           color: "var(--auth-ink)",
           fontSize: { xs: 16, sm: 22, xl: 18 },
         },
-        "& .MuiInputBase-input::placeholder": { color: "var(--auth-muted)", opacity: 1 },
+        "& .MuiInputBase-input::placeholder": {
+          color: "var(--auth-muted)",
+          opacity: 1,
+        },
         "& .MuiInputAdornment-root, & .MuiInputAdornment-root i": {
           color: "var(--auth-muted)",
           fontSize: 22,
@@ -142,8 +149,14 @@ export function HoaNamAuthShell({
           fontSize: { xs: 17, sm: 25, xl: 20 },
           fontWeight: 700,
           textTransform: "none",
-          "&:hover": { backgroundColor: "var(--ops-primary-hover)", boxShadow: "none" },
-          "&.Mui-disabled": { backgroundColor: isDark ? "#334969" : "#d4dfeb", color: "var(--auth-muted)" },
+          "&:hover": {
+            backgroundColor: "var(--ops-primary-hover)",
+            boxShadow: "none",
+          },
+          "&.Mui-disabled": {
+            backgroundColor: isDark ? "#334969" : "#d4dfeb",
+            color: "var(--auth-muted)",
+          },
         },
         "& .hn-auth-note": {
           border: 0,
@@ -167,7 +180,10 @@ export function HoaNamAuthShell({
           color: "var(--auth-link)",
           fontSize: 17,
           textTransform: "none",
-          "&.Mui-disabled": { backgroundColor: "var(--auth-note)", color: "var(--auth-muted)" },
+          "&.Mui-disabled": {
+            backgroundColor: "var(--auth-note)",
+            color: "var(--auth-muted)",
+          },
         },
       }}
     >
@@ -177,7 +193,10 @@ export function HoaNamAuthShell({
           position: "relative",
           overflow: "hidden",
           minWidth: 0,
-          height: { xs: "clamp(240px, 57vw, 580px)", xl: extendIllustration ? "100%" : "auto" },
+          height: {
+            xs: "clamp(240px, 57vw, 580px)",
+            xl: extendIllustration ? "100%" : "auto",
+          },
           minHeight: { xl: "max(650px, 100vh)" },
           backgroundColor: "#07395e",
         }}
@@ -238,7 +257,11 @@ export function HoaNamAuthShell({
         <Box
           sx={{
             position: "absolute",
-            top: { xs: "calc(24px - clamp(240px, 57vw, 580px))", sm: "calc(44px - clamp(240px, 57vw, 580px))", xl: 28 },
+            top: {
+              xs: "calc(24px - clamp(240px, 57vw, 580px))",
+              sm: "calc(44px - clamp(240px, 57vw, 580px))",
+              xl: 28,
+            },
             right: { xs: 24, sm: 28, xl: 38 },
             zIndex: 2,
             display: "flex",
@@ -262,15 +285,38 @@ export function HoaNamAuthShell({
               aria-haspopup="menu"
               aria-expanded={languageOpen}
               aria-controls={languageOpen ? "auth-language-menu" : undefined}
-              sx={{ display: "inline-flex", alignItems: "center", gap: "6px", border: 0,
-                background: "transparent", color: "inherit", cursor: "pointer", fontSize: 18,
-                lineHeight: 1, padding: 0 }}
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                border: 0,
+                background: "transparent",
+                color: "inherit",
+                cursor: "pointer",
+                fontSize: 18,
+                lineHeight: 1,
+                padding: 0,
+              }}
             >
               <span>{language.toUpperCase()}</span>
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none"
-                style={{ flex: "0 0 16px", transform: languageOpen ? "rotate(180deg)" : undefined }}>
-                <path d="m3.5 6 4.5 4 4.5-4" stroke="currentColor" strokeWidth="1.8"
-                  strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                aria-hidden="true"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                style={{
+                  flex: "0 0 16px",
+                  transform: languageOpen ? "rotate(180deg)" : undefined,
+                }}
+              >
+                <path
+                  d="m3.5 6 4.5 4 4.5-4"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </Box>
             {languageOpen && (
@@ -278,20 +324,56 @@ export function HoaNamAuthShell({
                 id="auth-language-menu"
                 role="menu"
                 aria-label={t("topbar.languageLabel")}
-                sx={{ position: "absolute", top: "calc(100% + 12px)", right: 0, zIndex: 5,
-                  minWidth: 190, padding: "6px", border: "1px solid var(--auth-border)", borderRadius: "12px",
-                  backgroundColor: "var(--auth-panel)", color: "var(--auth-ink)",
-                  boxShadow: isDark ? "0 14px 30px rgba(0,0,0,.4)" : "0 14px 30px rgba(28,85,132,.2)" }}
+                sx={{
+                  position: "absolute",
+                  top: "calc(100% + 12px)",
+                  right: 0,
+                  zIndex: 5,
+                  minWidth: 190,
+                  padding: "6px",
+                  border: "1px solid var(--auth-border)",
+                  borderRadius: "12px",
+                  backgroundColor: "var(--auth-panel)",
+                  color: "var(--auth-ink)",
+                  boxShadow: isDark
+                    ? "0 14px 30px rgba(0,0,0,.4)"
+                    : "0 14px 30px rgba(28,85,132,.2)",
+                }}
               >
                 {LANGUAGES.map(({ value, label }) => (
-                  <Box key={value} component="button" type="button" role="menuitemradio" aria-checked={language === value}
-                    onClick={() => { setLanguage(value); setLanguageOpen(false); }}
-                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
-                      width: "100%", border: 0, borderRadius: "8px", padding: "10px 12px", textAlign: "left",
-                      backgroundColor: language === value ? "var(--auth-note)" : "transparent",
-                      color: "inherit", cursor: "pointer", fontSize: 15, whiteSpace: "nowrap",
-                      "&:hover": { backgroundColor: "var(--auth-note)" } }}>
-                    {label}<span aria-hidden="true">{language === value ? "✓" : ""}</span>
+                  <Box
+                    key={value}
+                    component="button"
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={language === value}
+                    onClick={() => {
+                      setLanguage(value);
+                      setLanguageOpen(false);
+                    }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      width: "100%",
+                      border: 0,
+                      borderRadius: "8px",
+                      padding: "10px 12px",
+                      textAlign: "left",
+                      backgroundColor:
+                        language === value ? "var(--auth-note)" : "transparent",
+                      color: "inherit",
+                      cursor: "pointer",
+                      fontSize: 15,
+                      whiteSpace: "nowrap",
+                      "&:hover": { backgroundColor: "var(--auth-note)" },
+                    }}
+                  >
+                    {label}
+                    <span aria-hidden="true">
+                      {language === value ? "✓" : ""}
+                    </span>
                   </Box>
                 ))}
               </Box>
@@ -311,9 +393,11 @@ export function HoaNamAuthShell({
             onClick={() =>
               setThemePreference(themeMode === "light" ? "dark" : "light")
             }
-            aria-label={
-              themeMode === "light" ? "Bật giao diện tối" : "Bật giao diện sáng"
-            }
+            aria-label={t(
+              themeMode === "light"
+                ? "topbar.enableDarkTheme"
+                : "topbar.enableLightTheme",
+            )}
             sx={{
               border: 0,
               background: "transparent",
@@ -341,7 +425,9 @@ export function HoaNamAuthShell({
             borderRadius: "16px",
             border: "1px solid var(--auth-border)",
             backgroundColor: "var(--auth-panel)",
-            boxShadow: isDark ? "0 15px 38px rgba(0,0,0,.28)" : "0 15px 38px rgba(28, 85, 132, .11)",
+            boxShadow: isDark
+              ? "0 15px 38px rgba(0,0,0,.28)"
+              : "0 15px 38px rgba(28, 85, 132, .11)",
             "& > form": recoveryStep ? { marginBottom: 0 } : undefined,
             "& form [data-busy]": recoveryStep
               ? { gap: { xl: "34px" } }
@@ -359,7 +445,9 @@ export function HoaNamAuthShell({
                 display: "grid",
                 placeItems: "center",
                 borderRadius: "inherit",
-                backgroundColor: isDark ? "rgba(16,37,68,.9)" : "rgba(255,255,255,.88)",
+                backgroundColor: isDark
+                  ? "rgba(16,37,68,.9)"
+                  : "rgba(255,255,255,.88)",
               }}
             >
               <Box sx={{ textAlign: "center", fontWeight: 700 }}>
@@ -370,14 +458,16 @@ export function HoaNamAuthShell({
           )}
 
           {recoveryStep ? (
-            <Box sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              color: "var(--auth-link)",
-              fontSize: { xs: 16, sm: 18 },
-              marginBottom: "30px",
-            }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                color: "var(--auth-link)",
+                fontSize: { xs: 16, sm: 18 },
+                marginBottom: "30px",
+              }}
+            >
               {!hideRecoveryBack && (
                 <Box
                   component={Link}
@@ -412,10 +502,7 @@ export function HoaNamAuthShell({
                 marginBottom: 30,
               }}
             >
-              <span
-                aria-hidden="true"
-                style={{ fontSize: 27, lineHeight: 1 }}
-              >
+              <span aria-hidden="true" style={{ fontSize: 27, lineHeight: 1 }}>
                 ←
               </span>
               {t("auth.forgotPassword.backToLogin")}
@@ -499,9 +586,32 @@ export function HoaNamAuthShell({
             }}
           >
             Hoa Nam WMS
-            <Box component="span" sx={{ display: { xs: "inline", sm: screen === "session" ? "block" : "inline", xl: "inline" } }}>
-              {screen === "session" ? <Box component="span" sx={{ display: { xs: "inline", sm: "none", xl: "inline" } }}> · </Box> : " · "}
-              {language === "vi" ? "Hệ thống quản lý kho" : language === "zh" ? "仓库管理系统" : "Warehouse management system"}
+            <Box
+              component="span"
+              sx={{
+                display: {
+                  xs: "inline",
+                  sm: screen === "session" ? "block" : "inline",
+                  xl: "inline",
+                },
+              }}
+            >
+              {screen === "session" ? (
+                <Box
+                  component="span"
+                  sx={{ display: { xs: "inline", sm: "none", xl: "inline" } }}
+                >
+                  {" "}
+                  ·{" "}
+                </Box>
+              ) : (
+                " · "
+              )}
+              {language === "vi"
+                ? "Hệ thống quản lý kho"
+                : language === "zh"
+                  ? "仓库管理系统"
+                  : "Warehouse management system"}
             </Box>
           </Box>
         </Box>

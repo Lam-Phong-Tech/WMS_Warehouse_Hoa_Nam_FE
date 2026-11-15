@@ -9,8 +9,11 @@
  * `ActionButton`, ngày tháng, và mọi chuỗi bị "đóng băng" ở cấp module.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen } from "@testing-library/react";
-import { renderWithProviders } from "@/test/test-utils";
+import { cleanup, screen, waitFor } from "@testing-library/react";
+import {
+  cleanupCreatedQueryClients,
+  renderWithProviders,
+} from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
 vi.mock("@/shared/api/http", () => ({
@@ -26,6 +29,7 @@ import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
 import { ROUTES } from "@/shared/constants/routes";
 import PackingLabelReportPage from "@/modules/reports/pages/PackingLabelReportPage";
 
@@ -107,7 +111,7 @@ function ariaLabels(root: HTMLElement): string[] {
   );
 }
 
-describe("đổi sang English · màn hình không còn chữ tiếng Việt", () => {
+describe.each(["en", "zh"] as const)("rendered interface in %s", (language) => {
   beforeEach(async () => {
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();
@@ -122,17 +126,20 @@ describe("đổi sang English · màn hình không còn chữ tiếng Việt", (
       isSuperAdmin: false,
       permissionCodes: ["report.view", "report.export", "REPORT_EXPORT"],
     });
-    useLanguageStore.getState().setLanguage("en");
+    useLanguageStore.getState().setLanguage(language);
     // Từ điển EN nạp ĐỘNG (english-messages.ts): chưa về thì t() rơi về tiếng
     // Việt đúng như thiết kế. Không chờ ở đây thì test đua với lượt import đó —
     // chạy một mình thì thắng, chạy cùng cả bộ (nhiều worker tranh CPU) thì
     // thua và cả màn hiện tiếng Việt, báo đỏ oan.
     await ensureEnglishMessages();
+    await ensureChineseMessages();
   });
 
   afterEach(() => {
+    cleanup();
     useLanguageStore.getState().setLanguage("vi");
     cleanupTestState();
+    cleanupCreatedQueryClients();
   });
 
   it("RPT-05 Nhãn đóng gói: mọi chữ trên màn đều là tiếng Anh", async () => {
@@ -141,7 +148,8 @@ describe("đổi sang English · màn hình không còn chữ tiếng Việt", (
     ]);
 
     // Chờ dữ liệu về để quét cả phần bảng, không chỉ khung tĩnh.
-    expect(await screen.findByRole("table")).toBeInTheDocument();
+    const table = await screen.findByRole("table");
+    await waitFor(() => expect(table).toHaveTextContent("PL-PX-0001"));
 
     const offenders = [
       ...visibleTexts(container),
@@ -158,7 +166,11 @@ describe("đổi sang English · màn hình không còn chữ tiếng Việt", (
 
     const table = await screen.findByRole("table");
     // `FAILED` (trigger PostgreSQL) và `PRINT_FAILED` (nghiệp vụ) về cùng nhãn.
-    expect(table).toHaveTextContent("Print failed");
+    await waitFor(() =>
+      expect(table).toHaveTextContent(
+        language === "en" ? "Print failed" : "打印失败",
+      ),
+    );
     expect(table).not.toHaveTextContent("FAILED");
   });
 });

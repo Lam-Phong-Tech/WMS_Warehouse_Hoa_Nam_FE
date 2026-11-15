@@ -4,7 +4,10 @@ import { AUTH_BASELINE } from "@/shared/ui/tokens";
 import { AuthShell } from "@/modules/auth/components/AuthShell";
 import { AuthLoginFeedback } from "@/modules/auth/components/AuthLoginFeedback";
 import { AUTH_UAT_FORM_SX } from "@/modules/auth/components/AuthLoginFormSx";
-import { MfaOtpInput, MFA_OTP_LENGTH } from "@/modules/auth/components/MfaOtpInput";
+import {
+  MfaOtpInput,
+  MFA_OTP_LENGTH,
+} from "@/modules/auth/components/MfaOtpInput";
 import type {
   StepUpRequired,
   StepUpVerifyResponse,
@@ -110,7 +113,8 @@ export function LoginStepUpPanel({
     challenge.method === "mfa"
       ? t("auth.login.stepUpMfaSubtitle")
       : t("auth.login.stepUpEmailSubtitle", {
-          email: challenge.masked_email || "email đăng ký",
+          email:
+            challenge.masked_email || t("auth.login.registeredEmailFallback"),
         });
 
   return (

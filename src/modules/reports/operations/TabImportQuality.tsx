@@ -1,5 +1,7 @@
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
+import { reportTopOptions } from "./report-top-options";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Box, UiAlert, UiSelect, UiStatusBadge } from "@/shared/ui";
@@ -76,11 +78,6 @@ const resultOptions = (t: TranslateFn) => [
   { value: "FAILED", label: t("reports.importQuality.outcomeFailed") },
   { value: "DUPLICATE", label: t("reports.importQuality.outcomeDuplicate") },
 ];
-
-const TOP_ERROR_OPTIONS = [
-  { value: "10", label: "Top 10" },
-  { value: "20", label: "Top 20" },
-] as const;
 
 /**
  * Mã lỗi mang nghĩa "đã tồn tại / trùng" — tách khỏi Failed vì nghiệp vụ xử lý
@@ -561,7 +558,7 @@ export default function TabImportQuality() {
               label={t("reports.importQuality.topErrorsCount")}
               value={topErrors}
               onChange={setTopErrors}
-              options={TOP_ERROR_OPTIONS}
+              options={reportTopOptions([10, 20], t)}
             />
           }
         >
@@ -869,7 +866,7 @@ export default function TabImportQuality() {
               {
                 key: "message",
                 header: t("reports.importQuality.colErrorMessage"),
-                render: (row) => row.message || EMPTY_TEXT,
+                render: (row) => localizeMessage(row.message) || EMPTY_TEXT,
               },
               {
                 key: "reference",
@@ -878,7 +875,7 @@ export default function TabImportQuality() {
               },
               {
                 key: "request",
-                header: "Request",
+                header: t("reports.importQuality.colRequestNo"),
                 render: (row) => row.request || EMPTY_TEXT,
               },
               {
@@ -956,7 +953,7 @@ export default function TabImportQuality() {
               {
                 key: "message",
                 header: t("reports.importQuality.colErrorMessage"),
-                render: (row) => row.message || EMPTY_TEXT,
+                render: (row) => localizeMessage(row.message) || EMPTY_TEXT,
               },
               {
                 key: "reference",
@@ -965,7 +962,7 @@ export default function TabImportQuality() {
               },
               {
                 key: "request",
-                header: "Request",
+                header: t("reports.importQuality.colRequestNo"),
                 render: (row) => row.request || EMPTY_TEXT,
               },
               {

@@ -934,9 +934,7 @@ export default function IoHistoryReport() {
                               <tr
                                 key={row.id}
                                 data-drill-key={row.id}
-                                {...rowActivationProps(() =>
-                                  openDrill(row.id),
-                                )}
+                                {...rowActivationProps(() => openDrill(row.id))}
                               >
                                 <td>
                                   <time dateTime={row.postedAt}>
@@ -1038,7 +1036,9 @@ export default function IoHistoryReport() {
                                 <span className="io-page-gap">…</span>
                               )}
                               <button
-                                aria-label={"Trang " + n}
+                                aria-label={t("shared.table.pageLabel", {
+                                  page: n,
+                                })}
                                 aria-current={
                                   currentPage === n ? "page" : undefined
                                 }

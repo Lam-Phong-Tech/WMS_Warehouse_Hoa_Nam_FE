@@ -41,6 +41,8 @@ export function useMvpSkus(
   return useQuery({
     queryKey: mvpMasterKeys.skus(params),
     queryFn: () => getMvpSkus(params),
+    // PV profile membership can change while the add form is closed.
+    ...(params.without_pv_profile ? { staleTime: 0 } : {}),
     // Danh sách SKU trên MST-01 là dữ liệu dùng chung giữa nhiều phiên:
     // không giữ cache master 10 phút, nếu không thay đổi từ phiên khác chỉ
     // hiện sau khi F5. Chỉ bật live-refresh cho màn danh sách, không bật cho
@@ -155,7 +157,7 @@ export function useSetMvpSkuPublished() {
       publishedToApp,
     }: {
       id: string;
-      version: number;
+      version: number | undefined;
       publishedToApp: boolean;
     }) => setMvpSkuPublished(id, version, publishedToApp),
   );

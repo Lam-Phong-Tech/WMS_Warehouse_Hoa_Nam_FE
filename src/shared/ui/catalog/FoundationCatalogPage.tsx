@@ -362,7 +362,7 @@ export default function FoundationCatalogPage() {
       data-testid="ui-foundation-root"
       sx={{ display: "grid", gap: 3, maxWidth: 1080 }}
     >
-      <UiText variant="pageTitle">Foundation catalog (Vuexy baseline)</UiText>
+      <UiText variant="pageTitle">{t("catalog.title")}</UiText>
 
       <UiCard title={t("catalog.tokens.sectionTitle")}>
         <Stack direction="row" sx={{ flexWrap: "wrap", gap: 2 }}>
@@ -384,7 +384,7 @@ export default function FoundationCatalogPage() {
         </Stack>
       </UiCard>
 
-      <UiCard title="Typography">
+      <UiCard title={t("catalog.typography.sectionTitle")}>
         <Stack sx={{ gap: 1 }}>
           <UiText variant="pageTitle">
             {t("catalog.typography.pageTitle")}
@@ -450,7 +450,7 @@ export default function FoundationCatalogPage() {
         </Stack>
       </UiCard>
 
-      <UiCard title="KPI card">
+      <UiCard title={t("catalog.kpi.sectionTitle")}>
         <Box
           sx={{
             display: "grid",
@@ -712,7 +712,7 @@ export default function FoundationCatalogPage() {
         onToggle={() => setCollapsed((v) => !v)}
       />
 
-      <UiCard title="State surfaces">
+      <UiCard title={t("catalog.states.sectionTitle")}>
         <Box
           sx={{
             display: "grid",
@@ -745,7 +745,7 @@ export default function FoundationCatalogPage() {
       <UiCard title={t("catalog.formField.sectionTitle")}>
         <Box sx={{ maxWidth: 420 }}>
           <UiFormField
-            label="FormField shell"
+            label={t("catalog.formField.label")}
             required
             helperText={t("catalog.formField.helper")}
           >

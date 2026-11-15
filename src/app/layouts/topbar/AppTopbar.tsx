@@ -311,7 +311,10 @@ export function AppTopbar({
       ) : null}
 
       {!isDashboard ? (
-        <nav className="topbar-breadcrumb" aria-label="Breadcrumb">
+        <nav
+          className="topbar-breadcrumb"
+          aria-label={t("dashboard.breadcrumb.nav")}
+        >
           {breadcrumbTrail.map((entry, index) => (
             <span
               className="topbar-breadcrumb-step"

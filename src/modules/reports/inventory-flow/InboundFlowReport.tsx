@@ -1393,7 +1393,7 @@ export default function InboundFlowReport() {
                                 })}
                                 onClick={() => openDocument(document)}
                               >
-                                Xem
+                                {tUi("inbound.list.view")}
                               </RowActionButton>
                             </RowActionGroup>
                           </td>
@@ -1473,7 +1473,7 @@ export default function InboundFlowReport() {
                 {pageCount > 3 ? <span>…</span> : null}
                 <button
                   type="button"
-                  aria-label="Trang sau"
+                  aria-label={tUi("pv.catalog.nextPage")}
                   disabled={
                     safePage >= pageCount || searchedDocuments.length === 0
                   }

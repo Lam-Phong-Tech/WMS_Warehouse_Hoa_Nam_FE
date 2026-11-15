@@ -8,6 +8,7 @@ import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Box from "@mui/material/Box";
 import type { ReactNode } from "react";
 import { MOTION, SEMANTIC_LIGHT as S, TYPOGRAPHY } from "@/shared/ui/tokens";
+import { useT } from "@/shared/i18n/useT";
 
 export interface UiBreadcrumbItem {
   label: ReactNode;
@@ -22,9 +23,10 @@ export interface UiBreadcrumbProps {
 }
 
 export function UiBreadcrumb({ items, separator = "/" }: UiBreadcrumbProps) {
+  const t = useT();
   return (
     <Breadcrumbs
-      aria-label="Breadcrumb"
+      aria-label={t("dashboard.breadcrumb.nav")}
       separator={separator}
       sx={{ fontSize: TYPOGRAPHY.fontSizeSecondary, color: S.textMedium }}
     >

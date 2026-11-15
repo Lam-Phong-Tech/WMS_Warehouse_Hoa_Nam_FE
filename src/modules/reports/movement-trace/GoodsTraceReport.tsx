@@ -1,4 +1,5 @@
 import { useT } from "@/shared/i18n/useT";
+import { reportLabel } from "@/shared/i18n/report-labels";
 import { businessToday } from "@/shared/utils/date-time";
 import { parseDateTime } from "@/shared/utils/date-time";
 import { useDateTimePreferences } from "@/shared/store/interface-preferences.store";
@@ -255,45 +256,52 @@ export default function GoodsTraceReport() {
           XLSX.utils.json_to_sheet(
             values.map((row) =>
               Object.fromEntries(
-                Object.entries(row).map(([key, value]) => [key, safe(value)]),
+                Object.entries(row).map(([key, value]) => [
+                  reportLabel(key),
+                  safe(value),
+                ]),
               ),
             ),
           ),
-          name,
+          reportLabel(name),
         );
       if (sections.events)
         append(
           "Su kien",
           events.map((e) => ({
-            "Thời điểm": e.occurred_at,
-            "Thời điểm ghi nhận": e.recorded_at,
-            "Trạng thái": e.status,
-            Kho: e.warehouse_code,
-            "Vị trí trước": e.location_before,
-            "Vị trí sau": e.location_after,
-            "Số lượng": e.quantity,
-            "Số lượng trên phiếu": e.source_quantity,
-            "Số lượng mã đang xem": e.entity_quantity,
-            Mã: e.code,
+            [reportLabel("Thời điểm")]: e.occurred_at,
+            [reportLabel("Thời điểm ghi nhận")]: e.recorded_at,
+            [reportLabel("Trạng thái")]: e.status,
+            [reportLabel("Kho")]: e.warehouse_code,
+            [reportLabel("Vị trí trước")]: e.location_before,
+            [reportLabel("Vị trí sau")]: e.location_after,
+            [reportLabel("Số lượng")]: e.quantity,
+            [reportLabel("Số lượng trên phiếu")]: e.source_quantity,
+            [reportLabel("Số lượng mã đang xem")]: e.entity_quantity,
+            [reportLabel("Mã")]: e.code,
             SKU: e.sku_code,
-            "Sự kiện": e.event_label,
-            "Chứng từ": e.source_no,
-            "Biến động tồn mã đang xem": e.qty_delta,
-            "Biến động sổ kho nguồn": e.source_qty_delta,
-            "Tồn trước": e.qty_before,
-            "Tồn sau": e.qty_after,
-            "Người thực hiện": e.actor,
+            [reportLabel("Sự kiện")]: e.event_label,
+            [reportLabel("Chứng từ")]: e.source_no,
+            [reportLabel("Biến động tồn mã đang xem")]: e.qty_delta,
+            [reportLabel("Biến động sổ kho nguồn")]: e.source_qty_delta,
+            [reportLabel("Tồn trước")]: e.qty_before,
+            [reportLabel("Tồn sau")]: e.qty_after,
+            [reportLabel("Người thực hiện")]: e.actor,
           })),
         );
       if (sections.documents)
         append(
           "Chung tu",
           events.flatMap((e) => [
-            { "Sự kiện": e.id, "Chứng từ": e.source_no, Loại: e.source_type },
+            {
+              [reportLabel("Sự kiện")]: e.id,
+              [reportLabel("Chứng từ")]: e.source_no,
+              [reportLabel("Loại")]: e.source_type,
+            },
             ...e.related_documents.map((d) => ({
-              "Sự kiện": e.id,
-              "Chứng từ": d.code,
-              Loại: d.type,
+              [reportLabel("Sự kiện")]: e.id,
+              [reportLabel("Chứng từ")]: d.code,
+              [reportLabel("Loại")]: d.type,
             })),
           ]),
         );
@@ -310,23 +318,25 @@ export default function GoodsTraceReport() {
                 activeProfile?.code === r.child_code,
             )
             .map((r) => ({
-              "Mã cha": r.parent_code,
-              "Mã con": r.child_code,
+              [reportLabel("Mã cha")]: r.parent_code,
+              [reportLabel("Mã con")]: r.child_code,
               SKU: r.sku_code,
-              "Số lượng": r.quantity,
-              "Vị trí": r.location,
+              [reportLabel("Số lượng")]: r.quantity,
+              [reportLabel("Vị trí")]: r.location,
             })),
         );
       append("Thong tin truy van", [
         {
           ...query,
           profile_code: activeProfile?.code ?? "",
-          "Chỉ tác động tồn": stockOnly || exportStock,
-          "Thời điểm dữ liệu": data.data_as_of,
-          "Số sự kiện xuất": events.length,
-          "Sự kiện tác động tồn": events.filter(isStockEvent).length,
-          "Ảnh hưởng thuần": netDelta(events),
-          "Mã liên quan": new Set(events.map((e) => e.code)).size,
+          [reportLabel("Chỉ tác động tồn")]: stockOnly || exportStock,
+          [reportLabel("Thời điểm dữ liệu")]: data.data_as_of,
+          [reportLabel("Số sự kiện xuất")]: events.length,
+          [reportLabel("Sự kiện tác động tồn")]:
+            events.filter(isStockEvent).length,
+          [reportLabel("Ảnh hưởng thuần")]: netDelta(events),
+          [reportLabel("Mã liên quan")]: new Set(events.map((e) => e.code))
+            .size,
         },
       ]);
       await saveStyledReportWorkbook(

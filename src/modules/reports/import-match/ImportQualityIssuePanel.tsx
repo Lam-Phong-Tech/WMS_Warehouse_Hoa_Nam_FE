@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { isDuplicateCode } from "./import-match-model";
 import {
   useImportQualityIssues,
@@ -56,7 +57,7 @@ function IssueDetail({
               : t("importResult.warningIssue")
             : copy("Lỗi", "Error", "错误")}
         </span>
-        <strong>{issue.message || issue.code}</strong>
+        <strong>{localizeMessage(issue.message) || issue.code}</strong>
       </div>
       <dl>
         <div>
@@ -81,7 +82,7 @@ function IssueDetail({
       </dl>
       <h4>{copy("Hướng dẫn xử lý", "How to fix", "处理指引")}</h4>
       <p>
-        {issue.suggestedAction ||
+        {localizeMessage(issue.suggestedAction) ||
           copy(
             "Kiểm tra dữ liệu trong tệp nguồn rồi nhập lại.",
             "Check the source file data and import again.",
@@ -139,9 +140,9 @@ export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
                 onClick={() => setSelectedIndex(index)}
                 aria-pressed={activeIndex === index}
                 aria-label={copy(
-                  `Dòng ${row.rowNo}: ${row.message}`,
-                  `Row ${row.rowNo}: ${row.message}`,
-                  `第 ${row.rowNo} 行：${row.message}`,
+                  `Dòng ${row.rowNo}: ${localizeMessage(row.message) || row.code}`,
+                  `Row ${row.rowNo}: ${localizeMessage(row.message) || row.code}`,
+                  `第 ${row.rowNo} 行：${localizeMessage(row.message) || row.code}`,
                 )}
               >
                 <span className="hn-import-issues__row-heading">
@@ -159,7 +160,7 @@ export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
                   </span>
                 </span>
                 <span className="hn-import-issues__message">
-                  {row.message || row.code}
+                  {localizeMessage(row.message) || row.code}
                 </span>
                 <small>{row.field || "—"}</small>
               </button>

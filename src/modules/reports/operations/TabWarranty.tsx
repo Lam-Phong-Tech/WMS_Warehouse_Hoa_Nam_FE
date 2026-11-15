@@ -1,6 +1,7 @@
 import { businessToday } from "@/shared/utils/date-time";
 import { RowActionButton, RowActionGroup } from "@/shared/components/actions";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { reportTopOptions } from "./report-top-options";
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
@@ -109,11 +110,6 @@ const STATUS_COLORS: Record<string, string> = {
 const CLOSED_STATUSES = new Set(["RETURNED", "CANCELLED"]);
 
 const DUE_SOON_DAYS = 2;
-
-const TOP_COMPONENT_OPTIONS = [
-  { value: "5", label: "Top 5" },
-  { value: "10", label: "Top 10" },
-] as const;
 
 type CaseRow = {
   caseId: string;
@@ -868,7 +864,7 @@ export default function TabWarranty() {
             label={t("reports.warranty.topComponentsCount")}
             value={topComponents}
             onChange={setTopComponents}
-            options={TOP_COMPONENT_OPTIONS}
+            options={reportTopOptions([5, 10], t)}
           />
         }
       >
@@ -1180,7 +1176,7 @@ export default function TabWarranty() {
           },
           {
             key: "model",
-            header: "SKU / Model",
+            header: `SKU / ${t("masterData.catalog.model")}`,
             width: 160,
             sortAccessor: (row) => row.model,
             render: (row) => (
@@ -1503,7 +1499,11 @@ function CaseMiniTable({
             <Box sx={{ fontWeight: 700 }}>{row.caseNo || EMPTY_TEXT}</Box>
           ),
         },
-        { key: "model", header: "SKU / Model", render: (row) => row.model },
+        {
+          key: "model",
+          header: `SKU / ${t("masterData.catalog.model")}`,
+          render: (row) => row.model,
+        },
         {
           key: "defect",
           header: t("reports.warranty.colDefect"),

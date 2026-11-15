@@ -7,6 +7,8 @@
  * Chấp nhận cả dấu phẩy thập phân kiểu Việt ("1,5" → 1.5).
  */
 import { useEffect, useState } from "react";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import type { ReactNode } from "react";
 import {
   Controller,
@@ -82,6 +84,8 @@ function UiFormNumberInner<T extends FieldValues>({
   suffix,
   "data-testid": dataTestId,
 }: NumberInnerProps<T>) {
+  // Server errors can outlive the language in which they were received.
+  useLanguageStore((state) => state.language);
   // Lọc ký tự theo cùng luật với checkNumber(): không "e"/"+", không âm khi
   // sàn ≥ 0, không thập phân khi nguyên, không dài quá trần.
   const typingRule = { min, max, integer };
@@ -142,7 +146,11 @@ function UiFormNumberInner<T extends FieldValues>({
       disabled={disabled}
       autoFocus={autoFocus}
       error={Boolean(fieldState.error)}
-      helperText={fieldState.error?.message ?? helperText}
+      helperText={
+        fieldState.error?.message == null
+          ? helperText
+          : localizeMessage(fieldState.error.message)
+      }
       name={field.name}
       value={text}
       onChange={(event) => handleChange(event.target.value)}

@@ -4,6 +4,7 @@ import { isAxiosError } from "axios";
 import { UiAlert, UiConfirmDialog, UiDrawer, UiTextField } from "@/shared/ui";
 import { ActionButton, ActionIconButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { resolveFormErrors } from "@/shared/api/api-error";
 import { captureAuthOwner } from "@/shared/store/auth-owner";
 import { profileService } from "../../services/profile.service";
@@ -245,7 +246,7 @@ export function ProfileEditorDrawer({
           <p className="hn-personal-note">{t("auth.personal.managedAccess")}</p>
           {error ? (
             <UiAlert tone="error">
-              {error}
+              {localizeMessage(error)}
               {stale ? (
                 <ActionButton
                   kind="refresh"

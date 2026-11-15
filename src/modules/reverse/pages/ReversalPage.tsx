@@ -103,6 +103,17 @@ export default function ReversalPage() {
     void queryClient.invalidateQueries({ queryKey: reversalKeys.all });
   };
 
+  const reversalTypeLabel = (row: ReversalDocument) => {
+    switch (row.reference_document_type) {
+      case "OUTBOUND":
+        return t("reverse.list.typeOutbound");
+      case "INBOUND":
+        return t("reverse.list.typeInbound");
+      default:
+        return EMPTY_TEXT;
+    }
+  };
+
   const columns: ResponsiveTableColumn<ReversalDocument>[] = [
     {
       key: "stt",
@@ -160,9 +171,16 @@ export default function ReversalPage() {
       ),
     },
     {
+      key: "type",
+      header: t("reverse.list.colType"),
+      width: "10%",
+      sortAccessor: reversalTypeLabel,
+      render: reversalTypeLabel,
+    },
+    {
       key: "total_qty",
       header: t("reverse.list.colTotalQty"),
-      width: "14%",
+      width: "12%",
       align: "right",
       sortType: "value",
       sortAccessor: (row) => row.total_qty,
@@ -171,7 +189,7 @@ export default function ReversalPage() {
     {
       key: "created_at",
       header: t("reverse.detail.fieldCreatedAt"),
-      width: "20%",
+      width: "15%",
       sortType: "value",
       sortAccessor: (row) => {
         const timestamp = Date.parse(row.created_at);
@@ -188,7 +206,7 @@ export default function ReversalPage() {
       // thì `-`, KHÔNG rơi xuống UUID `created_by`.
       key: "created_by",
       header: t("reverse.detail.fieldCreatedBy"),
-      width: "11%",
+      width: "10%",
       hideOnMobile: true,
       sortAccessor: (row) => row.created_by || "",
       render: (row) => row.created_by || EMPTY_TEXT,
@@ -324,7 +342,7 @@ export default function ReversalPage() {
               padding: "12px 18px",
               borderColor: "var(--rev-line)",
             }}
-            actionColumnWidth="8%"
+            actionColumnWidth="6%"
             columns={columns}
             rows={rows}
             rowKey={(row) => row.id}

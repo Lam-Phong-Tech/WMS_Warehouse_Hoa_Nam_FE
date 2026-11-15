@@ -1215,7 +1215,7 @@ export default function RecipientAgencyReport() {
                                 })}
                                 onClick={() => setDetailRow(row)}
                               >
-                                Xem
+                                {tUi("inbound.list.view")}
                               </RowActionButton>
                             </RowActionGroup>
                           </td>

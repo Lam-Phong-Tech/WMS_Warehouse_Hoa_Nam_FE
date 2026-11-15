@@ -65,14 +65,14 @@ export function MovementTable({
     },
     {
       key: "warehouse_code",
-      header: "Kho",
+      header: t("updatedUi.text_19c608bfa103"),
       width: 110,
       hideOnMobile: true,
       render: (row) => text(row.warehouse_code),
     },
     {
       key: "qty_delta",
-      header: "SL Δ",
+      header: t("reports.movementTrace.colQtyDelta"),
       align: "right",
       width: 110,
       render: (row) => {

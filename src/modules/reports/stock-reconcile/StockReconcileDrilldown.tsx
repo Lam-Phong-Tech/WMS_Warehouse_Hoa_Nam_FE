@@ -6,6 +6,7 @@ import {
 } from "../components/report-export-workbook";
 import { tStatic as tExport } from "@/shared/i18n/useT";
 import { useLanguageStore } from "@/shared/i18n/language.store";
+import { reportLabel } from "@/shared/i18n/report-labels";
 import { useMemo } from "react";
 import { useWarehouseDirectory } from "@/shared/data/reference-queries";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -143,8 +144,16 @@ export function StockReconcileDrilldown({
     view === "flow"
       ? copy("Phát sinh theo SKU", "Movements by SKU", "按 SKU 的变动")
       : view === "code"
-        ? copy("Chi tiết đối soát mã", "Code reconciliation details", "编码对账详情")
-        : copy("Chi tiết chênh lệch tồn", "Stock difference details", "库存差异详情");
+        ? copy(
+            "Chi tiết đối soát mã",
+            "Code reconciliation details",
+            "编码对账详情",
+          )
+        : copy(
+            "Chi tiết chênh lệch tồn",
+            "Stock difference details",
+            "库存差异详情",
+          );
   const status =
     view === "code"
       ? copy("Lệch mã", "Code mismatch", "编码差异")
@@ -153,7 +162,9 @@ export function StockReconcileDrilldown({
 
   const exportMovements = (choice: ReportExportChoice) =>
     exportLocalReport(
-      ["Thời gian", "Chứng từ", "Loại", "Tăng", "Giảm", "Tồn sổ sau"],
+      ["Thời gian", "Chứng từ", "Loại", "Tăng", "Giảm", "Tồn sổ sau"].map(
+        reportLabel,
+      ),
       running.map(({ event, stock }) => [
         formatDateTime(event.occurred_at),
         event.movement_no,
@@ -176,7 +187,8 @@ export function StockReconcileDrilldown({
           <span className="rpt02-drill-identity">
             {" "}
             {row.skuCode} ·{" "}
-            {row.skuName || copy("Chưa có tên hàng", "No product name", "尚无品名")}
+            {row.skuName ||
+              copy("Chưa có tên hàng", "No product name", "尚无品名")}
           </span>
           <ActionIconButton
             kind="close"
@@ -325,8 +337,12 @@ export function StockReconcileDrilldown({
                         <th>{copy("Thời gian", "Time", "时间")}</th>
                         <th>{copy("Chứng từ", "Document", "单据")}</th>
                         <th>{copy("Loại", "Type", "类型")}</th>
-                        <th className="num">{copy("Tăng", "Increase", "增加")}</th>
-                        <th className="num">{copy("Giảm", "Decrease", "减少")}</th>
+                        <th className="num">
+                          {copy("Tăng", "Increase", "增加")}
+                        </th>
+                        <th className="num">
+                          {copy("Giảm", "Decrease", "减少")}
+                        </th>
                         <th className="num">
                           {copy("Tồn sổ sau", "Balance after", "结存")}
                         </th>
@@ -449,7 +465,13 @@ export function StockReconcileDrilldown({
 
           <aside className="rpt02-drill-side">
             <section className="rpt02-drill-card">
-              <h3>{copy("Thông tin đối soát", "Reconciliation details", "对账信息")}</h3>
+              <h3>
+                {copy(
+                  "Thông tin đối soát",
+                  "Reconciliation details",
+                  "对账信息",
+                )}
+              </h3>
               <dl>
                 <div>
                   <dt>
@@ -489,14 +511,22 @@ export function StockReconcileDrilldown({
             </section>
             {view === "flow" ? (
               <section className="rpt02-drill-card">
-                <h3>{copy("Đối chiếu tồn kho", "Stock reconciliation", "库存对账")}</h3>
+                <h3>
+                  {copy(
+                    "Đối chiếu tồn kho",
+                    "Stock reconciliation",
+                    "库存对账",
+                  )}
+                </h3>
                 <dl>
                   <div>
                     <dt>{copy("Tồn sổ", "Ledger stock", "账面库存")}</dt>
                     <dd>{qty(row.ledgerStock)}</dd>
                   </div>
                   <div>
-                    <dt>{copy("Tồn ghi nhận", "Recorded stock", "实盘库存")}</dt>
+                    <dt>
+                      {copy("Tồn ghi nhận", "Recorded stock", "实盘库存")}
+                    </dt>
                     <dd>{qty(row.actual)}</dd>
                   </div>
                   <div>
@@ -512,13 +542,23 @@ export function StockReconcileDrilldown({
                     type="button"
                     onClick={() => onViewChange("quantity")}
                   >
-                    {copy("Xem chênh lệch ›", "View difference ›", "查看差异 ›")}
+                    {copy(
+                      "Xem chênh lệch ›",
+                      "View difference ›",
+                      "查看差异 ›",
+                    )}
                   </button>
                 ) : null}
               </section>
             ) : null}
             <section className="rpt02-drill-card">
-              <h3>{copy("Công thức tính tồn sổ", "Ledger stock formula", "账面库存公式")}</h3>
+              <h3>
+                {copy(
+                  "Công thức tính tồn sổ",
+                  "Ledger stock formula",
+                  "账面库存公式",
+                )}
+              </h3>
               {row.hasFlow ? (
                 <>
                   <p className="rpt02-drill-formula">
@@ -533,12 +573,18 @@ export function StockReconcileDrilldown({
                     </div>
                     <div>
                       <dt>
-                        {copy("Nhập kho trong kỳ", "Receipts in period", "期间入库")}
+                        {copy(
+                          "Nhập kho trong kỳ",
+                          "Receipts in period",
+                          "期间入库",
+                        )}
                       </dt>
                       <dd>+{qty(row.inbound)}</dd>
                     </div>
                     <div>
-                      <dt>{copy("Xuất sản phẩm", "Product issues", "产品出库")}</dt>
+                      <dt>
+                        {copy("Xuất sản phẩm", "Product issues", "产品出库")}
+                      </dt>
                       <dd>−{qty(row.productOutbound)}</dd>
                     </div>
                     <div>
@@ -556,7 +602,9 @@ export function StockReconcileDrilldown({
                       <dd>+{qty(row.reversal)}</dd>
                     </div>
                     <div>
-                      <dt>{copy("Tồn cuối kỳ", "Closing stock", "期末库存")}</dt>
+                      <dt>
+                        {copy("Tồn cuối kỳ", "Closing stock", "期末库存")}
+                      </dt>
                       <dd>{qty(row.closing)}</dd>
                     </div>
                   </dl>

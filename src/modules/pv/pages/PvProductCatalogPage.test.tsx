@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
@@ -135,6 +136,92 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     expect(
       screen.getByRole("columnheader", { name: "Trạng thái hiển thị" }),
     ).toBeInTheDocument();
+  });
+
+  it("excludes profiles on other pages and hidden profiles from the add SKU search", async () => {
+    signInWith(["pv.master.manage", "pv.publish"]);
+    const available = {
+      sku_id: "new-sku",
+      sku_code: "NEW-001",
+      sku_name: "Available SKU",
+    };
+    const existing = {
+      sku_id: "other-page",
+      sku_code: "OLD-001",
+      sku_name: "Hidden existing SKU",
+    };
+    getMvpSkusMock.mockImplementation(
+      async (params: { without_pv_profile?: 0 | 1 }) => ({
+        data: params.without_pv_profile ? [available] : [existing, available],
+        meta: {},
+      }),
+    );
+    renderWithProviders(<PvProductCatalogPage />);
+    await screen.findByRole("table");
+    fireEvent.click(screen.getByTestId("pv-catalog-add"));
+    const picker = screen.getByRole("combobox", { name: /^SKU trong kho/ });
+    fireEvent.mouseDown(picker);
+    expect(
+      await screen.findByRole("option", { name: "NEW-001 — Available SKU" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "OLD-001 — Hidden existing SKU" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("refreshes SKU eligibility when reopening the add form despite the master cache", async () => {
+    signInWith(["pv.master.manage", "pv.publish"]);
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { staleTime: 600000, retry: false, gcTime: 0 },
+      },
+    });
+    let claimed = false;
+    getMvpSkusMock.mockImplementation(async () => ({
+      data: claimed
+        ? []
+        : [
+            {
+              sku_id: "new-sku",
+              sku_code: "NEW-001",
+              sku_name: "Available SKU",
+            },
+          ],
+      meta: {},
+    }));
+    const view = renderWithProviders(
+      <QueryClientProvider client={client}>
+        <PvProductCatalogPage />
+      </QueryClientProvider>,
+    );
+    try {
+      await screen.findByRole("table");
+      fireEvent.click(screen.getByTestId("pv-catalog-add"));
+      fireEvent.mouseDown(
+        screen.getByRole("combobox", { name: /^SKU trong kho/ }),
+      );
+      expect(
+        await screen.findByRole("option", { name: "NEW-001 — Available SKU" }),
+      ).toBeInTheDocument();
+      fireEvent.keyDown(
+        screen.getByRole("combobox", { name: /^SKU trong kho/ }),
+        { key: "Escape" },
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Hủy" }));
+      claimed = true;
+      fireEvent.click(screen.getByTestId("pv-catalog-add"));
+      fireEvent.mouseDown(
+        screen.getByRole("combobox", { name: /^SKU trong kho/ }),
+      );
+      await waitFor(() =>
+        expect(
+          screen.queryByRole("option", { name: "NEW-001 — Available SKU" }),
+        ).not.toBeInTheDocument(),
+      );
+    } finally {
+      view.unmount();
+      client.clear();
+    }
   });
 
   it("uses the compact header on tablet widths even when the sidebar is not pinned", async () => {

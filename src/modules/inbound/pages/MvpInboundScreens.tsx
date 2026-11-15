@@ -86,6 +86,7 @@ import {
 } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
 import {
   InboundReceiptProgress,
@@ -339,7 +340,7 @@ function CameraScanModal({
       {cameraError ? (
         <UiAlert tone="warning">
           {cameraError.kind === "text"
-            ? cameraError.text
+            ? localizeMessage(cameraError.text)
             : t(`inbound.camera.${cameraError.kind}`)}
         </UiAlert>
       ) : (
@@ -1114,7 +1115,7 @@ export function InboundScanModal({
     },
     {
       key: "quantity",
-      header: "SL",
+      header: t("catalog.common.qty"),
       width: 40,
       align: "center",
       render: (entry) => entry.quantity,

@@ -3,6 +3,7 @@ import { ResponsiveDataTable } from "@/shared/components/data-display/Responsive
 import { UiButton, UiStatusBadge } from "@/shared/ui";
 import { reportStatusLabel, statusTone } from "../operations/report-labels";
 import { useT } from "@/shared/i18n/useT";
+import { getApiErrorMessage } from "@/shared/api/api-error";
 import { formatDateTime } from "@/shared/utils/format-date";
 import { buildRecipientReturnReconciliation } from "./recipient-return-model";
 
@@ -41,7 +42,7 @@ export function RecipientReturnPanel({
       {loading ? <p role="status">{t("common.loadingData")}</p> : null}
       {error ? (
         <div role="alert">
-          <p>{error.message}</p>
+          <p>{getApiErrorMessage(error)}</p>
           <UiButton appearance="outlined" onClick={onRetry}>
             {t("common.retry")}
           </UiButton>

@@ -135,7 +135,8 @@ export function CatalogFeedback({
   onRetry,
   onReset,
 }: CatalogFeedbackProps) {
-  const english = useLanguageStore((state) => state.language !== "vi");
+  const language = useLanguageStore((state) => state.language);
+  const english = language !== "vi";
   const titleId = useId();
   const text = (vi: string, en: string) =>
     english ? localizedEnglish(en) : vi;

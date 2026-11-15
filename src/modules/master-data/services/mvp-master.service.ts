@@ -215,16 +215,28 @@ export async function updateMvpSku(
 /** Keep publishing on its own permission-protected endpoint. */
 export function setMvpSkuPublished(
   id: string,
-  version: number,
+  profileVersion: number | undefined,
   publishedToApp: boolean,
 ) {
+  if (
+    typeof profileVersion !== "number" ||
+    !Number.isSafeInteger(profileVersion) ||
+    profileVersion < 0
+  ) {
+    throw new WmsContractError(
+      "WMS_FE_MISSING_API_VALUE",
+      tStatic("pv.admin.errMissingVersion", {
+        action: tStatic("pv.admin.actionPublish"),
+      }),
+    );
+  }
   return http.patch<SkuRecord>(
     API_ENDPOINTS.PV_PRODUCT_PUBLISH.replace(":id", requiredApiIdentity(id)),
     { published: publishedToApp },
     {
       headers: {
         "Idempotency-Key": idempotencyKey(`sku-publish-${id}`),
-        "If-Match": String(requiredApiVersion(version)),
+        "If-Match": String(profileVersion),
       },
     },
   );

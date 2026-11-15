@@ -44,6 +44,7 @@ import { API_ENDPOINTS } from "@/shared/api/endpoints";
 import { http } from "@/shared/api/http";
 import { getApiErrorMessage } from "@/shared/api/api-error";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import {
   IMPORT_MATCH_ERROR_LABELS,
@@ -2207,7 +2208,7 @@ export default function ImportMatchReport() {
               {
                 key: "message",
                 header: t("reports.importMatchReport.colMessage"),
-                render: (row) => row.message || EMPTY_TEXT,
+                render: (row) => localizeMessage(row.message) || EMPTY_TEXT,
               },
               {
                 key: "reference",

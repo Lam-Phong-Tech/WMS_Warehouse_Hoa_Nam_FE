@@ -11,13 +11,7 @@ import {
   SwapOutlined,
 } from "@/shared/components/icons";
 import type { DailyMovement, HistoryRow } from "./model";
-import {
-  PAGE_SIZE,
-  displayDay,
-  displayStamp,
-  number,
-  percent,
-} from "./model";
+import { PAGE_SIZE, displayDay, displayStamp, number, percent } from "./model";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 import { UiSelect, FILTER_WIDTH } from "@/shared/ui";
 
@@ -66,7 +60,10 @@ export function OverviewCard({
               <span style={{ width: `${outboundRate}%` }}>
                 {outboundRate >= 8 ? percent(outboundRate) : null}
               </span>
-              <span className="is-reversal" style={{ width: `${reversalRate}%` }}>
+              <span
+                className="is-reversal"
+                style={{ width: `${reversalRate}%` }}
+              >
                 {reversalRate >= 8 ? percent(reversalRate) : null}
               </span>
             </>
@@ -587,7 +584,7 @@ export function HistoryTable({
                 className="is-number"
                 aria-label={tUi("dashboard.stockMix.colQuantity")}
               >
-                SL
+                {tUi("catalog.common.qty")}
               </th>
               <th
                 className="rpt08-actions-cell"

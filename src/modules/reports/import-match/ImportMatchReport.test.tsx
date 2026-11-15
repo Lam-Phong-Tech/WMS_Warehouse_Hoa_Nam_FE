@@ -7,7 +7,7 @@
  * batch, và tab Bảng/Lát cắt tự thu gọn bộ lọc.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, within } from "@testing-library/react";
+import { act, cleanup, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import dayjs from "dayjs";
 import { renderWithProviders } from "@/test/test-utils";
@@ -33,6 +33,10 @@ vi.mock("react-apexcharts", () => ({
 import { http } from "@/shared/api/http";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { ROUTES } from "@/shared/constants/routes";
+import { useLanguageStore } from "@/shared/i18n/language.store";
+import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
+import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import ImportMatchReport from "./ImportMatchReport";
 
 /** Kỳ mặc định là "tháng này" nên dữ liệu mẫu phải rơi vào hôm nay. */
@@ -156,6 +160,7 @@ function renderReport() {
 
 describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
   beforeEach(() => {
+    useLanguageStore.getState().setLanguage("vi");
     vi.mocked(http.get).mockReset();
     vi.mocked(http.getPage).mockReset();
     vi.mocked(http.get).mockImplementation(
@@ -177,8 +182,46 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
   });
 
   afterEach(() => {
+    cleanup();
     cleanupTestState();
+    useLanguageStore.getState().setLanguage("vi");
   });
+
+  it.each(["en", "zh"] as const)(
+    "localizes backend error messages in the batch drawer after switching to %s",
+    async (language) => {
+      const message = "Không tìm thấy MODEL ACTIVE với code 4344SFDFS.";
+      vi.mocked(http.getPage).mockImplementation(async (url: unknown) => ({
+        data: (String(url) === "/skus/import-reports"
+          ? [
+              {
+                ...SKU_IMPORT_REPORTS[0],
+                row_errors: [
+                  { ...SKU_IMPORT_REPORTS[0].row_errors[1], message },
+                ],
+              },
+            ]
+          : (PAGE_PAYLOAD[String(url)] ?? [])) as never,
+        meta: { current_page: 1, last_page: 1, total: 1 },
+      }));
+      const user = userEvent.setup();
+      renderReport();
+      await screen.findByRole("table");
+      await user.click(
+        screen.getByRole("button", { name: /Thiếu mã model bắt buộc/ }),
+      );
+      const dialog = await screen.findByRole("dialog");
+      expect(within(dialog).getByText(message)).toBeVisible();
+      await act(async () => {
+        await Promise.all([ensureEnglishMessages(), ensureChineseMessages()]);
+        useLanguageStore.getState().setLanguage(language);
+      });
+      const translated = localizeMessage(message);
+      expect(translated).not.toBe(message);
+      expect(within(dialog).getByText(translated)).toBeVisible();
+      expect(within(dialog).getByText("HN-SKU-042")).toBeVisible();
+    },
+  );
 
   it("ngữ cảnh Import dựng KPI và nhật ký từ /skus/import-reports", async () => {
     renderReport();

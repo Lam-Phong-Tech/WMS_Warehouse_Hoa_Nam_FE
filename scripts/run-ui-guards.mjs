@@ -19,18 +19,38 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const STEPS = [
+  ["i18n:audit", "scripts/check-i18n.mjs"],
+  ["i18n:audit --self-test", "scripts/check-i18n.mjs", "--self-test"],
+  ["i18n:audit:jsx", "scripts/check-i18n-jsx-literals.mjs"],
+  [
+    "i18n:audit:jsx --self-test",
+    "scripts/check-i18n-jsx-literals.mjs",
+    "--self-test",
+  ],
   ["ui:page-sizes", "scripts/check-page-size-selectors.mjs"],
-  ["ui:page-sizes --self-test", "scripts/check-page-size-selectors.mjs", "--self-test"],
+  [
+    "ui:page-sizes --self-test",
+    "scripts/check-page-size-selectors.mjs",
+    "--self-test",
+  ],
   ["ui:architecture", "scripts/check-ui-architecture.mjs"],
   ["ui:tokens", "scripts/check-ui-tokens.mjs"],
   ["ui:styles", "scripts/check-ui-styles.mjs"],
   ["ui:icons", "scripts/check-ui-icons.mjs"],
-  ["ui:architecture --self-test", "scripts/check-ui-architecture.mjs", "--self-test"],
+  [
+    "ui:architecture --self-test",
+    "scripts/check-ui-architecture.mjs",
+    "--self-test",
+  ],
   ["ui:tokens --self-test", "scripts/check-ui-tokens.mjs", "--self-test"],
   ["ui:styles --self-test", "scripts/check-ui-styles.mjs", "--self-test"],
   ["ui:icons --self-test", "scripts/check-ui-icons.mjs", "--self-test"],
   ["ui:dependencies", "scripts/check-ui-dependencies.mjs"],
-  ["ui:dependencies --self-test", "scripts/check-ui-dependencies.mjs", "--self-test"],
+  [
+    "ui:dependencies --self-test",
+    "scripts/check-ui-dependencies.mjs",
+    "--self-test",
+  ],
 ];
 
 const results = STEPS.map(([label, script, ...args]) => {
@@ -50,7 +70,9 @@ const results = STEPS.map(([label, script, ...args]) => {
 
 console.log("\n[ui:guards] Tổng hợp:");
 for (const result of results) {
-  console.log(`  ${result.ok ? "PASS" : "FAIL"}  ${result.label} (${result.detail})`);
+  console.log(
+    `  ${result.ok ? "PASS" : "FAIL"}  ${result.label} (${result.detail})`,
+  );
 }
 
 const failed = results.filter((result) => !result.ok);
@@ -60,4 +82,6 @@ if (failed.length > 0) {
   );
   process.exit(1);
 }
-console.log(`\n[ui:guards] PASS — ${results.length}/${results.length} bước xanh.`);
+console.log(
+  `\n[ui:guards] PASS — ${results.length}/${results.length} bước xanh.`,
+);

@@ -399,6 +399,11 @@ export function getApiErrorMessage(
   error: unknown,
   fallback = defaultApiErrorMessage(),
 ): string {
+  // Authentication contract diagnostics describe internal fields and response
+  // shape. Keep them on normalizeError.raw for diagnostics, outside user copy.
+  if (error instanceof Error && error.name === "AuthContractError") {
+    return tStatic("shared.apiError.invalidAuthResponse");
+  }
   const data = getResponseData(error);
   if (data) {
     // Lỗi nhập liệu: `errors` nói chính xác trường nào sai và sai thế nào, còn

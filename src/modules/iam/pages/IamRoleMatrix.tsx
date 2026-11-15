@@ -245,7 +245,7 @@ export function IamRoleMatrix({
                                             permission.permission_name
                                           }
                                         >
-                                          i
+                                          ⓘ
                                         </summary>
                                         <div>
                                           <strong>

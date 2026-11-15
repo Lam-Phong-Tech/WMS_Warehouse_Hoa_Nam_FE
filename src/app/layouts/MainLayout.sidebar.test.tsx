@@ -55,12 +55,16 @@ vi.mock("@/app/layouts/SideNav", () => ({
   SideNav: ({
     onToggle,
     onExpand,
+    pinned,
   }: {
     onToggle?: () => void;
     onExpand?: () => void;
+    pinned?: boolean;
   }) => (
     <nav>
-      <button onClick={onToggle}>Toggle sidebar</button>
+      <button onClick={onToggle} aria-pressed={pinned}>
+        Toggle sidebar
+      </button>
       <button onClick={onExpand}>Expand sidebar</button>
     </nav>
   ),
@@ -193,10 +197,19 @@ describe("MainLayout sidebar remains stable across navigation", () => {
   it("shares the actual desktop pin state with page filters", () => {
     setup(ROUTES.MASTER_DATA);
     expect(screen.getByTestId("sidebar-pinned")).toHaveTextContent("true");
+    expect(
+      screen.getByRole("button", { name: "Toggle sidebar" }),
+    ).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: "Toggle sidebar" }));
     expect(screen.getByTestId("sidebar-pinned")).toHaveTextContent("false");
+    expect(
+      screen.getByRole("button", { name: "Toggle sidebar" }),
+    ).toHaveAttribute("aria-pressed", "false");
     fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
     expect(screen.getByTestId("sidebar-pinned")).toHaveTextContent("true");
+    expect(
+      screen.getByRole("button", { name: "Toggle sidebar" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   it("lets the reversal page own its header and creation action", () => {

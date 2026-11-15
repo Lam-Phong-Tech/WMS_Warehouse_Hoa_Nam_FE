@@ -1308,7 +1308,7 @@ export function IamUserScreen({
                   />
                   <UiTextField
                     id="iam-email"
-                    label="Email"
+                    label={t("auth.fields.email")}
                     type="email"
                     required
                     fullWidth
@@ -1529,7 +1529,10 @@ export function IamUserScreen({
                       label: t("iam.user.fieldDisplayName"),
                       value: formState.displayName || EMPTY_TEXT,
                     },
-                    { label: "Email", value: formState.email || EMPTY_TEXT },
+                    {
+                      label: t("auth.fields.email"),
+                      value: formState.email || EMPTY_TEXT,
+                    },
                     {
                       label: t("iam.user.colRole"),
                       value: selectedRole?.role_name || EMPTY_TEXT,
@@ -1671,7 +1674,7 @@ export function IamUserScreen({
                     columns={2}
                     items={[
                       {
-                        label: "Email",
+                        label: t("auth.fields.email"),
                         value: viewingUser.email || EMPTY_TEXT,
                       },
                       {
@@ -1889,7 +1892,12 @@ export function IamUserScreen({
           </span>
         }
         actions={
-          <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: "wrap" }}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            useFlexGap
+            sx={{ flexWrap: "wrap" }}
+          >
             <ActionButton
               kind="cancel"
               onClick={closeGrantModal}

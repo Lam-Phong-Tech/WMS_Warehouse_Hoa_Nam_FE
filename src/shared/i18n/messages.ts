@@ -44,6 +44,8 @@ export const MESSAGES_VI = {
     viewDetail: "Xem chi tiết",
   },
   topbar: {
+    enableDarkTheme: "Bật giao diện tối",
+    enableLightTheme: "Bật giao diện sáng",
     language: "Ngôn ngữ",
     languageVietnamese: "Tiếng Việt",
     languageEnglish: "English",
@@ -104,6 +106,8 @@ export const MESSAGES_VI = {
     themeChanged: "Đã áp dụng giao diện",
   },
   nav: {
+    pin: "Ghim thanh điều hướng",
+    unpin: "Bỏ ghim và thu gọn thanh điều hướng",
     primary: "Điều hướng chính",
     collapse: "Thu gọn thanh điều hướng",
     expand: "Mở rộng thanh điều hướng",
@@ -4636,6 +4640,8 @@ export const MESSAGES_VI = {
   },
   shared: {
     table: {
+      pageLabel: "Trang {page}",
+      topCount: "Top {count}",
       loading: "Đang tải...",
       empty: "Không có dữ liệu",
       rowNumber: "#",
@@ -4666,6 +4672,8 @@ export const MESSAGES_VI = {
       rowsPerPageAria: "Số dòng mỗi trang",
     },
     apiError: {
+      invalidAuthResponse:
+        "Phản hồi xác thực từ máy chủ không hợp lệ. Vui lòng thử lại.",
       requestFailed: "Yêu cầu không thành công",
       noPermission:
         "Bạn không có quyền thực hiện thao tác này. Liên hệ quản trị viên để được cấp quyền.",
@@ -5008,6 +5016,7 @@ export const MESSAGES_VI = {
       stepUpResend: "Gửi lại mã",
       stepUpResendIn: "Gửi lại mã sau {seconds}s",
       stepUpResent: "Đã gửi lại mã xác minh.",
+      registeredEmailFallback: "email đăng ký",
       deviceTitle: "Xác minh thiết bị mới",
       deviceSubtitle:
         "Thiết bị này chưa được tin cậy. Nhập mã xác minh 6 chữ số đã gửi tới {email}.",
@@ -6047,6 +6056,9 @@ export const MESSAGES_VI = {
       readonlyNote:
         "Chế độ chỉ xem: tài khoản hiện tại chưa có quyền tạo, xác nhận, hoàn tất hoặc hủy phiếu đảo. Bạn vẫn có thể xem danh sách và chi tiết.",
       colTotalQty: "Tổng số lượng",
+      colType: "Loại",
+      typeOutbound: "Đảo xuất",
+      typeInbound: "Đảo nhập",
       searchPlaceholder: "Mã điều chỉnh, chứng từ gốc, lý do...",
       searchAria: "Tìm phiếu đảo",
       statusFilterAria: "Lọc trạng thái phiếu điều chỉnh",
@@ -6179,6 +6191,7 @@ export const MESSAGES_VI = {
     },
   },
   catalog: {
+    title: "Danh mục giao diện nền tảng (Vuexy)",
     common: {
       qty: "Số lượng",
       recipient: "Nơi nhận",
@@ -6192,6 +6205,7 @@ export const MESSAGES_VI = {
       sectionTitle: "Tokens — màu chuẩn (DEC-UI-BASELINE-01)",
     },
     typography: {
+      sectionTitle: "Kiểu chữ",
       pageTitle: "Tiêu đề trang 24/500",
       cardTitle: "Tiêu đề card 18/600",
       body: "Nội dung body 15px — {text}",
@@ -6246,6 +6260,7 @@ export const MESSAGES_VI = {
       draft: "NHÁP",
     },
     kpi: {
+      sectionTitle: "Thẻ KPI",
       available: "Tồn khả dụng",
       availableHint: "Cập nhật 5 phút trước",
       pendingDocs: "Phiếu chờ duyệt",
@@ -6320,11 +6335,13 @@ export const MESSAGES_VI = {
       pageSubtitle: "Số liệu cố định — fixture catalog",
     },
     states: {
+      sectionTitle: "Trạng thái giao diện",
       emptyDesc: "Chưa có phiếu nào trong bộ lọc hiện tại.",
       emptyAction: "Tạo phiếu mới",
       noPermission: "Cần quyền inventory.view.",
     },
     formField: {
+      label: "Vùng bọc trường nhập",
       sectionTitle: "FormField shell (control tùy ý)",
       helper: "Dùng khi control không phải TextField.",
       placeholder: "Control bên trong shell",

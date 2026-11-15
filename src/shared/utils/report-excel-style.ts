@@ -1,3 +1,4 @@
+import { canonicalReportLabel, reportLabel } from "@/shared/i18n/report-labels";
 import * as XLSX from "xlsx";
 import type { Workbook, CellValue, Fill, Borders } from "exceljs";
 
@@ -85,11 +86,15 @@ const border: Partial<Borders> = {
   left: { style: "thin", color: { argb: C.line } },
   right: { style: "thin", color: { argb: C.line } },
 };
-const dateColumn = (header: string) =>
-  !/(turnaround|xử lý|số ngày)/i.test(header) &&
-  /(ngày|thời gian|thời điểm|date|posted at|cancelled at|last attempt|created at|timestamp)/i.test(
-    header,
+const dateColumn = (displayHeader: string) => {
+  const header = canonicalReportLabel(displayHeader);
+  return (
+    !/(turnaround|xử lý|số ngày)/i.test(header) &&
+    /(ngày|thời gian|thời điểm|date|posted at|cancelled at|last attempt|created at|timestamp)/i.test(
+      header,
+    )
   );
+};
 
 /** Excel dates are timezone-free; offset timestamps are shown in UTC+7. */
 function reportDate(value: unknown): { value: Date; format: string } | null {
@@ -142,7 +147,7 @@ function reportDate(value: unknown): { value: Date; format: string } | null {
   };
 }
 function statusStyle(value: unknown) {
-  const key = String(value ?? "")
+  const key = canonicalReportLabel(String(value ?? ""))
     .trim()
     .toUpperCase();
   if (
@@ -166,6 +171,7 @@ function statusStyle(value: unknown) {
   return null;
 }
 function widthFor(header: string, values: unknown[]) {
+  header = canonicalReportLabel(header);
   if (dateColumn(header)) return 23;
   if (
     /^(Case|Import ID|Movement ID)$|mã phiếu|chứng từ|phiếu xuất/i.test(header)
@@ -213,8 +219,9 @@ export async function createStyledReportWorkbook(
   const ExcelJS = (await import("exceljs")).default;
   const book = new ExcelJS.Workbook();
   book.creator = "Hoa Nam WMS";
-  book.title =
-    options.title ?? TITLES[options.reportCode ?? ""] ?? "Báo cáo Hoa Nam";
+  book.title = reportLabel(
+    options.title ?? TITLES[options.reportCode ?? ""] ?? "Báo cáo Hoa Nam",
+  );
   book.properties.date1904 = Boolean(source.Workbook?.WBProps?.date1904);
   const preserveLayout = Object.values(source.Sheets).some((sheet) =>
     Object.entries(sheet).some(
@@ -241,7 +248,7 @@ export async function createStyledReportWorkbook(
           ),
         );
     const headers = summary
-      ? ["Chỉ tiêu", "Giá trị"]
+      ? [reportLabel("Chỉ tiêu"), reportLabel("Giá trị")]
       : matrix[headerIndex].map((v) => String(v ?? ""));
     const recordRows = matrix
       .slice(headerIndex + 1)
@@ -251,7 +258,7 @@ export async function createStyledReportWorkbook(
           preserveLayout || values.some((v) => v !== null && v !== ""),
       );
     const records = recordRows.map(({ values }) => values);
-    const ws = book.addWorksheet(name, {
+    const ws = book.addWorksheet(preserveLayout ? name : reportLabel(name), {
       properties: { defaultRowHeight: 30, tabColor: { argb: C.primary } },
       pageSetup: {
         orientation: "landscape",
@@ -270,26 +277,27 @@ export async function createStyledReportWorkbook(
       },
     });
     const headerRow = preserveLayout ? headerIndex + 1 : 4;
-    const title =
+    const title = reportLabel(
       options.title ??
-      (TITLES[options.reportCode ?? ""]
-        ? "HOA NAM — " + TITLES[options.reportCode ?? ""]
-        : undefined) ??
-      (headers.includes("Case")
-        ? "HOA NAM — BÁO CÁO BẢO HÀNH"
-        : name === "Source" || name === "Sheet1"
-          ? "HOA NAM — BÁO CÁO"
-          : "HOA NAM — " + name.toUpperCase());
+        (TITLES[options.reportCode ?? ""]
+          ? "HOA NAM — " + reportLabel(TITLES[options.reportCode ?? ""])
+          : undefined) ??
+        (headers.includes("Case")
+          ? reportLabel("HOA NAM — BÁO CÁO BẢO HÀNH")
+          : name === "Source" || name === "Sheet1"
+            ? reportLabel("HOA NAM — BÁO CÁO")
+            : "HOA NAM — " + reportLabel(name).toUpperCase()),
+    );
     const context = matrix
       .slice(0, headerIndex)
       .filter((row) => row.filter((v) => v !== null && v !== "").length > 1)
       .map((row) => row.filter((v) => v !== null && v !== "").join(": "));
     const subtitle = [
-      name,
+      reportLabel(name),
       options.subtitle,
       ...context,
-      records.length + " dòng",
-      "Thời gian Việt Nam (UTC+7)",
+      records.length + reportLabel(" dòng"),
+      reportLabel("Thời gian Việt Nam (UTC+7)"),
     ]
       .filter(Boolean)
       .join(" · ");
@@ -378,7 +386,7 @@ export async function createStyledReportWorkbook(
     }
     headers.forEach((header, c) => {
       const cell = ws.getCell(headerRow, c + 1);
-      cell.value = preserveLayout ? header : (HEADERS[header] ?? header);
+      cell.value = reportLabel(HEADERS[header] ?? header);
       cell.fill = fill(C.primary);
       cell.font = {
         name: "Calibri",
@@ -404,7 +412,7 @@ export async function createStyledReportWorkbook(
         const original = input[
           XLSX.utils.encode_cell({ r: recordRows[r].sourceRow, c })
         ] as XLSX.CellObject | undefined;
-        if (!preserveLayout) {
+        if (!preserveLayout || !original?.f) {
           const parsed = dateColumn(headers[c] ?? "")
             ? reportDate(value)
             : null;
@@ -439,7 +447,9 @@ export async function createStyledReportWorkbook(
           horizontal: typeof value === "number" ? "right" : "left",
         };
         if (
-          /trạng thái|status|đối soát|result|kết quả/i.test(headers[c] ?? "")
+          /trạng thái|status|đối soát|result|kết quả/i.test(
+            canonicalReportLabel(headers[c] ?? ""),
+          )
         ) {
           const status = statusStyle(value);
           if (status) {
@@ -492,10 +502,10 @@ export async function createStyledReportWorkbook(
         r: headerRow + records.length - 1,
         c: columns - 1,
       });
-    ws.headerFooter.oddFooter = "&LHOA NAM WMS&RTrang &P / &N";
+    ws.headerFooter.oddFooter = `&LHOA NAM WMS&R${reportLabel("Trang")} &P / &N`;
   }
   if (!book.worksheets.length)
-    throw new Error("Không có dữ liệu để xuất báo cáo.");
+    throw new Error(reportLabel("Không có dữ liệu để xuất báo cáo."));
   return book;
 }
 export async function serializeStyledReportWorkbook(

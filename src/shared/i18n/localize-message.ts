@@ -2,6 +2,7 @@ import { MESSAGES_VI } from "./messages";
 import { englishMessages } from "./english-messages";
 import { chineseMessages } from "./chinese-messages";
 import { useLanguageStore } from "./language.store";
+import { translateBackendCatalogMessage } from "./backend-message-catalog";
 import {
   BACKEND_MESSAGES,
   VALIDATION_MESSAGES,
@@ -46,8 +47,8 @@ function alternateExactCatalog(source: unknown, target: unknown) {
     cachedAlternateTarget = target;
     cachedAlternateExact = new Map();
     for (const entry of entries(source, target)) {
-      // Only complete known messages are reversible. Matching templates from
-      // another language could mistake user names or identifiers for prose.
+      // Exact reversal also covers short labels; templates use the stricter
+      // fixed-prose and numeric-capture checks below.
       if (
         !/\{\w+\}/.test(entry.source) &&
         !cachedAlternateExact.has(entry.source)
@@ -58,6 +59,96 @@ function alternateExactCatalog(source: unknown, target: unknown) {
   return cachedAlternateExact;
 }
 const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const numericParameter =
+  /^(min|max|count|decimals|limit|size|length|total|seconds|minutes|days|months|hours|attempts|remaining|maximum|minimum)$/i;
+const numericValue = /^[+-]?\d(?:[\d.,\s\u00a0\u202f]*\d)?%?$/u;
+let cachedTemplateSource: unknown;
+let cachedTemplateTarget: unknown;
+let cachedAlternateTemplates: Array<{
+  entry: Entry;
+  names: string[];
+  pattern: RegExp;
+  specificity: number;
+}> = [];
+
+function alternateTemplates(source: unknown, target: unknown) {
+  if (cachedTemplateSource !== source || cachedTemplateTarget !== target) {
+    cachedTemplateSource = source;
+    cachedTemplateTarget = target;
+    cachedAlternateTemplates = entries(source, target)
+      .flatMap((entry) => {
+        const names = [...entry.source.matchAll(/\{(\w+)\}/g)].map(
+          (match) => match[1],
+        );
+        if (!names.length) return [];
+        const literal = entry.source.replace(/\{\w+\}/g, "");
+        const prefix = entry.source.split(/\{\w+\}/)[0].trim();
+        const numericConstraint =
+          names.every((name) => numericParameter.test(name)) &&
+          /\b(must|at least|at most|cannot|exceed|characters|allowed|required)\b|至少|不得|不能|不超过|最多|必须|允许|字符/u.test(
+            literal,
+          );
+        const specificProse = prefix.length >= 8 && literal.length >= 28;
+        const specificChinese =
+          /\p{Script=Han}/u.test(literal) &&
+          prefix.length >= 4 &&
+          literal.length >= 12;
+        const specificField =
+          names.includes("attribute") &&
+          prefix.length >= 4 &&
+          literal.length >= 24;
+        if (
+          !(numericConstraint && prefix.length >= 2 && literal.length >= 4) &&
+          !specificProse &&
+          !specificChinese &&
+          !specificField
+        )
+          return [];
+        const parts = entry.source
+          .split(/(\{\w+\})/g)
+          .map((part) =>
+            /^\{\w+\}$/.test(part) ? "([\\s\\S]*?)" : escape(part),
+          );
+        return [
+          {
+            entry,
+            names,
+            pattern: new RegExp(`^${parts.join("")}$`, "u"),
+            specificity: literal.length,
+          },
+        ];
+      })
+      .sort((a, b) => b.specificity - a.specificity);
+  }
+  return cachedAlternateTemplates;
+}
+
+function reverseUiTemplate(
+  message: string,
+  source: unknown,
+  target: unknown,
+): string | undefined {
+  for (const { entry, names, pattern } of alternateTemplates(source, target)) {
+    const match = pattern.exec(message);
+    if (
+      !match ||
+      names.some(
+        (name, index) =>
+          numericParameter.test(name) && !numericValue.test(match[index + 1]),
+      )
+    )
+      continue;
+    return entry.target.replace(/\{(\w+)\}/g, (placeholder, name: string) => {
+      const index = names.indexOf(name);
+      if (index < 0) return placeholder;
+      const value = match[index + 1];
+      return name === "attribute"
+        ? (alternateExactCatalog(source, target).get(value) ?? value)
+        : value;
+    });
+  }
+  return undefined;
+}
 const normalizedAttributes = (attributes: Record<string, string>) =>
   Object.fromEntries(
     Object.entries(attributes).map(([source, target]) => [
@@ -100,6 +191,10 @@ function matchTemplate(
 }
 
 export function localizeMessage(message: string): string {
+  return localizeMessageWithDepth(message, 0);
+}
+
+function localizeMessageWithDepth(message: string, nesting: number): string {
   const language = useLanguageStore.getState().language;
   if (language === "vi" || !message) return message;
   const target = language === "en" ? englishMessages() : chineseMessages();
@@ -122,6 +217,15 @@ export function localizeMessage(message: string): string {
     ? backendMessages[trimmed]
     : undefined;
   if (backend) return backend;
+  const catalogMessage = translateBackendCatalogMessage(
+    trimmed,
+    language,
+    (nested) =>
+      nesting < 4 ? localizeMessageWithDepth(nested, nesting + 1) : nested,
+  );
+  if (catalogMessage !== undefined) return catalogMessage;
+  const retainedUiMessage = reverseUiTemplate(trimmed, alternate, target);
+  if (retainedUiMessage !== undefined) return retainedUiMessage;
   for (const [source, translatedTemplate] of validationMessages) {
     const translated = matchTemplate(
       trimmed,

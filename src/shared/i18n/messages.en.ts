@@ -56,6 +56,8 @@ export const MESSAGES_EN: MessageTree = {
     viewDetail: "View detail",
   },
   topbar: {
+    enableDarkTheme: "Enable dark theme",
+    enableLightTheme: "Enable light theme",
     language: "Language",
     languageVietnamese: "Tiếng Việt",
     languageEnglish: "English",
@@ -116,6 +118,8 @@ export const MESSAGES_EN: MessageTree = {
     themeChanged: "Theme changed to",
   },
   nav: {
+    pin: "Pin navigation",
+    unpin: "Unpin and collapse navigation",
     primary: "Main navigation",
     collapse: "Collapse the navigation bar",
     expand: "Expand the navigation bar",
@@ -1429,7 +1433,7 @@ export const MESSAGES_EN: MessageTree = {
       colUnit: "UOM",
       colProgress: "Quantity",
       colScanKind: "Scan mode",
-      colRowNumber: "STT",
+      colRowNumber: "#",
       scanPerItem: "Scan each component",
       scanPerBox: "Scan by box",
       titleExisting: "Component issue note {code}",
@@ -4659,6 +4663,8 @@ export const MESSAGES_EN: MessageTree = {
   },
   shared: {
     table: {
+      pageLabel: "Page {page}",
+      topCount: "Top {count}",
       loading: "Loading...",
       empty: "No data",
       rowNumber: "#",
@@ -4689,6 +4695,8 @@ export const MESSAGES_EN: MessageTree = {
       rowsPerPageAria: "Rows per page",
     },
     apiError: {
+      invalidAuthResponse:
+        "Invalid authentication response from the server. Please try again.",
       requestFailed: "Request failed",
       noPermission:
         "You do not have permission to perform this action. Contact an administrator to be granted access.",
@@ -5032,6 +5040,7 @@ export const MESSAGES_EN: MessageTree = {
       stepUpResend: "Resend code",
       stepUpResendIn: "Resend code in {seconds}s",
       stepUpResent: "Verification code resent.",
+      registeredEmailFallback: "your registered email",
       deviceTitle: "Verify new device",
       deviceSubtitle:
         "This device is not trusted yet. Enter the 6-digit verification code sent to {email}.",
@@ -6070,6 +6079,9 @@ export const MESSAGES_EN: MessageTree = {
       readonlyNote:
         "Read-only mode: this account cannot create, confirm, post or cancel stock adjustment documents. You can still browse the list and open details.",
       colTotalQty: "Total quantity",
+      colType: "Type",
+      typeOutbound: "Outbound reversal",
+      typeInbound: "Inbound reversal",
       searchPlaceholder: "Adjustment code, source document, reason...",
       searchAria: "Search stock adjustment documents",
       statusFilterAria: "Filter adjustment documents by status",
@@ -6202,6 +6214,7 @@ export const MESSAGES_EN: MessageTree = {
     },
   },
   catalog: {
+    title: "Foundation catalog (Vuexy baseline)",
     common: {
       qty: "Quantity",
       recipient: "Recipient",
@@ -6215,6 +6228,7 @@ export const MESSAGES_EN: MessageTree = {
       sectionTitle: "Tokens — baseline colours (DEC-UI-BASELINE-01)",
     },
     typography: {
+      sectionTitle: "Typography",
       pageTitle: "Page title 24/500",
       cardTitle: "Card title 18/600",
       body: "Body text 15px — {text}",
@@ -6269,6 +6283,7 @@ export const MESSAGES_EN: MessageTree = {
       draft: "DRAFT",
     },
     kpi: {
+      sectionTitle: "KPI cards",
       available: "Available stock",
       availableHint: "Updated 5 minutes ago",
       pendingDocs: "Documents awaiting approval",
@@ -6342,11 +6357,13 @@ export const MESSAGES_EN: MessageTree = {
       pageSubtitle: "Fixed figures — catalog fixture",
     },
     states: {
+      sectionTitle: "State surfaces",
       emptyDesc: "There is no document in the current filters yet.",
       emptyAction: "Create a new document",
       noPermission: "The inventory.view permission is required.",
     },
     formField: {
+      label: "Form field shell",
       sectionTitle: "FormField shell (any control)",
       helper: "Use it when the control is not a TextField.",
       placeholder: "Control inside the shell",

@@ -10,6 +10,7 @@ import {
 } from "@/shared/ui";
 import { ActionButton } from "@/shared/components/actions";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import {
   cssVarNameOf,
   OPERATIONS_COLORS,
@@ -175,7 +176,7 @@ export function ProfilePreferencesPanel({
     <div className="hn-personal-settings">
       {error ? (
         <UiAlert tone="error">
-          {stale ? t("auth.personal.stale") : error}
+          {stale ? t("auth.personal.stale") : localizeMessage(error)}
           {stale ? (
             <ActionButton kind="refresh" onClick={() => setReload(true)}>
               {t("auth.personal.reload")}

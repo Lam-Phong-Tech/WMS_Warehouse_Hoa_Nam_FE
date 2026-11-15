@@ -43,7 +43,11 @@ import { BoxReadDetailDialog } from "./BoxReadDetailDialog";
 
 type RawRecord = Record<string, unknown>;
 
-function formatQty(value: number | null | undefined, uom: string, t: TranslateFn) {
+function formatQty(
+  value: number | null | undefined,
+  uom: string,
+  t: TranslateFn,
+) {
   const formatted = formatQuantity(value);
   if (formatted === EMPTY_TEXT) return EMPTY_TEXT;
   return `${formatted}${uom ? ` ${localizedUnitLabel(uom, t)}` : ""}`;
@@ -291,7 +295,7 @@ export function BalanceDetailModal({
           <button
             type="button"
             className="hn-inventory-box-link"
-            aria-label={`Xem BOX ${code}`}
+            aria-label={t("putaway.queue.viewBox", { code })}
             onClick={() => setSelectedBox({ id, code })}
           >
             <CodeText>{code}</CodeText>

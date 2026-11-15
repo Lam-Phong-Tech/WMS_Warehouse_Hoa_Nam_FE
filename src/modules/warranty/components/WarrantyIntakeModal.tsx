@@ -44,6 +44,7 @@ import {
 } from "@/shared/constants/business-labels";
 import { useDialogExit } from "@/shared/utils/useDialogExit";
 import { useT } from "@/shared/i18n/useT";
+import { localizeMessage } from "@/shared/i18n/localize-message";
 import { ScanInput } from "@/shared/components/forms/ScanInput";
 import { useCanAny } from "@/shared/components/permission";
 import {
@@ -977,7 +978,7 @@ export function WarrantyIntakeModal({
             {resolveError ? (
               <Box sx={{ mt: 1 }}>
                 <UiAlert tone="warning">
-                  <Box>{resolveError}</Box>
+                  <Box>{localizeMessage(resolveError)}</Box>
                   <Box component="span" sx={{ fontSize: 12 }}>
                     {t("warranty.intake.lostCodeHint")}
                   </Box>
