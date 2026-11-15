@@ -33,6 +33,7 @@ import { ReversalDetailModal } from "../components/ReversalDetailModal";
 import { ReversalStatusTag } from "../components/ReversalStatusTag";
 import type { ReversalDocument } from "../types";
 import { formatQuantity } from "@/shared/utils/format-number";
+import { formatDateTime } from "@/shared/utils/format-date";
 import { ActionButton, RowActionButton } from "@/shared/components/actions";
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { rowIndexOf } from "@/shared/components/data-display/row-index";
@@ -122,9 +123,18 @@ export default function ReversalPage() {
       sortAccessor: (row) => row.reversal_code || "",
       // KHÔNG fallback sang row.id: cột này là MÃ ĐIỀU CHỈNH đọc được.
       render: (row) => (
-        <strong className="hn-reversal-code">
-          {row.reversal_code || EMPTY_TEXT}
-        </strong>
+        <div>
+          <strong className="hn-reversal-code">
+            {row.reversal_code || EMPTY_TEXT}
+          </strong>
+          <div className="hn-reversal-code-status">
+            <ReversalStatusTag
+              status={row.status}
+              physicalReturnStatus={row.physical_return_status}
+              compact
+            />
+          </div>
+        </div>
       ),
     },
     {
@@ -159,17 +169,18 @@ export default function ReversalPage() {
       render: (row) => formatQuantity(row.total_qty),
     },
     {
-      key: "status",
-      header: t("reverse.detail.colStatus"),
+      key: "created_at",
+      header: t("reverse.detail.fieldCreatedAt"),
       width: "20%",
       sortType: "value",
-      sortAccessor: (row) => row.status,
+      sortAccessor: (row) => {
+        const timestamp = Date.parse(row.created_at);
+        return Number.isFinite(timestamp) ? timestamp : 0;
+      },
       render: (row) => (
-        <ReversalStatusTag
-          status={row.status}
-          physicalReturnStatus={row.physical_return_status}
-          compact
-        />
+        <time dateTime={row.created_at || undefined}>
+          {formatDateTime(row.created_at)}
+        </time>
       ),
     },
     {

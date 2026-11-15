@@ -270,10 +270,10 @@
   color: inherit;
   font: inherit;
 }
-:is(.hn-reversal-screen, .hn-reversal-dialog) table tbody tr {
+.hn-reversal-dialog table tbody tr {
   transition: background-color 0.14s ease;
 }
-:is(.hn-reversal-screen, .hn-reversal-dialog) table tbody tr:hover {
+.hn-reversal-dialog table tbody tr:hover {
   background: color-mix(in srgb, var(--rev-pale) 55%, var(--rev-surface));
 }
 /* Nút mũi tên trong hàng đang hover phải ăn cùng tông với hàng, không tách
@@ -292,12 +292,32 @@
 .hn-reversal-screen table tbody tr:hover > :is(td, th):last-child {
   background: color-mix(in srgb, var(--rev-pale) 55%, var(--rev-surface));
 }
+/* Match SKU: animate every cell together, including the sticky action cell.
+   A separate row fade leaves the opaque sticky cell switching ahead of it. */
+.hn-reversal-screen table tbody tr,
+.hn-reversal-screen table tbody tr:hover {
+  background: transparent;
+  transition: none;
+}
+.hn-reversal-screen table tbody tr > td {
+  background: var(--rev-surface);
+  transition: background-color 0.14s ease;
+}
+.hn-reversal-screen table tbody tr:is(:hover, :focus-visible) > td {
+  background: color-mix(in srgb, var(--rev-pale) 55%, var(--rev-surface));
+}
 .hn-reversal-screen table th:last-child {
   background: var(--ops-table-header);
 }
 .hn-reversal-code {
   color: var(--rev-ink);
   font-weight: 700;
+}
+.hn-reversal-code-status {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 .hn-reversal-screen .hn-reversal-source-code {
   color: var(--rev-link);
@@ -534,6 +554,9 @@
   :is(.hn-reversal-screen, .hn-reversal-dialog)
     .MuiButton-root:not(.hn-row-action),
   :is(.hn-reversal-screen, .hn-reversal-dialog) table tbody tr {
+    transition: none;
+  }
+  .hn-reversal-screen table tbody tr > td {
     transition: none;
   }
 }

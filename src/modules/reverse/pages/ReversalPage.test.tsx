@@ -157,7 +157,7 @@ describe("REV-00 preserved list interactions", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("columnheader", { name: "Ngày tạo" }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
   });
 
   it("debounces and trims keyword, then resets the page while retaining the status filter", async () => {
