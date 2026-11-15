@@ -150,6 +150,8 @@ Thứ tự điển hình của phiếu xuất: **quét và đối chiếu → gh
 
 ### Drawer phiếu nhập — HTML đã chốt ngày 15/11/2026
 
+Drawer chi tiết/quét/phiếu hủy rộng tối đa **820px**, bằng drawer chi tiết phiếu xuất; màn hình hẹp dùng toàn bộ chiều rộng viewport.
+
 Chi tiết/quét/phiếu hủy dùng cùng drawer: tiêu đề một dòng, nhãn trạng thái cạnh nút đóng; bên dưới có tiến trình và tab **Tổng quan / Hàng hóa (Quét hàng khi đang xử lý) / Lịch sử**. Phiếu mở mặc định ở Quét hàng; phiếu đã nhập/hủy mở Tổng quan. Dữ liệu quét và hộp đang nhập được giữ khi đổi tab; quay lại phải khôi phục tiêu điểm ô nhập tương ứng.
 
 Theo mẫu người dùng đã chỉnh: bỏ khối thống kê, nút in/sao chép ở header, nhãn cập nhật lần cuối và dòng tổng hợp số mã hợp lệ/lỗi bên phải tiêu đề bảng. Hàng nhận tách **Tên hàng** và **Loại**; nguồn quét dùng icon + chữ thường. Hai bảng bo **8px**, cột phụ có bề rộng gọn, cột tên/SKU nhận phần còn lại; đầu bảng dùng surface semantic `--ops-canvas` và chữ heading **14px/700** cho bố cục compact riêng này. Mobile giữ cách chuyển card của bảng dùng chung. Ghi chú dài giới hạn hai dòng và có Xem thêm/Thu gọn, ghi chú ngắn không hiện nút.
