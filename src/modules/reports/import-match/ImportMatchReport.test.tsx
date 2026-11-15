@@ -7,7 +7,7 @@
  * batch, và tab Bảng/Lát cắt tự thu gọn bộ lọc.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, screen, within } from "@testing-library/react";
+import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import dayjs from "dayjs";
 import { renderWithProviders } from "@/test/test-utils";
@@ -211,14 +211,18 @@ describe("RPT-04 · Nhập liệu, đối chiếu & lỗi", () => {
         screen.getByRole("button", { name: /Thiếu mã model bắt buộc/ }),
       );
       const dialog = await screen.findByRole("dialog");
-      expect(within(dialog).getByText(message)).toBeVisible();
+      await waitFor(() =>
+        expect(within(dialog).getByText(message)).toBeVisible(),
+      );
       await act(async () => {
         await Promise.all([ensureEnglishMessages(), ensureChineseMessages()]);
         useLanguageStore.getState().setLanguage(language);
       });
       const translated = localizeMessage(message);
       expect(translated).not.toBe(message);
-      expect(within(dialog).getByText(translated)).toBeVisible();
+      await waitFor(() =>
+        expect(within(dialog).getByText(translated)).toBeVisible(),
+      );
       expect(within(dialog).getByText("HN-SKU-042")).toBeVisible();
     },
   );
