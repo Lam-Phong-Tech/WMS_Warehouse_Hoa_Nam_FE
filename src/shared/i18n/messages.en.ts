@@ -1050,7 +1050,7 @@ export const MESSAGES_EN: MessageTree = {
         "Type a dealer code or name to auto-fill recipient / address",
       agencyNoMatch: "No dealer matches that keyword.",
       agencyTypeToSearch: "Type a dealer code or name to search.",
-      agencyCreate: "+ Add new recipient",
+      agencyCreate: "Add new recipient",
       fieldRecipient: "Recipient / destination",
       fieldAddress: "Delivery address",
       fieldPhone: "Contact phone",

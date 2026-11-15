@@ -1586,7 +1586,7 @@ const MESSAGES_ZH_BASE: MessageTree = {
       fieldAgencyPlaceholder: "输入经销商代码或名称以自动填写收件人/地址",
       agencyNoMatch: "没有经销商匹配该关键字。",
       agencyTypeToSearch: "输入要搜索的经销商代码或名称。",
-      agencyCreate: "+ 添加新收件人",
+      agencyCreate: "添加新收件人",
       fieldRecipient: "收件人/目的地",
       fieldAddress: "送货地址",
       fieldPhone: "联系电话",

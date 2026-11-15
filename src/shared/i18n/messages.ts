@@ -1008,7 +1008,7 @@ export const MESSAGES_VI = {
         "Gõ mã hoặc tên đại lý để tự điền người nhận / địa chỉ",
       agencyNoMatch: "Không tìm thấy đại lý khớp từ khoá.",
       agencyTypeToSearch: "Gõ mã hoặc tên đại lý để tìm.",
-      agencyCreate: "+ Thêm nơi nhận mới",
+      agencyCreate: "Thêm nơi nhận mới",
       fieldRecipient: "Người / nơi nhận",
       fieldAddress: "Địa chỉ nhận",
       fieldPhone: "SĐT liên hệ",
