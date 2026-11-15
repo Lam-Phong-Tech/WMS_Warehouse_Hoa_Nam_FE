@@ -1,5 +1,61 @@
 import { expect, test } from "@playwright/test";
 
+test("receipt goods and scanned codes fit the compact drawer without horizontal scrolling", async ({
+  page,
+}) => {
+  for (const status of ["POSTED", "SCANNING"]) {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(
+      `/e2e/fixtures/inbound-receipt.html?status=${status}&longCodes=1`,
+    );
+    await page
+      .getByRole("tab", {
+        name: status === "POSTED" ? "Hàng hóa" : "Quét hàng",
+        exact: true,
+      })
+      .click();
+    const tables = page.locator(".hn-inbound-scan-table table");
+    await expect(tables).toHaveCount(2);
+    for (const table of await tables.all()) {
+      const sizes = await table.evaluate((el) => ({
+        table: el.getBoundingClientRect().width,
+        available: el.parentElement!.clientWidth,
+        scroll: el.parentElement!.scrollWidth,
+      }));
+      expect(sizes.table).toBeLessThanOrEqual(sizes.available + 1);
+      expect(sizes.scroll).toBeLessThanOrEqual(sizes.available + 1);
+    }
+    await page.screenshot({
+      path: `test-results/inbound-receipt/compact-no-scroll-${status}.png`,
+    });
+  }
+});
+
+test("receipt progress remains fully visible alongside inbound list styles", async ({
+  page,
+}) => {
+  for (const width of [1440, 820, 390, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto("/e2e/fixtures/inbound-receipt.html?status=POSTED");
+    const progress = page.getByRole("list", { name: "Tiến trình nhập kho" });
+    await expect(progress).toBeVisible();
+    const layout = await progress.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      return {
+        height: rect.height,
+        overflow: getComputedStyle(el).overflow,
+        contained: [...el.querySelectorAll("li>span")].every((child) => {
+          const bounds = child.getBoundingClientRect();
+          return bounds.top >= rect.top - 1 && bounds.bottom <= rect.bottom + 1;
+        }),
+      };
+    });
+    expect(layout.height).toBeGreaterThanOrEqual(50);
+    expect(layout.contained).toBe(true);
+    expect(layout.overflow).not.toBe("hidden");
+  }
+});
+
 test("dark selected receipt tab keeps readable contrast", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("hoa-nam-theme", "dark"));
   await page.goto("/e2e/fixtures/inbound-receipt.html?status=POSTED");

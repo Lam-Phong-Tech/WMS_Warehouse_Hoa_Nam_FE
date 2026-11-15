@@ -16,6 +16,7 @@ import "@/styles/hn-wms-page-normalize.css";
 import "@/styles/hn-wms-source-screen.css";
 import "@/shared/ui/operations-ui.css";
 import "@/styles/hn-responsive.css";
+import "@/modules/inbound/pages/inbound-list.css";
 
 initializeTheme();
 useAuthStore.setState({ isSuperAdmin: true, isProfileLoaded: true });
@@ -23,12 +24,15 @@ const status = new URLSearchParams(location.search).get("status") || "POSTED";
 const cancelled = status === "CANCELLED";
 const empty = cancelled || status === "DRAFT";
 const actor = "nguyễn duy khánh a";
+const longCodes = new URLSearchParams(location.search).has("longCodes");
 const line = {
   id: "line-1",
   product_id: "sku-1",
-  sku_code: "DCMY155",
-  product_name: "Cưa tròn dùng pin không chổi than – DCMY155 (BM/FK/Z)",
-  product_type: "PRODUCT",
+  sku_code: longCodes ? "DCA-CHUCK13" : "DCMY155",
+  product_name: longCodes
+    ? "Đầu kẹp mũi khoan 13mm DongCheng"
+    : "Cưa tròn dùng pin không chổi than – DCMY155 (BM/FK/Z)",
+  product_type: longCodes ? "COMPONENT" : "PRODUCT",
   product_unit: "cái",
   product_info_complete: true,
   qty_planned: 0,
@@ -97,8 +101,8 @@ http.getPage = async (url) =>
                 id: "entry-1",
                 inbound_line_id: "line-1",
                 item_id: "item-1",
-                item_code: "DCMY155-001",
-                sku_code: "DCMY155",
+                item_code: longCodes ? "QR-COMP-20261112-027" : "DCMY155-001",
+                sku_code: line.sku_code,
                 sku_name: line.product_name,
                 quantity: 1,
                 scan_source: "CAMERA_OR_MANUAL_CODE",

@@ -96,7 +96,7 @@ export function InboundReceiptProgress({ status }: { status: InboundStatus }) {
   const active = cancelled ? 1 : status === "POSTED" ? 2 : 1;
   return (
     <ol
-      className="hn-inbound-progress"
+      className="hn-inbound-receipt-progress"
       aria-label={t("inbound.detail.progressLabel")}
     >
       {labels.map((label, index) => (
@@ -105,7 +105,7 @@ export function InboundReceiptProgress({ status }: { status: InboundStatus }) {
           className={`${index < active || status === "POSTED" ? "is-complete" : ""} ${index === active ? "is-current" : ""} ${cancelled && index === 1 ? "is-cancelled" : ""}`}
           aria-current={index === active ? "step" : undefined}
         >
-          <span className="hn-inbound-progress__dot" aria-hidden="true">
+          <span className="hn-inbound-receipt-progress__dot" aria-hidden="true">
             {cancelled && index === 1 ? (
               <CloseCircleOutlined />
             ) : index < active || status === "POSTED" ? (

@@ -964,7 +964,7 @@ export function InboundScanModal({
     {
       key: "stt",
       header: "#",
-      width: 46,
+      width: 36,
       align: "center",
       render: (line) =>
         (detail?.lines
@@ -974,7 +974,7 @@ export function InboundScanModal({
     {
       key: "sku",
       header: "SKU",
-      width: 115,
+      width: 110,
       truncate: 0,
       render: (line) => {
         // Ưu tiên mã SKU đã gắn sẵn trên dòng (BE trả product_code/product_name
@@ -1000,7 +1000,7 @@ export function InboundScanModal({
     {
       key: "type",
       header: t("inbound.detail.colType"),
-      width: 108,
+      width: 90,
       truncate: 0,
       render: (line) => {
         const productType =
@@ -1018,13 +1018,13 @@ export function InboundScanModal({
     {
       key: "unit",
       header: t("inbound.detail.colUnit"),
-      width: 64,
+      width: 48,
       render: (line) => line.productUnit || EMPTY_TEXT,
     },
     {
       key: "scanned",
       header: t("inbound.detail.colScannedQty"),
-      width: 46,
+      width: 40,
       align: "right",
       render: (line) => <strong>{line.scanned}</strong>,
     },
@@ -1033,7 +1033,7 @@ export function InboundScanModal({
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colInfo"),
-      width: 180,
+      width: 134,
       render: (line) =>
         line.infoComplete ? (
           <UiStatusBadge
@@ -1072,7 +1072,7 @@ export function InboundScanModal({
     {
       key: "stt",
       header: "#",
-      width: 46,
+      width: 36,
       align: "center",
       render: (entry) =>
         mvpRowNumber(
@@ -1084,7 +1084,7 @@ export function InboundScanModal({
     {
       key: "code",
       header: t("inbound.detail.colCode"),
-      width: 180,
+      width: 160,
       truncate: 0,
       render: (entry) => (
         <Box component="span" sx={{ fontFamily: "var(--wms-font-family)" }}>
@@ -1115,14 +1115,14 @@ export function InboundScanModal({
     {
       key: "quantity",
       header: "SL",
-      width: 64,
+      width: 40,
       align: "center",
       render: (entry) => entry.quantity,
     },
     {
       key: "result",
       header: t("inbound.detail.colResult"),
-      width: 150,
+      width: 104,
       truncate: 0,
       render: (entry) =>
         entry.status === "ACTIVE" ? (
@@ -1150,7 +1150,7 @@ export function InboundScanModal({
     {
       key: "source",
       header: t("inbound.detail.colSource"),
-      width: 160,
+      width: 104,
       truncate: 0,
       render: (entry) => (
         <span className="hn-inbound-scan-source">
@@ -1171,7 +1171,7 @@ export function InboundScanModal({
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colAction"),
-      width: 88,
+      width: 56,
       render: (entry) =>
         entry.status === "ACTIVE" && canScan && isMutable ? (
           <RowActionButton

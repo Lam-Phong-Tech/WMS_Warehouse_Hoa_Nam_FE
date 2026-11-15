@@ -58,13 +58,13 @@
 .hn-inbound-receipt-navigation .MuiTabs-indicator {
   background-color: var(--ops-link);
 }
-.hn-inbound-progress {
+.hn-inbound-receipt-progress {
   display: flex;
   list-style: none;
   padding: 0;
   margin: 0 0 14px;
 }
-.hn-inbound-progress li {
+.hn-inbound-receipt-progress li {
   position: relative;
   flex: 1;
   display: flex;
@@ -75,7 +75,7 @@
   font-size: 13px;
   text-align: center;
 }
-.hn-inbound-progress li:not(:last-child):after {
+.hn-inbound-receipt-progress li:not(:last-child):after {
   content: "";
   position: absolute;
   top: 16px;
@@ -83,10 +83,10 @@
   width: calc(100% - 48px);
   border-top: 2px solid var(--ops-line);
 }
-.hn-inbound-progress li.is-complete:after {
+.hn-inbound-receipt-progress li.is-complete:after {
   border-color: var(--ops-primary);
 }
-.hn-inbound-progress__dot {
+.hn-inbound-receipt-progress__dot {
   display: grid;
   place-items: center;
   width: 34px;
@@ -97,20 +97,20 @@
   color: var(--ops-muted);
   font-size: 17px;
 }
-.hn-inbound-progress .is-complete,
-.hn-inbound-progress .is-current {
+.hn-inbound-receipt-progress .is-complete,
+.hn-inbound-receipt-progress .is-current {
   color: var(--ops-heading);
 }
-.hn-inbound-progress .is-complete .hn-inbound-progress__dot,
-.hn-inbound-progress .is-current .hn-inbound-progress__dot {
+.hn-inbound-receipt-progress .is-complete .hn-inbound-receipt-progress__dot,
+.hn-inbound-receipt-progress .is-current .hn-inbound-receipt-progress__dot {
   background: var(--ops-primary);
   border-color: var(--ops-primary);
   color: var(--ops-on-primary);
 }
-.hn-inbound-progress .is-cancelled {
+.hn-inbound-receipt-progress .is-cancelled {
   color: var(--ops-danger-text);
 }
-.hn-inbound-progress .is-cancelled .hn-inbound-progress__dot {
+.hn-inbound-receipt-progress .is-cancelled .hn-inbound-receipt-progress__dot {
   background: var(--ops-danger-soft);
   border-color: var(--ops-danger);
   color: var(--ops-danger-text);
@@ -340,7 +340,7 @@
 }
 .hn-inbound-scan-drawer .hn-inbound-scan-table table {
   table-layout: fixed;
-  min-width: 860px;
+  min-width: 100%;
 }
 .hn-inbound-scan-drawer .hn-inbound-scan-table th {
   color: var(--ops-heading);
@@ -348,11 +348,11 @@
   background-image: none;
   font-size: 14px;
   font-weight: 700;
-  padding: 13px 12px;
+  padding: 12px 8px;
 }
 .hn-inbound-scan-drawer .hn-inbound-scan-table td {
   vertical-align: middle;
-  padding: 15px 12px;
+  padding: 14px 8px;
   font-size: 14px;
 }
 .hn-inbound-scan-table .MuiChip-root {
@@ -429,7 +429,7 @@
   .hn-inbound-info-grid .is-wide {
     grid-column: span 2;
   }
-  .hn-inbound-progress li {
+  .hn-inbound-receipt-progress li {
     font-size: 11px;
   }
   .hn-inbound-cancel-notice {
