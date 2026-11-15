@@ -104,6 +104,7 @@ export interface InboundDetail {
   document: InboundDocument & { version: number };
   supplier?: InboundSupplier | null;
   lines: InboundLine[];
+  operationHistory?: InboundOperationEvent[];
   statusHistory: Array<{
     id: string;
     fromStatus: string;
@@ -113,6 +114,14 @@ export interface InboundDetail {
     changedBy: string;
     note: string;
   }>;
+}
+
+export interface InboundOperationEvent {
+  id: string;
+  action: string;
+  actorName: string;
+  occurredAt?: string;
+  note: string;
 }
 
 /**

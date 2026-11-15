@@ -199,7 +199,9 @@ function normalizeDocument(row: RawRecord): InboundDocument {
           new Set(
             lines
               .map((line) =>
-                text(line.sku_type ?? line.product_type).trim().toUpperCase(),
+                text(line.sku_type ?? line.product_type)
+                  .trim()
+                  .toUpperCase(),
               )
               .filter(Boolean),
           ),
@@ -284,6 +286,20 @@ function normalizeDetail(row: RawRecord): InboundDetail {
     lines: rawLines(row).map((line) =>
       normalizeLine(line, document.id, document.status),
     ),
+    operationHistory: Array.isArray(row.operation_history)
+      ? row.operation_history
+          .filter(
+            (entry): entry is RawRecord =>
+              typeof entry === "object" && entry !== null,
+          )
+          .map((entry) => ({
+            id: text(entry.id),
+            action: text(entry.action),
+            actorName: text(entry.actor_name),
+            occurredAt: text(entry.occurred_at) || undefined,
+            note: text(entry.note),
+          }))
+      : undefined,
     statusHistory: (Array.isArray(row.status_history) ? row.status_history : [])
       .filter(
         (entry): entry is RawRecord =>

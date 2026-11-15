@@ -262,11 +262,20 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     expect(field).not.toHaveTextContent("00:00");
   });
 
-  it("hiển thị ngày giờ cập nhật của phiếu nhập", async () => {
+  it("thay nhãn cập nhật bằng lịch sử thao tác có người và giờ thực tế", async () => {
     mockHooks();
     vi.mocked(useInboundDetail).mockReturnValue({
       data: {
         ...DETAIL,
+        operationHistory: [
+          {
+            id: "edit-1",
+            action: "EDIT",
+            actorName: "Người chỉnh phiếu",
+            occurredAt: "2026-11-12T08:00:00Z",
+            note: "Đổi ghi chú",
+          },
+        ],
         document: {
           ...DETAIL.document,
           updatedAt: "2026-11-12T08:00:00.000000Z",
@@ -280,8 +289,11 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
       <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
     );
 
-    const field = (await screen.findByText("Ngày giờ cập nhật")).parentElement;
-    expect(field).toHaveTextContent("12/11/2026 15:00");
+    expect(screen.queryByText("Ngày giờ cập nhật")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Lịch sử (1)" }));
+    expect(await screen.findByText("Người chỉnh phiếu")).toBeInTheDocument();
+    expect(screen.getByText("12/11/2026 15:00")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Quét hàng" }));
     expect(
       await screen.findByRole("columnheader", { name: "ĐVT" }),
     ).toBeInTheDocument();
@@ -293,6 +305,29 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     vi.mocked(useInboundDetail).mockReturnValue({
       data: {
         ...DETAIL,
+        operationHistory: [
+          {
+            id: "scan-a",
+            action: "SCAN",
+            actorName: "An quét",
+            occurredAt: "2026-11-15T09:18:00Z",
+            note: "",
+          },
+          {
+            id: "scan-b",
+            action: "SCAN",
+            actorName: "Bình quét",
+            occurredAt: "2026-11-15T09:19:00Z",
+            note: "",
+          },
+          {
+            id: "post",
+            action: "POST",
+            actorName: "Người ghi nhận",
+            occurredAt: "2026-11-15T09:20:00Z",
+            note: "",
+          },
+        ],
         document: {
           ...DETAIL.document,
           status: "POSTED",
@@ -308,12 +343,10 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
       <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
     );
 
-    expect(
-      (await screen.findByText("Người quét")).parentElement,
-    ).toHaveTextContent("An quét, Bình quét");
-    expect(
-      screen.getByText("Người ghi nhận nhập kho").parentElement,
-    ).toHaveTextContent("Người ghi nhận");
+    fireEvent.click(await screen.findByRole("tab", { name: "Lịch sử (3)" }));
+    expect(await screen.findByText("An quét")).toBeInTheDocument();
+    expect(screen.getByText("Bình quét")).toBeInTheDocument();
+    expect(screen.getByText("Người ghi nhận")).toBeInTheDocument();
     expect(screen.queryByText("Người hủy")).not.toBeInTheDocument();
   });
 
@@ -333,7 +366,7 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
       renderWithProviders(
         <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
       );
-      await screen.findByText("Người quét");
+      await screen.findByText("Thông tin hủy phiếu");
       if (cancelledBy) {
         expect(screen.getByText("Người hủy").parentElement).toHaveTextContent(
           cancelledBy,
@@ -412,7 +445,8 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
 
     expect(await screen.findByText("Mã đã quét của phiếu")).toBeInTheDocument();
     // Chuỗi tóm tắt được React render thành nhiều text node nên so trên document.
-    expect(document.body.textContent).toContain("1 hợp lệ · 1 đã gỡ");
+    expect(document.body.textContent).not.toContain("1 hợp lệ · 1 đã gỡ");
+    expect(screen.getByText("Đã gỡ")).toBeInTheDocument();
   });
 
   it("gỡ mã đã quét gửi đúng entry id và version hiện tại", async () => {
@@ -719,6 +753,24 @@ describe("IN-03 · quét mã hộp linh kiện (scan-driven)", () => {
     // Không gọi classify (đã nhận diện tại client) và chưa gọi scan.
     expect(classifyScanCodes).not.toHaveBeenCalled();
     expect(scanMutate).not.toHaveBeenCalled();
+  });
+
+  it("khôi phục tiêu điểm số lượng hộp khi quay lại tab quét", async () => {
+    mockHooks([]);
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+    await scanCode("BOX-HN-COMP-BASE-003-0001");
+    const quantity = await screen.findByLabelText(
+      /^Số lượng linh kiện trong hộp/,
+    );
+    const overview = screen.getByRole("tab", { name: "Tổng quan" });
+    overview.focus();
+    fireEvent.click(overview);
+    const scan = screen.getByRole("tab", { name: "Quét hàng" });
+    scan.focus();
+    fireEvent.click(scan);
+    await waitFor(() => expect(quantity).toHaveFocus());
   });
 
   it("xác nhận số lượng gửi mã hộp lên scan (không kèm line/container)", async () => {
@@ -1078,7 +1130,8 @@ describe("IN-03 · thông tin phiếu trong drawer quét", () => {
     );
 
     expect(await screen.findByText("Nhà cung cấp")).toBeInTheDocument();
-    expect(screen.getByText("NCC-003 - Kubota Việt Nam")).toBeInTheDocument();
+    expect(screen.getByText("NCC-003")).toBeInTheDocument();
+    expect(screen.getByText("Kubota Việt Nam")).toBeInTheDocument();
   });
 
   it("hiển thị Chưa có khi phiếu chưa gắn nhà cung cấp", async () => {

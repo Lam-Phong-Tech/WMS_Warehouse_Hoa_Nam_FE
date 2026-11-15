@@ -148,6 +148,14 @@ Thứ tự điển hình của phiếu xuất: **quét và đối chiếu → gh
 
 ## 5. Bộ lọc, bảng và phân trang — theo bảng SKU
 
+### Drawer phiếu nhập — HTML đã chốt ngày 15/11/2026
+
+Chi tiết/quét/phiếu hủy dùng cùng drawer: tiêu đề một dòng, nhãn trạng thái cạnh nút đóng; bên dưới có tiến trình và tab **Tổng quan / Hàng hóa (Quét hàng khi đang xử lý) / Lịch sử**. Phiếu mở mặc định ở Quét hàng; phiếu đã nhập/hủy mở Tổng quan. Dữ liệu quét và hộp đang nhập được giữ khi đổi tab; quay lại phải khôi phục tiêu điểm ô nhập tương ứng.
+
+Theo mẫu người dùng đã chỉnh: bỏ khối thống kê, nút in/sao chép ở header, nhãn cập nhật lần cuối và dòng tổng hợp số mã hợp lệ/lỗi bên phải tiêu đề bảng. Hàng nhận tách **Tên hàng** và **Loại**; nguồn quét dùng icon + chữ thường. Hai bảng bo **8px**, cột phụ có bề rộng gọn, cột tên/SKU nhận phần còn lại; đầu bảng dùng surface semantic `--ops-canvas` và chữ heading **14px/700** cho bố cục compact riêng này. Mobile giữ cách chuyển card của bảng dùng chung. Ghi chú dài giới hạn hai dòng và có Xem thêm/Thu gọn, ghi chú ngắn không hiện nút.
+
+Lịch sử dùng bằng chứng lưu trên server (tạo, quét/gỡ mã, sửa thông tin, bổ sung SKU, hoàn tất thùng, nhập/hủy), có người và thời gian từng thao tác; không lấy `updated_at` để đoán giờ thao tác. Phiếu hủy có cảnh báo không đổi tồn kho, thông tin người/giờ/lý do hủy; giữ mã đã quét nếu thực tế có và không mời quét tiếp khi phiếu đã đóng. Không đưa dữ liệu mẫu vào runtime.
+
 Nguồn quyết định: [`sku-list-filter-table-style.md`](./sku-list-filter-table-style.md) và `src/modules/master-data/pages/sku-list.css`. Không sử dụng mục Data table, filters & pagination của UI Kit để thay các số đo dưới đây.
 
 ### Bộ lọc

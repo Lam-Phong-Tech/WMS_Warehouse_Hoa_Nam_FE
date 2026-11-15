@@ -36,6 +36,35 @@ import {
 } from "./inboundService";
 
 describe("inbound real API contract", () => {
+  it("reads receipt-scoped operation history without substituting updatedAt or actor ids", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "IN-1",
+      status: "CANCELLED",
+      version: 3,
+      lines: [],
+      updated_at: "2026-11-15T12:00:00Z",
+      operation_history: [
+        {
+          id: "cancel-1",
+          action: "CANCEL",
+          actor_name: "Người hủy",
+          actor_id: "private-uuid",
+          occurred_at: "2026-11-15T09:27:00Z",
+          note: "Nhầm phiếu",
+        },
+      ],
+    });
+    const detail = await fetchInboundDetail("IN-1");
+    expect(detail.operationHistory).toEqual([
+      {
+        id: "cancel-1",
+        action: "CANCEL",
+        actorName: "Người hủy",
+        occurredAt: "2026-11-15T09:27:00Z",
+        note: "Nhầm phiếu",
+      },
+    ]);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });

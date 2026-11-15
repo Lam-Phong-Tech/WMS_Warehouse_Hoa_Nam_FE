@@ -108,11 +108,11 @@ function InboundListScreen() {
   const loading = query.isLoading;
   const hasFilters = Boolean(
     searchInput ||
-      status ||
-      pendingInfo !== undefined ||
-      createdFrom ||
-      createdTo ||
-      sortOrder !== "desc",
+    status ||
+    pendingInfo !== undefined ||
+    createdFrom ||
+    createdTo ||
+    sortOrder !== "desc",
   );
 
   useEffect(() => {
@@ -660,7 +660,16 @@ function InboundListScreen() {
           documentId={scanDocumentId}
           onClose={() => setScanDocumentId(null)}
           onChanged={() => void query.refetch()}
-          onEdit={canCreate ? () => editDocument(scanDocumentId) : undefined}
+          onEdit={
+            canCreate &&
+            !rows.some(
+              (row) =>
+                row.id === scanDocumentId &&
+                (row.status === "POSTED" || row.status === "CANCELLED"),
+            )
+              ? () => editDocument(scanDocumentId)
+              : undefined
+          }
         />
       ) : null}
     </div>

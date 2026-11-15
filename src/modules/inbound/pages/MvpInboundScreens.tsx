@@ -1,11 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { rowIndexOfBy } from "@/shared/components/data-display/row-index";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { parseDateTime } from "@/shared/utils/date-time";
 import {
   Box,
   Drawer,
-  Grid,
   Stack,
   UiAlert,
   UiDialog,
@@ -14,6 +12,7 @@ import {
   UiStatusBadge,
   UiTextField,
   useUiConfirm,
+  UiTabs,
 } from "@/shared/ui";
 import { SEMANTIC_LIGHT as S } from "@/shared/ui/tokens";
 import {
@@ -27,6 +26,10 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   InboxOutlined,
+  CameraOutlined,
+  ScanOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
 } from "@/shared/components/icons";
 import {
   getApiErrorMessage,
@@ -47,7 +50,6 @@ import {
   WMS_PERMISSION_CATALOG as P,
 } from "@/shared/constants/wms-permissions";
 import {
-  INBOUND_STATUS_LABELS,
   QR_RESOLUTION_STATUS_LABELS,
   SKU_TYPE_LABELS,
   businessLabel,
@@ -85,6 +87,14 @@ import {
 import { EMPTY_TEXT } from "@/shared/constants/display";
 import { useT, type TranslateFn } from "@/shared/i18n/useT";
 import { NUMBER_RULES, checkNumber } from "@/shared/validation/number-rules";
+import {
+  InboundReceiptProgress,
+  InboundReceiptOverview,
+  InboundReceiptHistory,
+  InboundReceiptStatus,
+  InboundSectionHeading,
+} from "../components/InboundReceiptPresentation";
+import { inboundHistory } from "../components/inbound-receipt-history";
 import "./inbound-scan-drawer.css";
 
 /** Lý do hủy phiếu phải đủ ý — dưới ngưỡng này là "ok"/"x" vô nghĩa cho tra soát. */
@@ -389,7 +399,9 @@ export function InboundScanModal({
   const dialog = useDialogExit(onClose);
   const t = useT();
   const detailQuery = useInboundDetail(documentId);
-  const warehousesQuery = useWarehouseDirectory({ enabled: Boolean(documentId) });
+  const warehousesQuery = useWarehouseDirectory({
+    enabled: Boolean(documentId),
+  });
   const skuQuery = useMvpSkus({ status: "ACTIVE", per_page: 100 });
   const scanEntriesQuery = useInboundScanEntries(documentId, "ALL");
   const scanMutation = useScanInbound();
@@ -415,6 +427,7 @@ export function InboundScanModal({
   // Giữ CHUỖI người dùng gõ để báo lỗi thay vì ép về 1 im lặng (ô number cũ
   // nhận "-5"/"1e5" rồi Number() || 1 nuốt mất lỗi).
   const [quantity, setQuantity] = useState("1");
+  const boxQuantityRef = useRef<HTMLInputElement>(null);
   const [quantityError, setQuantityError] = useState<string | null>(null);
   const [scanVersion, setScanVersion] = useState<number | null>(null);
   const [scanLog, setScanLog] = useState<ScanLogRow[]>([]);
@@ -438,18 +451,18 @@ export function InboundScanModal({
   const { confirm, confirmDialog } = useUiConfirm();
 
   const detail = detailQuery.data;
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const warehouse = warehousesQuery.data?.find(
-    (row) => String(row.id ?? row.warehouse_id) === detail?.document.warehouseId,
+    (row) =>
+      String(row.id ?? row.warehouse_id) === detail?.document.warehouseId,
   );
   const warehouseName = String(
     warehouse?.name ?? warehouse?.warehouse_name ?? "",
   ).trim();
-  // Hiển thị cùng định dạng với ô chọn NCC ở modal "Thông tin phiếu nhập":
-  // "MÃ - Tên"; phiếu cũ chưa gắn NCC thì để trống cho ô hiện "—".
-  const supplierLabel = detail?.supplier
-    ? [detail.supplier.code, detail.supplier.name].filter(Boolean).join(" - ")
-    : "";
-  const skuRows = useMemo(() => skuQuery.data?.data ?? [], [skuQuery.data?.data]);
+  const skuRows = useMemo(
+    () => skuQuery.data?.data ?? [],
+    [skuQuery.data?.data],
+  );
   const skuById = useMemo(
     () => new Map<string, SkuRecord>(skuRows.map((sku) => [sku.sku_id, sku])),
     [skuRows],
@@ -495,11 +508,23 @@ export function InboundScanModal({
     cancelMutation.isPending ||
     unscanMutation.isPending ||
     completeCartonMutation.isPending;
-  const scanEntries = scanEntriesQuery.data ?? [];
+  const scanEntries = useMemo(
+    () => scanEntriesQuery.data ?? [],
+    [scanEntriesQuery.data],
+  );
   const activeEntries = scanEntries.filter(
     (entry) => entry.status === "ACTIVE",
   );
-  const removedEntryCount = scanEntries.length - activeEntries.length;
+  const operationHistory = useMemo(
+    () => (detail ? inboundHistory(detail, scanEntries) : []),
+    [detail, scanEntries],
+  );
+  const shownTab = activeTab ?? (isMutable ? "items" : "overview");
+  useEffect(() => {
+    if (shownTab === "items" && pendingBox && canScan && !working) {
+      boxQuantityRef.current?.focus();
+    }
+  }, [shownTab, pendingBox, canScan, working]);
   const activeCartonScannedQty = activeCarton
     ? activeEntries
         .filter((entry) => entry.containerId === activeCarton.id)
@@ -939,7 +964,7 @@ export function InboundScanModal({
     {
       key: "stt",
       header: "#",
-      width: "7%",
+      width: 46,
       align: "center",
       render: (line) =>
         (detail?.lines
@@ -949,7 +974,7 @@ export function InboundScanModal({
     {
       key: "sku",
       header: "SKU",
-      width: "15%",
+      width: 115,
       truncate: 0,
       render: (line) => {
         // Ưu tiên mã SKU đã gắn sẵn trên dòng (BE trả product_code/product_name
@@ -966,39 +991,40 @@ export function InboundScanModal({
     },
     {
       key: "name",
-      header: t("inbound.detail.colNameType"),
-      width: "34%",
+      header: t("inbound.detail.colName"),
+      width: "auto",
+      truncate: 0,
+      render: (line) =>
+        line.skuName || skuById.get(line.productId)?.sku_name || EMPTY_TEXT,
+    },
+    {
+      key: "type",
+      header: t("inbound.detail.colType"),
+      width: 108,
       truncate: 0,
       render: (line) => {
-        const sku = skuById.get(line.productId);
-        const name = line.skuName || sku?.sku_name;
-        // productType gắn thẳng trên dòng (BE) — nguồn chính, không phụ thuộc
-        // skuById (bị giới hạn per_page nên có thể miss SKU nằm ngoài trang đầu).
-        const productType = line.productType || sku?.sku_type;
-        return (
-          <div>
-            <div>{name || EMPTY_TEXT}</div>
-            {productType ? (
-              <UiStatusBadge
-                tone="neutral"
-                sx={{ mt: 0.5 }}
-                label={businessLabel(SKU_TYPE_LABELS, productType)}
-              />
-            ) : null}
-          </div>
+        const productType =
+          line.productType || skuById.get(line.productId)?.sku_type;
+        return productType ? (
+          <UiStatusBadge
+            tone="neutral"
+            label={businessLabel(SKU_TYPE_LABELS, productType)}
+          />
+        ) : (
+          EMPTY_TEXT
         );
       },
     },
     {
       key: "unit",
       header: t("inbound.detail.colUnit"),
-      width: "9%",
+      width: 64,
       render: (line) => line.productUnit || EMPTY_TEXT,
     },
     {
       key: "scanned",
       header: t("inbound.detail.colScannedQty"),
-      width: "7%",
+      width: 46,
       align: "right",
       render: (line) => <strong>{line.scanned}</strong>,
     },
@@ -1007,7 +1033,7 @@ export function InboundScanModal({
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colInfo"),
-      width: "28%",
+      width: 180,
       render: (line) =>
         line.infoComplete ? (
           <UiStatusBadge
@@ -1042,11 +1068,11 @@ export function InboundScanModal({
     // phiếu" ngay bên dưới nên không lặp lại ở đây.
   ];
 
-  const scanEntryColumns: ResponsiveTableColumn<InboundScanEntry>[] = [
+  const allScanEntryColumns: ResponsiveTableColumn<InboundScanEntry>[] = [
     {
       key: "stt",
       header: "#",
-      width: "7%",
+      width: 46,
       align: "center",
       render: (entry) =>
         mvpRowNumber(
@@ -1058,7 +1084,7 @@ export function InboundScanModal({
     {
       key: "code",
       header: t("inbound.detail.colCode"),
-      width: "23%",
+      width: 180,
       truncate: 0,
       render: (entry) => (
         <Box component="span" sx={{ fontFamily: "var(--wms-font-family)" }}>
@@ -1073,7 +1099,7 @@ export function InboundScanModal({
     {
       key: "sku",
       header: "SKU",
-      width: "24%",
+      width: "auto",
       truncate: 0,
       render: (entry) => (
         <div>
@@ -1089,14 +1115,14 @@ export function InboundScanModal({
     {
       key: "quantity",
       header: "SL",
-      width: "7%",
-      align: "right",
+      width: 64,
+      align: "center",
       render: (entry) => entry.quantity,
     },
     {
       key: "result",
       header: t("inbound.detail.colResult"),
-      width: "19%",
+      width: 150,
       truncate: 0,
       render: (entry) =>
         entry.status === "ACTIVE" ? (
@@ -1124,17 +1150,19 @@ export function InboundScanModal({
     {
       key: "source",
       header: t("inbound.detail.colSource"),
-      width: "12%",
+      width: 160,
       truncate: 0,
       render: (entry) => (
-        <UiStatusBadge
-          tone="neutral"
-          label={
-            entry.scanSource === "CAMERA_OR_MANUAL_CODE"
-              ? t("inbound.detail.sourceCamera")
-              : t("inbound.detail.sourceManual")
-          }
-        />
+        <span className="hn-inbound-scan-source">
+          {entry.scanSource === "CAMERA_OR_MANUAL_CODE" ? (
+            <CameraOutlined />
+          ) : (
+            <ScanOutlined />
+          )}
+          {entry.scanSource === "CAMERA_OR_MANUAL_CODE"
+            ? t("inbound.detail.sourceCamera")
+            : t("inbound.detail.sourceManual")}
+        </span>
       ),
     },
     {
@@ -1143,7 +1171,7 @@ export function InboundScanModal({
       // Cột nút: không bọc lớp cắt chữ, tránh xén mất nút.
       truncate: 0,
       header: t("inbound.detail.colAction"),
-      width: "8%",
+      width: 88,
       render: (entry) =>
         entry.status === "ACTIVE" && canScan && isMutable ? (
           <RowActionButton
@@ -1156,6 +1184,9 @@ export function InboundScanModal({
         ) : null,
     },
   ];
+  const scanEntryColumns = allScanEntryColumns.filter(
+    (column) => column.key !== "actions" || (canScan && isMutable),
+  );
 
   const scanLogColumns: ResponsiveTableColumn<ScanLogRow>[] = [
     {
@@ -1214,272 +1245,280 @@ export function InboundScanModal({
       >
         <div className="hn-inbound-scan-shell">
           <header className="hn-inbound-scan-header">
-            <strong>
-              {drawerTitle}
-            </strong>
-            <ActionIconButton
-              kind="close"
-              label={t("common.close")}
-              onClick={dialog.close}
-              disabled={working}
-            />
+            <strong>{drawerTitle}</strong>
+            <div className="hn-inbound-scan-header-actions">
+              {detail ? (
+                <InboundReceiptStatus status={detail.document.status} />
+              ) : null}
+              <ActionIconButton
+                kind="close"
+                label={t("common.close")}
+                onClick={dialog.close}
+                disabled={working}
+              />
+            </div>
           </header>
           <div className="hn-inbound-scan-body">
-          {detailQuery.isError ? (
-            <Box sx={{ mb: 2 }}>
-              <UiAlert tone="error">
-                <Box sx={{ fontWeight: 700 }}>
-                  {getApiErrorMessage(
-                    detailQuery.error,
-                    t("inbound.detail.loadError"),
-                  )}
-                </Box>
-                <Box sx={{ typography: "body2" }}>
-                  {errorDescription(detailQuery.error, t)}
-                </Box>
-              </UiAlert>
-            </Box>
-          ) : null}
-
-          {detail ? (
-            <>
-              <Box className="hn-inbound-scan-summary">
-                <Grid container spacing={1.5}>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box
-                      sx={{ typography: "caption", color: "text.secondary" }}
-                    >
-                      {t("inbound.detail.fieldSource")}
-                    </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {detail.document.source || EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box
-                      sx={{ typography: "caption", color: "text.secondary" }}
-                    >
-                      {t("inbound.detail.fieldStatus")}
-                    </Box>
-                    <UiStatusBadge
-                      tone={
-                        detail.document.status === "POSTED"
-                          ? "success"
-                          : detail.document.status === "SCANNING"
-                            ? "info"
-                            : detail.document.status === "CANCELLED"
-                              ? "error"
-                              : "warning"
-                      }
-                      label={businessLabel(
-                        INBOUND_STATUS_LABELS,
-                        detail.document.status,
-                      )}
-                    />
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box
-                      sx={{ typography: "caption", color: "text.secondary" }}
-                    >
-                      {t("reverse.detail.fieldCreatedBy")}
-                    </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {detail.document.createdBy === "-"
-                        ? EMPTY_TEXT
-                        : detail.document.createdBy}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box
-                      sx={{ typography: "caption", color: "text.secondary" }}
-                    >
-                      {t("inbound.detail.fieldVersion")}
-                    </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {scanVersion ?? detail.document.version}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                      {t("updatedUi.text_4572c8880b00")}
-                    </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {detail.document.createdAt
-                        ? parseDateTime(detail.document.createdAt).format(
-                            "DD/MM/YYYY HH:mm",
-                          )
-                        : EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                      {t("inbound.detail.fieldUpdatedAt")}
-                    </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {detail.document.updatedAt
-                        ? parseDateTime(detail.document.updatedAt).format(
-                            "DD/MM/YYYY HH:mm",
-                          )
-                        : EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                      {t("inbound.detail.fieldWarehouse")}
-                    </Box>
-                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
-                      {warehouseName || EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                      {t("inbound.detail.fieldSupplier")}
-                    </Box>
-                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
-                      {supplierLabel || EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 3 }}>
-                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                      {t("updatedUi.text_9b223cea940b")}
-                    </Box>
-                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
-                      {detail.document.note || EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                      {t("inbound.detail.fieldScannedBy")}
-                    </Box>
-                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
-                      {detail.document.scannedByNames?.join(", ") || EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  <Grid size={{ xs: 6, sm: 3 }}>
-                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                      {t("inbound.detail.fieldPostedBy")}
-                    </Box>
-                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
-                      {detail.document.postedBy || EMPTY_TEXT}
-                    </Box>
-                  </Grid>
-                  {detail.document.cancelledBy ? (
-                    <Grid size={{ xs: 6, sm: 3 }}>
-                      <Box sx={{ typography: "caption", color: "text.secondary" }}>
-                        {t("inbound.detail.fieldCancelledBy")}
-                      </Box>
-                      <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
-                        {detail.document.cancelledBy}
-                      </Box>
-                    </Grid>
-                  ) : null}
-                </Grid>
-              </Box>
-
-              {/* Chứng từ đính kèm: chỉ xem/tải ngay trong drawer quét và chỉ
-                  hiện khi phiếu thật sự có tệp (hideWhenEmpty). */}
-              <Box className="hn-inbound-scan-attachments">
-                <DocumentAttachmentsPanel
-                  documentType="INBOUND"
-                  documentId={documentId}
-                  disabled
-                  hideWhenEmpty
-                />
-              </Box>
-
-              {isMutable ? (
-                <Box
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: "var(--ops-radius-card)",
-                    p: 2,
-                    mb: 2,
-                  }}
-                >
-                  <Box
-                    sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}
-                  >
-                    {t("inbound.scan.sectionTitle")}
+            {detailQuery.isError ? (
+              <Box sx={{ mb: 2 }}>
+                <UiAlert tone="error">
+                  <Box sx={{ fontWeight: 700 }}>
+                    {getApiErrorMessage(
+                      detailQuery.error,
+                      t("inbound.detail.loadError"),
+                    )}
                   </Box>
-                  {activeCarton ? (
-                    <Box sx={{ mb: 1.5 }}>
-                      <UiAlert tone="info">
-                        <Stack
-                          direction="row"
-                          spacing={0.75}
-                          sx={{ alignItems: "center" }}
-                        >
-                          <InboxOutlined />
-                          <Box sx={{ fontWeight: 700 }}>
-                            {t("inbound.carton.activeLabel", {
-                              code: activeCarton.code,
-                            })}
-                          </Box>
-                        </Stack>
-                        <Box sx={{ typography: "body2" }}>
-                          {t("inbound.carton.scannedPrefix")}{" "}
-                          <strong>{activeCartonScannedQty}</strong>{" "}
-                          {t("inbound.carton.scannedSuffix")}{" "}
-                          {t("inbound.carton.scannedInto", {
-                            code: activeCarton.code,
-                          })}
-                        </Box>
-                        <ActionButton
-                          kind="scan"
-                          sx={{ mt: 1 }}
-                          disabled={!canScan || working}
-                          onClick={() => void handleCompleteCarton()}
-                        >
-                          {completeCartonMutation.isPending
-                            ? t("inbound.detail.posting")
-                            : t("inbound.carton.finishButton")}
-                        </ActionButton>
-                      </UiAlert>
-                    </Box>
-                  ) : null}
+                  <Box sx={{ typography: "body2" }}>
+                    {errorDescription(detailQuery.error, t)}
+                  </Box>
+                </UiAlert>
+              </Box>
+            ) : null}
 
-                  {pendingBox ? (
-                    /* Đã quét một mã HỘP linh kiện: hiện ô nhập số lượng đếm tay
-                       + nút Xác nhận. Xác nhận xong quay lại chờ quét mã tiếp. */
+            {detail ? (
+              <>
+                <div className="hn-inbound-receipt-navigation">
+                  <InboundReceiptProgress status={detail.document.status} />
+                  <UiTabs
+                    aria-label={t("inbound.detail.titleDetailWithCode", {
+                      code: detail.document.code,
+                    })}
+                    value={shownTab}
+                    onChange={setActiveTab}
+                    items={[
+                      {
+                        key: "overview",
+                        label: (
+                          <span className="hn-inbound-tab-label">
+                            <FileTextOutlined />
+                            {t("inbound.detail.tabOverview")}
+                          </span>
+                        ),
+                      },
+                      {
+                        key: "items",
+                        label: (
+                          <span className="hn-inbound-tab-label">
+                            <InboxOutlined />
+                            {t(
+                              isMutable
+                                ? "inbound.detail.tabScan"
+                                : "inbound.detail.tabGoods",
+                            )}
+                          </span>
+                        ),
+                      },
+                      {
+                        key: "history",
+                        label: (
+                          <span className="hn-inbound-tab-label">
+                            <HistoryOutlined />
+                            {t("inbound.detail.tabHistory", {
+                              count: operationHistory.length,
+                            })}
+                          </span>
+                        ),
+                      },
+                    ]}
+                  />
+                </div>
+                {detail.document.status === "CANCELLED" ? (
+                  <div className="hn-inbound-cancel-notice">
+                    <UiAlert tone="error">
+                      <strong>{t("inbound.detail.cancelledTitle")}</strong>
+                      <div>{t("inbound.post.cancelledNote")}</div>
+                    </UiAlert>
+                  </div>
+                ) : null}
+                <section
+                  role="tabpanel"
+                  aria-label={t("inbound.detail.tabOverview")}
+                  hidden={shownTab !== "overview"}
+                  className="hn-inbound-tab-panel"
+                  tabIndex={0}
+                >
+                  <InboundReceiptOverview
+                    detail={detail}
+                    warehouseName={warehouseName}
+                    events={operationHistory}
+                  />
+                  {/* Chứng từ đính kèm: chỉ xem/tải ngay trong drawer quét và chỉ
+                  hiện khi phiếu thật sự có tệp (hideWhenEmpty). */}
+                  <Box className="hn-inbound-scan-attachments">
+                    <DocumentAttachmentsPanel
+                      documentType="INBOUND"
+                      documentId={documentId}
+                      disabled
+                      hideWhenEmpty
+                    />
+                  </Box>
+                </section>
+                <section
+                  role="tabpanel"
+                  aria-label={t(
+                    isMutable
+                      ? "inbound.detail.tabScan"
+                      : "inbound.detail.tabGoods",
+                  )}
+                  hidden={shownTab !== "items"}
+                  className="hn-inbound-tab-panel"
+                  tabIndex={0}
+                >
+                  {isMutable ? (
                     <Box
+                      className="hn-inbound-scan-input-card"
                       sx={{
                         border: "1px solid",
-                        borderColor: "primary.main",
+                        borderColor: "divider",
                         borderRadius: "var(--ops-radius-card)",
                         p: 2,
-                        mb: 1.5,
+                        mb: 2,
                       }}
                     >
-                      <Stack
-                        direction="row"
-                        spacing={0.75}
-                        sx={{ alignItems: "center", mb: 1 }}
-                      >
-                        <InboxOutlined color="primary" />
-                        <Box sx={{ fontWeight: 700 }}>
-                          {t("inbound.box.title", { sku: pendingBox.skuCode })}
-                        </Box>
-                      </Stack>
                       <Box
                         sx={{
-                          typography: "body2",
-                          color: "text.secondary",
+                          typography: "subtitle2",
+                          fontWeight: 700,
                           mb: 1.5,
                         }}
                       >
-                        {t("inbound.box.codePrefix")}{" "}
-                        <strong>{pendingBox.boxCode}</strong>{" "}
-                        {t("inbound.box.description", {
-                          sku: pendingBox.skuCode,
-                        })}
+                        {t("inbound.scan.sectionTitle")}
                       </Box>
-                      <Stack
-                        direction={{ xs: "column", sm: "row" }}
-                        spacing={1.5}
-                        sx={{ alignItems: { sm: "flex-end" } }}
-                      >
-                        <Box sx={{ minWidth: 0 }}>
+                      {activeCarton ? (
+                        <Box sx={{ mb: 1.5 }}>
+                          <UiAlert tone="info">
+                            <Stack
+                              direction="row"
+                              spacing={0.75}
+                              sx={{ alignItems: "center" }}
+                            >
+                              <InboxOutlined />
+                              <Box sx={{ fontWeight: 700 }}>
+                                {t("inbound.carton.activeLabel", {
+                                  code: activeCarton.code,
+                                })}
+                              </Box>
+                            </Stack>
+                            <Box sx={{ typography: "body2" }}>
+                              {t("inbound.carton.scannedPrefix")}{" "}
+                              <strong>{activeCartonScannedQty}</strong>{" "}
+                              {t("inbound.carton.scannedSuffix")}{" "}
+                              {t("inbound.carton.scannedInto", {
+                                code: activeCarton.code,
+                              })}
+                            </Box>
+                            <ActionButton
+                              kind="scan"
+                              sx={{ mt: 1 }}
+                              disabled={!canScan || working}
+                              onClick={() => void handleCompleteCarton()}
+                            >
+                              {completeCartonMutation.isPending
+                                ? t("inbound.detail.posting")
+                                : t("inbound.carton.finishButton")}
+                            </ActionButton>
+                          </UiAlert>
+                        </Box>
+                      ) : null}
+
+                      {pendingBox ? (
+                        /* Đã quét một mã HỘP linh kiện: hiện ô nhập số lượng đếm tay
+                       + nút Xác nhận. Xác nhận xong quay lại chờ quét mã tiếp. */
+                        <Box
+                          sx={{
+                            border: "1px solid",
+                            borderColor: "primary.main",
+                            borderRadius: "var(--ops-radius-card)",
+                            p: 2,
+                            mb: 1.5,
+                          }}
+                        >
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            sx={{ alignItems: "center", mb: 1 }}
+                          >
+                            <InboxOutlined color="primary" />
+                            <Box sx={{ fontWeight: 700 }}>
+                              {t("inbound.box.title", {
+                                sku: pendingBox.skuCode,
+                              })}
+                            </Box>
+                          </Stack>
+                          <Box
+                            sx={{
+                              typography: "body2",
+                              color: "text.secondary",
+                              mb: 1.5,
+                            }}
+                          >
+                            {t("inbound.box.codePrefix")}{" "}
+                            <strong>{pendingBox.boxCode}</strong>{" "}
+                            {t("inbound.box.description", {
+                              sku: pendingBox.skuCode,
+                            })}
+                          </Box>
+                          <Stack
+                            direction={{ xs: "column", sm: "row" }}
+                            spacing={1.5}
+                            sx={{ alignItems: { sm: "flex-end" } }}
+                          >
+                            <Box sx={{ minWidth: 0 }}>
+                              <Box
+                                sx={{
+                                  typography: "caption",
+                                  color: "text.secondary",
+                                  mb: 0.5,
+                                }}
+                              >
+                                {t("inbound.box.qtyLabel")}
+                              </Box>
+                              <UiNumberField
+                                autoFocus={shownTab === "items"}
+                                inputRef={boxQuantityRef}
+                                value={quantity}
+                                rule={NUMBER_RULES.quantity}
+                                disabled={!canScan || busy}
+                                onChange={(next) => {
+                                  setQuantity(next);
+                                  if (quantityError) setQuantityError(null);
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") {
+                                    event.preventDefault();
+                                    void handleConfirmBox();
+                                  }
+                                }}
+                                sx={{ width: "100%", maxWidth: 220 }}
+                                slotProps={{
+                                  htmlInput: {
+                                    "aria-label": t("inbound.box.qtyLabel"),
+                                  },
+                                }}
+                                error={Boolean(quantityError)}
+                                helperText={quantityError ?? undefined}
+                              />
+                            </Box>
+                            <ActionButton
+                              kind="scan"
+                              disabled={!canScan || busy}
+                              onClick={() => void handleConfirmBox()}
+                            >
+                              {busy
+                                ? t("inbound.detail.posting")
+                                : t("inbound.box.confirm")}
+                            </ActionButton>
+                            <ActionButton
+                              kind="cancel"
+                              disabled={busy}
+                              onClick={handleCancelBox}
+                            >
+                              {t("inbound.box.cancel")}
+                            </ActionButton>
+                          </Stack>
+                        </Box>
+                      ) : (
+                        <Box sx={{ mb: 1.5 }}>
                           <Box
                             sx={{
                               typography: "caption",
@@ -1487,290 +1526,240 @@ export function InboundScanModal({
                               mb: 0.5,
                             }}
                           >
-                            {t("inbound.box.qtyLabel")}
+                            {t("inbound.scan.hint")}
                           </Box>
-                          <UiNumberField
-                            autoFocus
-                            value={quantity}
-                            rule={NUMBER_RULES.quantity}
-                            disabled={!canScan || busy}
-                            onChange={(next) => {
-                              setQuantity(next);
-                              if (quantityError) setQuantityError(null);
-                            }}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                void handleConfirmBox();
-                              }
-                            }}
-                            sx={{ width: "100%", maxWidth: 220 }}
-                            slotProps={{
-                              htmlInput: {
-                                "aria-label": t("inbound.box.qtyLabel"),
-                              },
-                            }}
-                            error={Boolean(quantityError)}
-                            helperText={quantityError ?? undefined}
-                          />
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{ alignItems: "flex-start" }}
+                          >
+                            <Box sx={{ flex: 1 }}>
+                              <ScanInput
+                                value={scanCode}
+                                autoFocus={shownTab === "items"}
+                                size="large"
+                                disabled={!canScan || busy}
+                                placeholder={t("inbound.scan.inputPlaceholder")}
+                                onChange={setScanCode}
+                                onScan={(code) => void handleScan(code)}
+                              />
+                            </Box>
+                          </Stack>
                         </Box>
-                        <ActionButton
-                          kind="scan"
-                          disabled={!canScan || busy}
-                          onClick={() => void handleConfirmBox()}
-                        >
-                          {busy
-                            ? t("inbound.detail.posting")
-                            : t("inbound.box.confirm")}
-                        </ActionButton>
-                        <ActionButton
-                          kind="cancel"
-                          disabled={busy}
-                          onClick={handleCancelBox}
-                        >
-                          {t("inbound.box.cancel")}
-                        </ActionButton>
-                      </Stack>
-                    </Box>
-                  ) : (
-                    <Box sx={{ mb: 1.5 }}>
-                      <Box
-                        sx={{
-                          typography: "caption",
-                          color: "text.secondary",
-                          mb: 0.5,
-                        }}
-                      >
-                        {t("inbound.scan.hint")}
-                      </Box>
-                      <Stack
-                        direction="row"
-                        spacing={1}
-                        sx={{ alignItems: "flex-start" }}
-                      >
-                        <Box sx={{ flex: 1 }}>
-                          <ScanInput
-                            value={scanCode}
-                            size="middle"
-                            disabled={!canScan || busy}
-                            placeholder={t("inbound.scan.inputPlaceholder")}
-                            onChange={setScanCode}
-                            onScan={(code) => void handleScan(code)}
-                          />
-                        </Box>
-                      </Stack>
-                    </Box>
-                  )}
-                </Box>
-              ) : detail.document.status !== "POSTED" ? (
-                <Box sx={{ mb: 2 }}>
-                  <UiAlert tone="info">
-                    <Box sx={{ fontWeight: 700 }}>
-                      {t("inbound.post.failedTitle")}
-                    </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {t("inbound.post.cancelledNote")}
-                    </Box>
-                  </UiAlert>
-                </Box>
-              ) : null}
-
-              <Box
-                className="hn-inbound-scan-table"
-                sx={{
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: "var(--ops-radius-card)",
-                  p: 1.5,
-                }}
-              >
-                <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                  {t("inbound.detail.receivedTitle")}
-                </Box>
-                {hasMissingSkuInfo ? (
-                  <Box sx={{ mb: 2 }}>
-                    <UiAlert tone="warning">
-                      <Box sx={{ fontWeight: 700 }}>
-                        {t("inbound.detail.infoBlockedTitle", {
-                          count: linesMissingInfo.length,
-                        })}
-                      </Box>
-                      <Box sx={{ typography: "body2" }}>
-                        {t("inbound.detail.infoBlockedBody")}
-                      </Box>
-                    </UiAlert>
-                  </Box>
-                ) : null}
-                <ResponsiveDataTable<InboundLine>
-                  columns={lineColumns}
-                  rows={detail.lines}
-                  rowKey={(line) => line.id}
-                  loading={detailQuery.isFetching}
-                  emptyText={t("inbound.detail.receivedEmpty")}
-                  mobileBreakpoint="lg"
-                  headerCellStyle={{ whiteSpace: "normal" }}
-                />
-              </Box>
-
-              <Box
-                className="hn-inbound-scan-table"
-                sx={{
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: "var(--ops-radius-card)",
-                  p: 2,
-                  mt: 2,
-                }}
-              >
-                <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                  {t("inbound.detail.entriesTitle")}
-                </Box>
-                <Box
-                  sx={{ typography: "caption", color: "text.secondary", mb: 1 }}
-                >
-                  {`${t("inbound.detail.entriesSummary", {
-                    valid: activeEntries.length,
-                  })}${
-                    removedEntryCount
-                      ? t("inbound.detail.entriesRemovedSuffix", {
-                          count: removedEntryCount,
-                        })
-                      : ""
-                  }`}
-                </Box>
-                {scanEntriesQuery.isError ? (
-                  <UiAlert tone="error">
-                    <Box sx={{ fontWeight: 700 }}>
-                      {getApiErrorMessage(
-                        scanEntriesQuery.error,
-                        t("inbound.detail.entriesLoadError"),
                       )}
                     </Box>
-                    <Box sx={{ typography: "body2" }}>
-                      {errorDescription(scanEntriesQuery.error, t)}
-                    </Box>
-                  </UiAlert>
-                ) : (
-                  <>
-                    <ResponsiveDataTable<InboundScanEntry>
-                      columns={scanEntryColumns}
-                      rows={pagedScanEntries}
-                      rowKey={(entry) => entry.id}
-                      loading={scanEntriesQuery.isLoading}
-                      emptyText={t("inbound.detail.entriesEmpty")}
+                  ) : null}
+
+                  <Box
+                    className="hn-inbound-scan-table"
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: "var(--ops-radius-card)",
+                      p: 1.5,
+                    }}
+                  >
+                    <InboundSectionHeading
+                      icon={<InboxOutlined />}
+                      count={detail.lines.length}
+                    >
+                      {t("inbound.detail.receivedTitle")}
+                    </InboundSectionHeading>
+                    {hasMissingSkuInfo ? (
+                      <Box sx={{ mb: 2 }}>
+                        <UiAlert tone="warning">
+                          <Box sx={{ fontWeight: 700 }}>
+                            {t("inbound.detail.infoBlockedTitle", {
+                              count: linesMissingInfo.length,
+                            })}
+                          </Box>
+                          <Box sx={{ typography: "body2" }}>
+                            {t("inbound.detail.infoBlockedBody")}
+                          </Box>
+                        </UiAlert>
+                      </Box>
+                    ) : null}
+                    <ResponsiveDataTable<InboundLine>
+                      columns={lineColumns}
+                      rows={detail.lines}
+                      rowKey={(line) => line.id}
+                      loading={detailQuery.isFetching}
+                      emptyText={t(
+                        detail.document.status === "CANCELLED"
+                          ? "inbound.detail.cancelledGoodsEmpty"
+                          : "inbound.detail.receivedEmpty",
+                      )}
                       mobileBreakpoint="lg"
                       headerCellStyle={{ whiteSpace: "normal" }}
                     />
-                    {scanEntries.length > SCAN_ENTRY_PAGE_SIZE ? (
-                      <Box sx={{ mt: 1.5 }}>
-                        <UiPagination
-                          page={safeScanEntryPage}
-                          pageSize={SCAN_ENTRY_PAGE_SIZE}
-                          total={scanEntries.length}
-                          onPageChange={setScanEntryPage}
-                          showTotal={false}
-                        />
-                      </Box>
-                    ) : null}
-                  </>
-                )}
-              </Box>
-
-              {scanLog.length ? (
-                <Box
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: "var(--ops-radius-card)",
-                    p: 2,
-                    mt: 2,
-                  }}
-                >
-                  <Box sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}>
-                    {t("inbound.detail.sessionTitle")}
                   </Box>
-                  {/* Nhật ký phiên là state cục bộ (không có query) nên không có
+
+                  <Box
+                    className="hn-inbound-scan-table"
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "divider",
+                      borderRadius: "var(--ops-radius-card)",
+                      p: 2,
+                      mt: 2,
+                    }}
+                  >
+                    <InboundSectionHeading
+                      icon={<ScanOutlined />}
+                      count={scanEntries.length}
+                    >
+                      {t("inbound.detail.entriesTitle")}
+                    </InboundSectionHeading>
+                    {scanEntriesQuery.isError ? (
+                      <UiAlert tone="error">
+                        <Box sx={{ fontWeight: 700 }}>
+                          {getApiErrorMessage(
+                            scanEntriesQuery.error,
+                            t("inbound.detail.entriesLoadError"),
+                          )}
+                        </Box>
+                        <Box sx={{ typography: "body2" }}>
+                          {errorDescription(scanEntriesQuery.error, t)}
+                        </Box>
+                      </UiAlert>
+                    ) : (
+                      <>
+                        <ResponsiveDataTable<InboundScanEntry>
+                          columns={scanEntryColumns}
+                          rows={pagedScanEntries}
+                          rowKey={(entry) => entry.id}
+                          loading={scanEntriesQuery.isLoading}
+                          emptyText={t(
+                            detail.document.status === "CANCELLED"
+                              ? "inbound.detail.cancelledEntriesEmpty"
+                              : "inbound.detail.entriesEmpty",
+                          )}
+                          mobileBreakpoint="lg"
+                          headerCellStyle={{ whiteSpace: "normal" }}
+                        />
+                        {scanEntries.length > SCAN_ENTRY_PAGE_SIZE ? (
+                          <Box sx={{ mt: 1.5 }}>
+                            <UiPagination
+                              page={safeScanEntryPage}
+                              pageSize={SCAN_ENTRY_PAGE_SIZE}
+                              total={scanEntries.length}
+                              onPageChange={setScanEntryPage}
+                              showTotal={false}
+                            />
+                          </Box>
+                        ) : null}
+                      </>
+                    )}
+                  </Box>
+                </section>
+                <section
+                  role="tabpanel"
+                  aria-label={t("inbound.detail.historyTitle")}
+                  hidden={shownTab !== "history"}
+                  className="hn-inbound-tab-panel"
+                  tabIndex={0}
+                >
+                  <InboundReceiptHistory events={operationHistory} />
+                  {scanLog.length ? (
+                    <Box
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: "var(--ops-radius-card)",
+                        p: 2,
+                        mt: 2,
+                      }}
+                    >
+                      <Box
+                        sx={{ typography: "subtitle2", fontWeight: 700, mb: 1 }}
+                      >
+                        {t("inbound.detail.sessionTitle")}
+                      </Box>
+                      {/* Nhật ký phiên là state cục bộ (không có query) nên không có
                       cờ loading tương ứng; chỉ bổ sung emptyText. */}
-                  <ResponsiveDataTable<ScanLogRow>
-                    columns={scanLogColumns}
-                    rows={pagedScanLog}
-                    rowKey={(row) => row.key}
-                    emptyText={t("inbound.detail.sessionEmpty")}
-                  />
-                  {scanLog.length > SCAN_LOG_PAGE_SIZE ? (
-                    <Box sx={{ mt: 1.5 }}>
-                      <UiPagination
-                        page={safeScanLogPage}
-                        pageSize={SCAN_LOG_PAGE_SIZE}
-                        total={scanLog.length}
-                        onPageChange={setScanLogPage}
-                        showTotal={false}
+                      <ResponsiveDataTable<ScanLogRow>
+                        columns={scanLogColumns}
+                        rows={pagedScanLog}
+                        rowKey={(row) => row.key}
+                        emptyText={t("inbound.detail.sessionEmpty")}
                       />
+                      {scanLog.length > SCAN_LOG_PAGE_SIZE ? (
+                        <Box sx={{ mt: 1.5 }}>
+                          <UiPagination
+                            page={safeScanLogPage}
+                            pageSize={SCAN_LOG_PAGE_SIZE}
+                            total={scanLog.length}
+                            onPageChange={setScanLogPage}
+                            showTotal={false}
+                          />
+                        </Box>
+                      ) : null}
                     </Box>
                   ) : null}
-                </Box>
-              ) : null}
-
-              {receiptEvidence ? (
-                <Box sx={{ mt: 2 }}>
-                  <UiAlert tone="success">
-                    <Box sx={{ fontWeight: 700 }}>
-                      {t("inbound.post.evidenceTitle")}
-                    </Box>
-                    {/* KHÔNG hiển thị request_id ở màn THÀNH CÔNG: đó là UUID
+                </section>
+                {receiptEvidence ? (
+                  <Box sx={{ mt: 2 }}>
+                    <UiAlert tone="success">
+                      <Box sx={{ fontWeight: 700 }}>
+                        {t("inbound.post.evidenceTitle")}
+                      </Box>
+                      {/* KHÔNG hiển thị request_id ở màn THÀNH CÔNG: đó là UUID
                       đối chiếu log do middleware sinh cho mỗi lượt gọi API, không
                       phải chứng từ nghiệp vụ nên không có mã đọc được. Nó chỉ có
                       ích khi BÁO LỖI cho kỹ thuật — nơi duy nhất còn hiển thị là
                       ApiErrorAlert/PvErrorState (màn lỗi, có nhãn "để tra soát"). */}
-                    <Box
-                      sx={{
-                        typography: "body2",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                      }}
-                    >
-                      {t("inbound.post.evidenceDocument")}{" "}
-                      {receiptEvidence.receiptCode ? (
-                        <strong>{receiptEvidence.receiptCode}</strong>
-                      ) : (
-                        <CopyableId value={receiptEvidence.receiptId} />
-                      )}
-                    </Box>
-                    <Box
-                      sx={{
-                        typography: "body2",
-                        display: "flex",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                        gap: 0.5,
-                      }}
-                    >
-                      {t("inbound.post.evidenceMovements", {
-                        count: receiptEvidence.movements.length,
-                      })}
-                      {receiptEvidence.movements.map((movement, index) => (
-                        <Box
-                          key={movement.id}
-                          component="span"
-                          sx={{ display: "inline-flex", alignItems: "center" }}
-                        >
-                          {movement.code ? (
-                            <strong>{movement.code}</strong>
-                          ) : (
-                            <CopyableId value={movement.id} />
-                          )}
-                          {index < receiptEvidence.movements.length - 1
-                            ? ","
-                            : ""}
-                        </Box>
-                      ))}
-                    </Box>
-                  </UiAlert>
-                </Box>
-              ) : null}
-            </>
-          ) : null}
+                      <Box
+                        sx={{
+                          typography: "body2",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                        }}
+                      >
+                        {t("inbound.post.evidenceDocument")}{" "}
+                        {receiptEvidence.receiptCode ? (
+                          <strong>{receiptEvidence.receiptCode}</strong>
+                        ) : (
+                          <CopyableId value={receiptEvidence.receiptId} />
+                        )}
+                      </Box>
+                      <Box
+                        sx={{
+                          typography: "body2",
+                          display: "flex",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 0.5,
+                        }}
+                      >
+                        {t("inbound.post.evidenceMovements", {
+                          count: receiptEvidence.movements.length,
+                        })}
+                        {receiptEvidence.movements.map((movement, index) => (
+                          <Box
+                            key={movement.id}
+                            component="span"
+                            sx={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            {movement.code ? (
+                              <strong>{movement.code}</strong>
+                            ) : (
+                              <CopyableId value={movement.id} />
+                            )}
+                            {index < receiptEvidence.movements.length - 1
+                              ? ","
+                              : ""}
+                          </Box>
+                        ))}
+                      </Box>
+                    </UiAlert>
+                  </Box>
+                ) : null}
+              </>
+            ) : null}
           </div>
           {detail && isMutable ? (
             <footer className="hn-inbound-scan-footer">
