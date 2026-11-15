@@ -53,6 +53,29 @@ const CELL_HEIGHT = 88;
 const CHART_WIDTH_PADDING = 36;
 const CHART_HEIGHT_PADDING = 48;
 
+let labelMeasureContext: CanvasRenderingContext2D | null | undefined;
+
+/** SVG heatmap labels do not support CSS text-overflow. Keep the full code
+ * in the series/tooltip and selected panel, fitting only its visual label. */
+function fitTrayLabel(code: string, cellWidth: number): string {
+  if (!code) return "";
+  labelMeasureContext ??= document.createElement("canvas").getContext("2d");
+  const context = labelMeasureContext;
+  const availableWidth = Math.max(0, cellWidth - 20);
+  if (context) context.font = `700 13px ${TYPOGRAPHY.fontFamily}`;
+  const measure = (text: string) =>
+    context ? context.measureText(text).width : Array.from(text).length * 13;
+  if (measure(code) <= availableWidth) return code;
+  const characters = Array.from(code);
+  while (
+    characters.length &&
+    measure(`${characters.join("")}…`) > availableWidth
+  ) {
+    characters.pop();
+  }
+  return measure("…") <= availableWidth ? `${characters.join("")}…` : "";
+}
+
 /**
  * Container/TRAY đã có sẵn trạng thái chiếm dụng EMPTY/PARTIAL (xem
  * putawayService.test.ts) — đây là dữ liệu THẬT trả về từ chính API container
@@ -233,8 +256,7 @@ function TraySelectionGridComponent({
       const current = liveInteraction.current;
       if (current.disabled) return;
       const cell = config as
-        | { seriesIndex?: number; dataPointIndex?: number }
-        | undefined;
+        { seriesIndex?: number; dataPointIndex?: number } | undefined;
       const point = readPoint(
         (chartContext as { w?: unknown } | undefined)?.w,
         cell?.seriesIndex,
@@ -395,9 +417,21 @@ function TraySelectionGridComponent({
         // "bold" thật — weight nặng hơn buộc trình duyệt tự "giả đậm" (synthetic
         // bold), dễ làm dấu tiếng Việt bị méo/lệch trong SVG text.
         style: { fontSize: "13px", fontWeight: 700, colors: [TEXT_COLOR] },
-        formatter: (_value, opts) =>
-          readPoint(opts?.w, opts?.seriesIndex, opts?.dataPointIndex)?.code ??
-          "",
+        formatter: (_value, opts) => {
+          const code =
+            readPoint(opts?.w, opts?.seriesIndex, opts?.dataPointIndex)?.code ??
+            "";
+          const series = opts?.w?.config?.series?.[opts?.seriesIndex];
+          const columns =
+            series && typeof series === "object" && "data" in series
+              ? series.data.length
+              : 0;
+          const gridWidth = opts?.w?.globals?.gridWidth;
+          return fitTrayLabel(
+            code,
+            columns > 0 && gridWidth > 0 ? gridWidth / columns : CELL_MIN_WIDTH,
+          );
+        },
       },
       xaxis: {
         labels: { show: false },
@@ -624,6 +658,7 @@ function TraySelectionGridComponent({
             typography: "subtitle1",
             fontWeight: 700,
             lineHeight: 1.3,
+            overflowWrap: "anywhere",
             mb: selectedTray ? 1 : 0,
             color: selectedTray ? S.successText : "text.disabled",
           }}
