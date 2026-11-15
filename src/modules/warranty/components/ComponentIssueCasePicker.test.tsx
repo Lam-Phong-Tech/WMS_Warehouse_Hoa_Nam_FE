@@ -49,17 +49,24 @@ describe("ComponentIssueCasePicker", () => {
 
   afterEach(cleanupTestState);
 
-  it("selects the real active case, masks PII and blocks every terminal status", async () => {
+  it("only shows checking and repairing cases, preserves PII masking and selects a case", async () => {
     const active = warrantyCase();
     const terminalStatuses = [
       "RETURNED",
       "RETURNED_TO_CUSTOMER",
       "CLOSED",
       "CANCELLED",
+      "RECEIVED",
+      "COMPLETED",
     ] as const;
     vi.mocked(fetchWarrantyCases).mockResolvedValue({
       data: [
         active,
+        warrantyCase({
+          id: "checking",
+          case_code: "BH-CHECKING",
+          status: "CHECKING",
+        }),
         ...terminalStatuses.map((status) =>
           warrantyCase({
             id: status,
@@ -80,10 +87,14 @@ describe("ComponentIssueCasePicker", () => {
     });
     expect(screen.queryByText("Nguyễn Văn An")).not.toBeInTheDocument();
     for (const status of terminalStatuses) {
-      const button = screen.getByRole("button", { name: `Chọn BH-${status}` });
-      expect(button).toBeDisabled();
-      fireEvent.click(button);
+      expect(
+        screen.queryByRole("button", { name: `Chọn BH-${status}` }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText(`BH-${status}`)).not.toBeInTheDocument();
     }
+    expect(
+      screen.getByRole("button", { name: "Chọn BH-CHECKING" }),
+    ).toBeEnabled();
     expect(onSelect).not.toHaveBeenCalled();
     fireEvent.click(activeButton);
     expect(onSelect).toHaveBeenCalledWith(active);
@@ -108,6 +119,7 @@ describe("ComponentIssueCasePicker", () => {
     await waitFor(() =>
       expect(fetchWarrantyCases).toHaveBeenLastCalledWith({
         search: undefined,
+        status: "CHECKING,REPAIRING",
         page: 2,
         per_page: 10,
       }),
@@ -121,6 +133,7 @@ describe("ComponentIssueCasePicker", () => {
     await waitFor(() =>
       expect(fetchWarrantyCases).toHaveBeenLastCalledWith({
         search: "BH-003",
+        status: "CHECKING,REPAIRING",
         page: 1,
         per_page: 10,
       }),

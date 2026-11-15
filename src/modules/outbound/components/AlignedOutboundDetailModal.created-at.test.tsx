@@ -47,7 +47,7 @@ it("shows created_at as Ngày tạo instead of the date-only doc_date", async ()
       scanned: 0,
       status: "DRAFT",
       version: 1,
-      createdBy: "USER-1",
+      createdBy: "Người tạo phiếu xuất",
     },
     lines: [],
     itemMatches: [],
@@ -61,6 +61,12 @@ it("shows created_at as Ngày tạo instead of the date-only doc_date", async ()
 
   expect(await screen.findByText("09/11/2026 08:59")).toBeInTheDocument();
   expect(screen.queryByText("09/11/2026 00:00")).not.toBeInTheDocument();
+  expect(screen.getByText("Người tạo phiếu").parentElement).toHaveTextContent(
+    "Người tạo phiếu xuất",
+  );
+  expect(screen.getByText("Người quét")).toBeInTheDocument();
+  expect(screen.getByText("Người ghi nhận xuất kho")).toBeInTheDocument();
+  expect(screen.queryByText("Người hủy")).not.toBeInTheDocument();
 });
 
 it("shows posted_at as the successful outbound time", async () => {
@@ -81,6 +87,8 @@ it("shows posted_at as the successful outbound time", async () => {
       status: "POSTED",
       version: 2,
       createdBy: "USER-1",
+      scannedByNames: ["An quét", "Bình quét"],
+      postedBy: "Người ghi nhận phiếu xuất",
     },
     lines: [],
     itemMatches: [],
@@ -96,4 +104,48 @@ it("shows posted_at as the successful outbound time", async () => {
     await screen.findByText("Ngày giờ xuất kho thành công"),
   ).toBeInTheDocument();
   expect(screen.getByText("12/11/2026 12:20")).toBeInTheDocument();
+  expect(screen.getByText("Người quét").parentElement).toHaveTextContent(
+    "An quét, Bình quét",
+  );
+  expect(
+    screen.getByText("Người ghi nhận xuất kho").parentElement,
+  ).toHaveTextContent("Người ghi nhận phiếu xuất");
 });
+
+it.each([undefined, "", "Người hủy phiếu xuất"])(
+  "only shows the cancellation actor when a name exists (%s)",
+  async (cancelledBy) => {
+    service.fetchOutboundDetail.mockResolvedValue({
+      document: {
+        id: "OUT-CANCEL",
+        code: "PX-CANCEL",
+        date: "2026-11-15",
+        createdAt: "2026-11-15T10:00:00",
+        warehouseId: "WH-1",
+        recipientName: "Khách hàng",
+        recipientAddress: "",
+        expected: 0,
+        scanned: 0,
+        status: "CANCELLED",
+        version: 2,
+        createdBy: "Người tạo phiếu xuất",
+        cancelledBy,
+      },
+      lines: [],
+      itemMatches: [],
+      movements: [],
+      statusHistory: [],
+    });
+    renderWithProviders(
+      <AlignedOutboundDetailModal documentId="OUT-CANCEL" onClose={vi.fn()} />,
+    );
+    await screen.findByText("Người tạo phiếu");
+    if (cancelledBy) {
+      expect(screen.getByText("Người hủy").parentElement).toHaveTextContent(
+        cancelledBy,
+      );
+    } else {
+      expect(screen.queryByText("Người hủy")).not.toBeInTheDocument();
+    }
+  },
+);

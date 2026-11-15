@@ -144,6 +144,8 @@ describe("ComponentIssueModal (COMP-01)", () => {
     vi.mocked(fetchComponentIssueDocument).mockResolvedValue(
       makeDetail({
         status: "POSTED",
+        created_by_name: "Nguyễn Văn Tạo",
+        posted_by_name: "Trần Văn Xuất",
         created_at: "2026-08-13T01:30:00Z",
         posted_at: "2026-08-13T03:45:00Z",
         lines: [
@@ -152,6 +154,7 @@ describe("ComponentIssueModal (COMP-01)", () => {
             sku_id: "sku-1",
             sku_code: "LK-PIN-20V",
             sku_name: "Pin 20V",
+            unit: "Cái",
             required_qty: 1,
             scanned_qty: 1,
             items: [
@@ -178,7 +181,16 @@ describe("ComponentIssueModal (COMP-01)", () => {
     );
 
     expect(await screen.findByText("Ngày tạo phiếu")).toBeInTheDocument();
-    expect(screen.getByText("Thời gian ghi nhận")).toBeInTheDocument();
+    expect(screen.getByText("Người tạo phiếu")).toBeInTheDocument();
+    expect(screen.getByText("Người thực hiện xuất phiếu")).toBeInTheDocument();
+    expect(screen.getByText("Nguyễn Văn Tạo")).toBeInTheDocument();
+    expect(screen.getByText("Trần Văn Xuất")).toBeInTheDocument();
+    expect(screen.queryByText("Ngày chứng từ")).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("columnheader", { name: "ĐVT" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Cái")).toBeInTheDocument();
+    expect(screen.getByText("Thời gian xuất kho")).toBeInTheDocument();
     expect(screen.getByText("Thời gian quét")).toBeInTheDocument();
     expect(
       screen.getByText(formatDateTime("2026-08-13T01:30:00Z")),

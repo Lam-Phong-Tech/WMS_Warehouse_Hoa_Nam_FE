@@ -33,6 +33,7 @@ export type ComponentIssueLine = {
   sku_id: string;
   sku_code: string;
   sku_name: string;
+  unit?: string;
   required_qty: number;
   scanned_qty: number;
   note?: string;
@@ -67,6 +68,8 @@ export type ComponentIssueDocument = {
   cancel_reason?: string;
   created_at?: string;
   posted_at?: string;
+  created_by_name?: string;
+  posted_by_name?: string;
   version: number;
   lines: ComponentIssueLine[];
 };
@@ -120,6 +123,7 @@ function normalizeLine(row: RawRecord): ComponentIssueLine {
     sku_id: text(row.sku_id),
     sku_code: text(row.sku_code),
     sku_name: text(row.sku_name, "-"),
+    unit: text(row.unit).trim() || undefined,
     required_qty: num(row.required_qty),
     scanned_qty: num(row.scanned_qty),
     note: text(row.note) || undefined,
@@ -152,6 +156,8 @@ function normalizeDocument(row: RawRecord): ComponentIssueDocument {
     cancel_reason: text(document.cancel_reason) || undefined,
     created_at: text(document.created_at) || undefined,
     posted_at: text(document.posted_at) || undefined,
+    created_by_name: text(document.created_by_name).trim() || undefined,
+    posted_by_name: text(document.posted_by_name).trim() || undefined,
     version: requiredApiNumber(document.version, "component_issue.version"),
     lines: rawLines.map(normalizeLine),
   };

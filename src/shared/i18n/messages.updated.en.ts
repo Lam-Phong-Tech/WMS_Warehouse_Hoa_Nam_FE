@@ -28,7 +28,7 @@ export const MESSAGES_UPDATED_EN = {
   text_0a1c02f926e9: "Document cancelled",
   text_0a3f7deb0656: "Match rate",
   text_0b5d83c18230:
-    "Select an active case to create a component issue document.",
+    "Select a case under inspection or repair to create a component issue document.",
   text_0be7d9b1d01d: "Recording in progress",
   text_0c576314af49: "Updating data...",
   text_0ce3732c6c81: "Demo data",

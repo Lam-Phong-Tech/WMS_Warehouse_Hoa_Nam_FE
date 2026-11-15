@@ -967,7 +967,7 @@ export function InboundScanModal({
     {
       key: "name",
       header: t("inbound.detail.colNameType"),
-      width: "43%",
+      width: "34%",
       truncate: 0,
       render: (line) => {
         const sku = skuById.get(line.productId);
@@ -988,6 +988,12 @@ export function InboundScanModal({
           </div>
         );
       },
+    },
+    {
+      key: "unit",
+      header: t("inbound.detail.colUnit"),
+      width: "9%",
+      render: (line) => line.productUnit || EMPTY_TEXT,
     },
     {
       key: "scanned",
@@ -1333,7 +1339,7 @@ export function InboundScanModal({
                       {supplierLabel || EMPTY_TEXT}
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 12 }}>
+                  <Grid size={{ xs: 12, sm: 3 }}>
                     <Box sx={{ typography: "caption", color: "text.secondary" }}>
                       {t("updatedUi.text_9b223cea940b")}
                     </Box>
@@ -1341,6 +1347,32 @@ export function InboundScanModal({
                       {detail.document.note || EMPTY_TEXT}
                     </Box>
                   </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                      {t("inbound.detail.fieldScannedBy")}
+                    </Box>
+                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
+                      {detail.document.scannedByNames?.join(", ") || EMPTY_TEXT}
+                    </Box>
+                  </Grid>
+                  <Grid size={{ xs: 6, sm: 3 }}>
+                    <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                      {t("inbound.detail.fieldPostedBy")}
+                    </Box>
+                    <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
+                      {detail.document.postedBy || EMPTY_TEXT}
+                    </Box>
+                  </Grid>
+                  {detail.document.cancelledBy ? (
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                      <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                        {t("inbound.detail.fieldCancelledBy")}
+                      </Box>
+                      <Box sx={{ typography: "body2", overflowWrap: "anywhere" }}>
+                        {detail.document.cancelledBy}
+                      </Box>
+                    </Grid>
+                  ) : null}
                 </Grid>
               </Box>
 

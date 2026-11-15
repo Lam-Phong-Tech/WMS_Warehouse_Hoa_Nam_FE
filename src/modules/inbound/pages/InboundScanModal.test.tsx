@@ -282,7 +282,67 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
 
     const field = (await screen.findByText("Ngày giờ cập nhật")).parentElement;
     expect(field).toHaveTextContent("12/11/2026 15:00");
+    expect(
+      await screen.findByRole("columnheader", { name: "ĐVT" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Cái")).toBeInTheDocument();
   });
+
+  it("hiển thị tất cả người quét và người ghi nhận nhập kho", async () => {
+    mockHooks();
+    vi.mocked(useInboundDetail).mockReturnValue({
+      data: {
+        ...DETAIL,
+        document: {
+          ...DETAIL.document,
+          status: "POSTED",
+          scannedByNames: ["An quét", "Bình quét"],
+          postedBy: "Người ghi nhận",
+        },
+      },
+      isLoading: false,
+      isError: false,
+    } as never);
+
+    renderWithProviders(
+      <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+    );
+
+    expect(
+      (await screen.findByText("Người quét")).parentElement,
+    ).toHaveTextContent("An quét, Bình quét");
+    expect(
+      screen.getByText("Người ghi nhận nhập kho").parentElement,
+    ).toHaveTextContent("Người ghi nhận");
+    expect(screen.queryByText("Người hủy")).not.toBeInTheDocument();
+  });
+
+  it.each([undefined, "", "Người hủy phiếu"])(
+    "chỉ hiển thị mục người hủy khi có tên (%s)",
+    async (cancelledBy) => {
+      mockHooks();
+      vi.mocked(useInboundDetail).mockReturnValue({
+        data: {
+          ...DETAIL,
+          document: { ...DETAIL.document, status: "CANCELLED", cancelledBy },
+        },
+        isLoading: false,
+        isError: false,
+      } as never);
+
+      renderWithProviders(
+        <InboundScanModal documentId="IN-1" onClose={vi.fn()} />,
+      );
+      await screen.findByText("Người quét");
+      if (cancelledBy) {
+        expect(screen.getByText("Người hủy").parentElement).toHaveTextContent(
+          cancelledBy,
+        );
+      } else {
+        expect(screen.queryByText("Người hủy")).not.toBeInTheDocument();
+      }
+    },
+  );
 
   it.each([undefined, ""])(
     "không dựng giờ 00:00 từ ngày chứng từ khi thiếu thời điểm tạo (%s)",
@@ -312,7 +372,9 @@ describe("IN-03 · bảng mã đã quét và gỡ mã trước Post", () => {
     );
 
     expect(await screen.findByText("Mã đã quét của phiếu")).toBeInTheDocument();
-    expect(screen.getByRole("dialog").closest(".MuiDrawer-root")).not.toBeNull();
+    expect(
+      screen.getByRole("dialog").closest(".MuiDrawer-root"),
+    ).not.toBeNull();
     expect(screen.getByText("ITEM-BC-000008")).toBeInTheDocument();
     expect(screen.getByText("ITEM-BC-000009")).toBeInTheDocument();
     expect(screen.getByText("Camera / mã")).toBeInTheDocument();
@@ -682,7 +744,9 @@ describe("IN-03 · quét mã hộp linh kiện (scan-driven)", () => {
     // Ô số lượng là UiNumberField (type="text" + inputMode numeric), không
     // còn là spinbutton của <input type="number">.
     fireEvent.change(
-      await screen.findByRole("textbox", { name: /Số lượng linh kiện trong hộp/ }),
+      await screen.findByRole("textbox", {
+        name: /Số lượng linh kiện trong hộp/,
+      }),
       { target: { value: "5" } },
     );
     fireEvent.click(screen.getByRole("button", { name: /Xác nhận/ }));

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { businessToday } from "@/shared/utils/date-time";
+import { formatDateTime } from "@/shared/utils/format-date";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 
@@ -103,6 +104,7 @@ const DOCUMENTS: ComponentIssueDocument[] = [
     warehouse_id: "wh-1",
     warranty_case_id: "wc-1",
     document_date: "2026-08-20T08:00:00Z",
+    created_at: "2026-08-20T07:30:00Z",
     purpose: "WARRANTY",
     status: "SCANNING",
     version: 2,
@@ -115,6 +117,8 @@ const DOCUMENTS: ComponentIssueDocument[] = [
     warehouse_id: "wh-2",
     warranty_case_id: "wc-2",
     document_date: "2026-08-21T08:00:00Z",
+    created_at: "2026-08-21T08:10:00Z",
+    posted_at: "2026-08-21T09:45:00Z",
     purpose: "WARRANTY",
     status: "POSTED",
     version: 1,
@@ -347,6 +351,27 @@ describe("WarrantyComponentIssueListPage (WAR-04)", () => {
     );
     expect(fetchComponentIssueDocument).toHaveBeenCalledWith("ci-1");
     expect(fetchComponentIssueDocument).toHaveBeenCalledWith("ci-2");
+    expect(
+      screen.getByRole("columnheader", { name: "Thời gian tạo / xuất" }),
+    ).toBeInTheDocument();
+    const postedRow = screen
+      .getByRole("button", { name: "CI-0002" })
+      .closest("tr")!;
+    const createdTime = within(postedRow).getByTitle("Ngày tạo phiếu");
+    const postedTime = within(postedRow).getByTitle("Thời gian xuất kho");
+    expect(createdTime).toHaveTextContent(
+      formatDateTime(DOCUMENTS[1].created_at),
+    );
+    expect(postedTime).toHaveTextContent(
+      formatDateTime(DOCUMENTS[1].posted_at),
+    );
+    expect(createdTime.nextElementSibling).toBe(postedTime);
+    const scanningRow = screen
+      .getByRole("button", { name: "CI-0001" })
+      .closest("tr")!;
+    expect(
+      within(scanningRow).getByTitle("Thời gian xuất kho"),
+    ).toHaveTextContent("Chưa có");
 
     expect(
       screen.queryByRole("button", { name: "Thông tin kho xuất linh kiện" }),

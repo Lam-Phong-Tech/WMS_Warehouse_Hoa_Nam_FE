@@ -39,6 +39,7 @@ import {
 import { mvpMasterKeys } from "@/modules/master-data/hooks/use-mvp-master";
 import type { SkuRecord } from "@/modules/master-data/types/mvp-master.types";
 import { EMPTY_TEXT } from "@/shared/constants/display";
+import { formatDateTime } from "@/shared/utils/format-date";
 import { UI_STATE, uiStateProps } from "@/shared/constants/ui-state";
 import { useT } from "@/shared/i18n/useT";
 import {
@@ -469,6 +470,7 @@ export default function WarrantyComponentIssueListPage() {
                 <col className="hn-war04-case-col" />
                 <col className="hn-war04-components-col" />
                 <col className="hn-war04-tracking-col" />
+                <col className="hn-war04-time-col" />
                 <col className="hn-war04-status-col" />
                 <col className="hn-war04-actions-col" />
               </colgroup>
@@ -490,6 +492,7 @@ export default function WarrantyComponentIssueListPage() {
                   <th className="hn-war04-desktop">
                     {tUi("dashboard.severity.p2")}
                   </th>
+                  <th scope="col">{t("warranty.componentList.colTimes")}</th>
                   <SortableTh
                     label={tUi("dashboard.composition.colStatus")}
                     sortKey="status"
@@ -596,6 +599,26 @@ export default function WarrantyComponentIssueListPage() {
                         className="hn-war04-desktop"
                       >
                         {trackingLabel(document)}
+                      </td>
+                      <td
+                        className="hn-war04-time-cell"
+                        data-label={t("warranty.componentList.colTimes")}
+                      >
+                        <span title={t("warranty.componentIssue.createdAt")}>
+                          {formatDateTime(
+                            row.created_at || document.created_at,
+                          )}
+                        </span>
+                        <span
+                          className="hn-war04-muted"
+                          title={t("warranty.componentIssue.postedAt")}
+                        >
+                          {row.status === "POSTED"
+                            ? formatDateTime(
+                                row.posted_at || document.posted_at,
+                              )
+                            : EMPTY_TEXT}
+                        </span>
                       </td>
                       <td
                         className="hn-war04-status-cell"

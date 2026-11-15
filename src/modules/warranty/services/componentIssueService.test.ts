@@ -81,6 +81,8 @@ describe("componentIssueService (COMP-01)", () => {
       document: {
         id: "ci-2",
         component_issue_no: "CI-0002",
+        created_by_name: "Nguyễn Văn Tạo",
+        posted_by_name: "Trần Văn Xuất",
         warehouse_id: "wh-1",
         warranty_case_id: "wc-2",
         status: "SCANNING",
@@ -92,6 +94,7 @@ describe("componentIssueService (COMP-01)", () => {
           sku_id: "sku-1",
           sku_code: "LK-PIN-20V",
           sku_name: "Pin 20V",
+          unit: "Cái",
           required_qty: "2",
           scanned_qty: "1",
           items: [{ id: "item-1", quantity: 1, status: "ACTIVE" }],
@@ -107,12 +110,15 @@ describe("componentIssueService (COMP-01)", () => {
     expect(document).toMatchObject({
       id: "ci-2",
       component_issue_no: "CI-0002",
+      created_by_name: "Nguyễn Văn Tạo",
+      posted_by_name: "Trần Văn Xuất",
       warranty_case_id: "wc-2",
       status: "SCANNING",
       version: 2,
     });
     expect(document.lines[0]).toMatchObject({
       sku_code: "LK-PIN-20V",
+      unit: "Cái",
       required_qty: 2,
       scanned_qty: 1,
     });

@@ -28,7 +28,8 @@ export const MESSAGES_UPDATED_VI = {
   text_09caee89904d: "Tổng:",
   text_0a1c02f926e9: "Phiếu đã hủy",
   text_0a3f7deb0656: "Tỷ lệ khớp",
-  text_0b5d83c18230: "Chọn hồ sơ đang hoạt động để tạo phiếu xuất linh kiện.",
+  text_0b5d83c18230:
+    "Chọn hồ sơ đang kiểm tra hoặc đang sửa chữa để tạo phiếu xuất linh kiện.",
   text_0be7d9b1d01d: "Đang ghi nhận",
   text_0c576314af49: "Đang cập nhật dữ liệu...",
   text_0ce3732c6c81: "Dữ liệu minh họa",

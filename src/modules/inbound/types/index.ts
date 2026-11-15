@@ -32,6 +32,9 @@ export interface InboundDocument {
   remaining: number;
   status: InboundStatus;
   createdBy: string;
+  scannedByNames?: string[];
+  postedBy?: string;
+  cancelledBy?: string;
   createdAt?: string;
   updatedAt?: string;
   version?: number;

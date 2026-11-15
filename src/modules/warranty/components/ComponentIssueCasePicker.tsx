@@ -25,7 +25,6 @@ import { useDialogExit } from "@/shared/utils/useDialogExit";
 import {
   WARRANTY_STATUS_COLORS,
   WARRANTY_STATUS_LABELS,
-  WARRANTY_TERMINAL_STATUSES,
   warrantyPiiText,
 } from "@/modules/warranty/constants";
 import { useWarrantyCases } from "@/modules/warranty/hooks/use-warranty";
@@ -44,6 +43,11 @@ const STATUS_TONES: Record<string, UiStatusTone> = {
   processing: "info",
   blue: "info",
 };
+
+const ISSUE_CASE_STATUSES: readonly WarrantyCase["status"][] = [
+  "CHECKING",
+  "REPAIRING",
+];
 
 /** WAR-04 starts the existing issue flow with a real, active warranty case. */
 export function ComponentIssueCasePicker({
@@ -73,10 +77,13 @@ export function ComponentIssueCasePicker({
 
   const query = useWarrantyCases({
     search: search || undefined,
+    status: ISSUE_CASE_STATUSES.join(","),
     page,
     per_page: 10,
   });
-  const rows = query.data?.data ?? [];
+  const rows = (query.data?.data ?? []).filter((row) =>
+    ISSUE_CASE_STATUSES.includes(row.status),
+  );
   const pagination = resolveApiPagination(query.data?.meta, {
     page,
     pageSize: 10,
@@ -88,7 +95,7 @@ export function ComponentIssueCasePicker({
       !canIssue ||
       !dialog.open ||
       selectedRef.current ||
-      WARRANTY_TERMINAL_STATUSES.includes(row.status)
+      !ISSUE_CASE_STATUSES.includes(row.status)
     )
       return;
     selectedRef.current = row;
@@ -122,9 +129,6 @@ export function ComponentIssueCasePicker({
       actions={<ActionButton kind="close" onClick={dialog.close} />}
     >
       <div className="hn-war04-case-picker__body">
-        <p className="hn-war04-case-picker__description">
-          {tUi("updatedUi.text_0b5d83c18230")}
-        </p>
         <UiTextField
           className="hn-war04-case-picker__search"
           autoFocus
@@ -156,7 +160,6 @@ export function ComponentIssueCasePicker({
             aria-busy={query.isFetching}
           >
             {rows.map((row) => {
-              const inactive = WARRANTY_TERMINAL_STATUSES.includes(row.status);
               return (
                 <li className="hn-war04-case-picker__row" key={row.id}>
                   <div className="hn-war04-case-picker__identity">
@@ -179,12 +182,7 @@ export function ComponentIssueCasePicker({
                   />
                   <RowActionButton
                     kind="next"
-                    disabled={inactive || !canIssue || !dialog.open}
-                    title={
-                      inactive
-                        ? t("warranty.componentIssue.caseInactive")
-                        : undefined
-                    }
+                    disabled={!canIssue || !dialog.open}
                     aria-label={`${t("shared.table.selectRow")} ${row.case_code || row.id}`}
                     onClick={() => selectCase(row)}
                   >

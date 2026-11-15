@@ -971,6 +971,23 @@ describe("inbound · cờ thông tin SKU trên từng dòng phiếu", () => {
     vi.clearAllMocks();
   });
 
+  it("đọc tên người quét, người ghi nhận và người hủy từ dữ liệu đã lưu", async () => {
+    vi.mocked(http.get).mockResolvedValue({
+      id: "IN-1",
+      status: "CANCELLED",
+      version: 2,
+      lines: [],
+      scanned_by_names: ["An quét", "Bình quét", "  ", null],
+      posted_by_name: null,
+      posted_by: "user-uuid",
+      cancelled_by_name: "Người hủy phiếu",
+    });
+    const detail = await fetchInboundDetail("IN-1");
+    expect(detail.document.scannedByNames).toEqual(["An quét", "Bình quét"]);
+    expect(detail.document.postedBy).toBeUndefined();
+    expect(detail.document.cancelledBy).toBe("Người hủy phiếu");
+  });
+
   it("đọc cờ thiếu thông tin và đơn vị tính hiện tại từ dòng phiếu", async () => {
     vi.mocked(http.get).mockResolvedValue({
       id: "IN-1",
@@ -1085,10 +1102,30 @@ describe("inbound list · display-only SKU counts", () => {
           id: "IN-COUNT",
           status: "SCANNING",
           lines: [
-            { product_id: "SKU-1", qty_planned: 2, scanned_qty: 2, sku_type: "PRODUCT" },
-            { product_id: "SKU-1", qty_planned: 3, scanned_qty: 3, sku_type: "PRODUCT" },
-            { sku_id: "SKU-2", qty_planned: 5, scanned_qty: 5, sku_type: "COMPONENT" },
-            { product_id: " ", qty_planned: 1, scanned_qty: 1, sku_type: "PRODUCT" },
+            {
+              product_id: "SKU-1",
+              qty_planned: 2,
+              scanned_qty: 2,
+              sku_type: "PRODUCT",
+            },
+            {
+              product_id: "SKU-1",
+              qty_planned: 3,
+              scanned_qty: 3,
+              sku_type: "PRODUCT",
+            },
+            {
+              sku_id: "SKU-2",
+              qty_planned: 5,
+              scanned_qty: 5,
+              sku_type: "COMPONENT",
+            },
+            {
+              product_id: " ",
+              qty_planned: 1,
+              scanned_qty: 1,
+              sku_type: "PRODUCT",
+            },
           ],
         },
       ],

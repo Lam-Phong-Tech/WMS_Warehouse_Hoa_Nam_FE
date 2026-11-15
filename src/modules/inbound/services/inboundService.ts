@@ -215,6 +215,14 @@ function normalizeDocument(row: RawRecord): InboundDocument {
     status,
     // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
     createdBy: text(row.created_by_name ?? row.creator_name, "-"),
+    scannedByNames: Array.isArray(row.scanned_by_names)
+      ? row.scanned_by_names
+          .filter((name): name is string => typeof name === "string")
+          .map((name) => name.trim())
+          .filter(Boolean)
+      : [],
+    postedBy: text(row.posted_by_name).trim() || undefined,
+    cancelledBy: text(row.cancelled_by_name).trim() || undefined,
     createdAt: text(row.created_at) || undefined,
     updatedAt: text(row.updated_at) || undefined,
     version: nullableApiNumber(row.version ?? row.lock_version) ?? undefined,

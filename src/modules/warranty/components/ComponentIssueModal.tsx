@@ -81,7 +81,7 @@ import {
 import { makeWarrantyIdempotencyKey } from "@/modules/warranty/services/warrantyService";
 import { COMPONENT_ISSUE_STATUS_BADGE } from "@/modules/warranty/constants";
 import { EMPTY_TEXT } from "@/shared/constants/display";
-import { formatDate, formatDateTime } from "@/shared/utils/format-date";
+import { formatDateTime } from "@/shared/utils/format-date";
 import type {
   ComponentIssueDocument,
   ComponentIssueLine,
@@ -498,7 +498,7 @@ export function ComponentIssueModal({
     {
       key: "line_no",
       header: t("shared.table.rowNumber"),
-      width: 48,
+      width: "5%",
       render: (line) => (
         <Box
           component="span"
@@ -515,6 +515,7 @@ export function ComponentIssueModal({
     {
       key: "sku",
       header: t("warranty.componentIssue.colComponent"),
+      width: "31%",
       render: (line) => (
         <Stack spacing={0}>
           <Box
@@ -531,9 +532,15 @@ export function ComponentIssueModal({
       ),
     },
     {
+      key: "unit",
+      header: t("warranty.componentIssue.colUnit"),
+      width: "9%",
+      render: (line) => line.unit || EMPTY_TEXT,
+    },
+    {
       key: "progress",
       header: t("warranty.componentIssue.colProgress"),
-      width: 140,
+      width: "13%",
       render: (line) => (
         <UiStatusBadge
           tone={line.scanned_qty === line.required_qty ? "success" : "info"}
@@ -544,6 +551,7 @@ export function ComponentIssueModal({
     {
       key: "items",
       header: t("warranty.componentIssue.colScanKind"),
+      width: "19%",
       render: (line) => {
         const active = line.items.filter((item) => item.status !== "REMOVED");
         if (!active.length)
@@ -565,7 +573,7 @@ export function ComponentIssueModal({
     {
       key: "scanned_at",
       header: t("warranty.componentIssue.colScannedAt"),
-      width: 160,
+      width: "23%",
       render: (line) => {
         // Mỗi item là một lần quét thành công; dòng có thể có nhiều item.
         // Hiển thị lần quét gần nhất để người dùng đối chiếu mốc thời gian.
@@ -905,24 +913,34 @@ export function ComponentIssueModal({
                     <Grid size={{ xs: 12, sm: 4 }}>
                       <Box>
                         <UiText variant="caption">
-                          {t("warranty.componentIssue.documentDate")}
-                        </UiText>
-                      </Box>
-                      <UiText variant="body">
-                        {detail.document_date
-                          ? formatDate(detail.document_date)
-                          : EMPTY_TEXT}
-                      </UiText>
-                    </Grid>
-                    <Grid size={{ xs: 12, sm: 4 }}>
-                      <Box>
-                        <UiText variant="caption">
                           {t("warranty.componentIssue.createdAt")}
                         </UiText>
                       </Box>
                       <UiText variant="body">
                         {detail.created_at
                           ? formatDateTime(detail.created_at)
+                          : EMPTY_TEXT}
+                      </UiText>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Box>
+                        <UiText variant="caption">
+                          {t("warranty.componentIssue.createdBy")}
+                        </UiText>
+                      </Box>
+                      <UiText variant="body">
+                        {detail.created_by_name || EMPTY_TEXT}
+                      </UiText>
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                      <Box>
+                        <UiText variant="caption">
+                          {t("warranty.componentIssue.postedBy")}
+                        </UiText>
+                      </Box>
+                      <UiText variant="body">
+                        {detail.status === "POSTED"
+                          ? detail.posted_by_name || EMPTY_TEXT
                           : EMPTY_TEXT}
                       </UiText>
                     </Grid>

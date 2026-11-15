@@ -48,6 +48,9 @@ export interface OutboundDocumentRecord {
   status: OutboundStatus;
   version: number;
   createdBy: string;
+  scannedByNames?: string[];
+  postedBy?: string;
+  cancelledBy?: string;
   createdAt?: string;
   updatedAt?: string;
   /** Thời điểm ghi nhận xuất kho thành công (BE `posted_at`). */
@@ -378,6 +381,14 @@ function normalizeDocument(row: RawRecord): OutboundDocumentRecord {
     version: num(row.version),
     // KHÔNG rơi xuống row.created_by (UUID): thiếu tên thì "-".
     createdBy: text(row.created_by_name, "-"),
+    scannedByNames: Array.isArray(row.scanned_by_names)
+      ? row.scanned_by_names
+          .filter((name): name is string => typeof name === "string")
+          .map((name) => name.trim())
+          .filter(Boolean)
+      : [],
+    postedBy: text(row.posted_by_name).trim() || undefined,
+    cancelledBy: text(row.cancelled_by_name).trim() || undefined,
     createdAt: text(row.created_at) || undefined,
     updatedAt: text(row.updated_at) || undefined,
     postedAt: text(row.posted_at) || undefined,

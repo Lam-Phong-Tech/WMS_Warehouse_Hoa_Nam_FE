@@ -34,6 +34,13 @@ describe("warrantyService", () => {
     grantWarrantyManage();
   });
   describe("fetchWarrantyCases (WAR-01)", () => {
+    it("gửi bộ lọc nhiều trạng thái trước khi phân trang", async () => {
+      vi.mocked(http.getPage).mockResolvedValue({ data: [], meta: { total: 0 } });
+      await fetchWarrantyCases({ status: "CHECKING,REPAIRING", page: 2 });
+      expect(http.getPage).toHaveBeenCalledWith("/warranty-cases", {
+        params: expect.objectContaining({ status: "CHECKING,REPAIRING", page: 2, per_page: 10 }),
+      });
+    });
     it("chuẩn hóa row legacy: warranty_case_id, temp code, status alias OPEN", async () => {
       vi.mocked(http.getPage).mockResolvedValue({
         data: [{ warranty_case_id: "wc-1", warranty_case_code: "BH-0001",

@@ -459,22 +459,30 @@
   width: 5%;
 }
 .hn-war04-code-col {
-  width: 22%;
+  width: 18%;
 }
 .hn-war04-case-col {
-  width: 22%;
+  width: 18%;
 }
 .hn-war04-components-col {
-  width: 23%;
+  width: 19%;
 }
 .hn-war04-tracking-col {
-  width: 10%;
+  width: 8%;
+}
+.hn-war04-time-col {
+  width: 16%;
+}
+.hn-war04-time-cell > span {
+  display: block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .hn-war04-status-col {
-  width: 10%;
+  width: 9%;
 }
 .hn-war04-actions-col {
-  width: 8%;
+  width: 7%;
 }
 .hn-war04-table th {
   padding: 12px 18px;
@@ -809,16 +817,19 @@
     display: block;
   }
   .hn-war04-code-col {
-    width: 28%;
+    width: 23%;
   }
   .hn-war04-case-col {
-    width: 43%;
+    width: 33%;
+  }
+  .hn-war04-time-col {
+    width: 20%;
   }
   .hn-war04-status-col {
-    width: 16%;
+    width: 12%;
   }
   .hn-war04-actions-col {
-    width: 8%;
+    width: 7%;
   }
   .hn-war04-compact .hn-war04-component-summary {
     font-size: 10px;
@@ -943,6 +954,10 @@
     grid-column: 1 / -1;
     grid-row: 3;
   }
+  .hn-war04-table .hn-war04-time-cell {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
   .hn-war04-table .hn-war04-status-cell {
     grid-column: 2;
     grid-row: 1;
@@ -954,6 +969,7 @@
   }
   .hn-war04-code-col,
   .hn-war04-case-col,
+  .hn-war04-time-col,
   .hn-war04-status-col,
   .hn-war04-index-col,
   .hn-war04-actions-col {

@@ -862,6 +862,28 @@ export function AlignedOutboundDetailModal({
                 label={t("outbound.detail.fieldScanned")}
                 value={`${totalScanned}/${totalExpected}`}
               />
+              <DetailField
+                label={t("outbound.detail.fieldCreatedBy")}
+                value={
+                  doc.createdBy && doc.createdBy !== "-"
+                    ? doc.createdBy
+                    : EMPTY_TEXT
+                }
+              />
+              <DetailField
+                label={t("outbound.detail.fieldScannedBy")}
+                value={doc.scannedByNames?.join(", ") || EMPTY_TEXT}
+              />
+              <DetailField
+                label={t("outbound.detail.fieldPostedBy")}
+                value={doc.postedBy || EMPTY_TEXT}
+              />
+              {doc.cancelledBy ? (
+                <DetailField
+                  label={t("outbound.detail.fieldCancelledBy")}
+                  value={doc.cancelledBy}
+                />
+              ) : null}
             </Grid>
             <details
               className="hn-outbound-detail__additional"
@@ -1177,9 +1199,31 @@ export function AlignedOutboundDetailModal({
               <Grid size={12}>
                 <Box className="hn-outbound-dialog__section" sx={SECTION_SX}>
                   <Box
-                    sx={{ typography: "subtitle2", fontWeight: 700, mb: 1.5 }}
+                    component="header"
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                      gap: 1,
+                      mt: -1,
+                      mr: -1,
+                      mb: 1.5,
+                    }}
                   >
-                    {t("outbound.detail.step3")}
+                    <Box
+                      sx={{ typography: "subtitle2", fontWeight: 700, pt: 1 }}
+                    >
+                      {t("outbound.detail.step3")}
+                    </Box>
+                    {posted && packingLabel ? (
+                      <ActionButton
+                        kind="view"
+                        onClick={() => setLabelPreviewOpen(true)}
+                      >
+                        {t("outbound.detail.previewLabel")}
+                      </ActionButton>
+                    ) : null}
                   </Box>
                   <Stack spacing={1.5}>
                     {labelWarning ? (
@@ -1204,24 +1248,11 @@ export function AlignedOutboundDetailModal({
                             value={labelStatus(t, packingLabel.status)}
                             size={{ xs: 12, sm: 4 }}
                           />
-                          <Grid
+                          <DetailField
+                            label={t("outbound.detail.fieldSourceRequest")}
+                            value={packingLabel.sourceRequestNo || EMPTY_TEXT}
                             size={{ xs: 12, sm: 4 }}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: {
-                                xs: "flex-start",
-                                sm: "flex-end",
-                              },
-                            }}
-                          >
-                            <ActionButton
-                              kind="view"
-                              onClick={() => setLabelPreviewOpen(true)}
-                            >
-                              {t("outbound.detail.previewLabel")}
-                            </ActionButton>
-                          </Grid>
+                          />
                           <DetailField
                             label={t("outbound.detail.fieldLabelRecipient")}
                             value={
@@ -1239,11 +1270,6 @@ export function AlignedOutboundDetailModal({
                           <DetailField
                             label={t("outbound.detail.fieldSkuCount")}
                             value={packingLabel.skuCount}
-                            size={{ xs: 12, sm: 4 }}
-                          />
-                          <DetailField
-                            label={t("outbound.detail.fieldSourceRequest")}
-                            value={packingLabel.sourceRequestNo || EMPTY_TEXT}
                             size={{ xs: 12, sm: 4 }}
                           />
                         </Grid>
