@@ -92,13 +92,13 @@ button.hn-report-export-button.MuiButton-root:focus-visible {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
-.hn-report-export-body fieldset {
+.hn-report-export-body > fieldset {
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
-.hn-report-export-body legend,
+.hn-report-export-body > fieldset > legend,
 .hn-report-export-body h3 {
   margin: 0 0 8px;
   padding: 0;

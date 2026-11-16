@@ -1,5 +1,47 @@
 import { expect, test } from "@playwright/test";
 test.setTimeout(120000);
+for (const theme of ["light", "dark"]) {
+  for (const width of [1440, 390]) {
+    test(`export format keeps its border in ${theme} at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.addInitScript(
+        (value) => localStorage.setItem("hoa-nam-theme", value),
+        theme,
+      );
+      await page.goto(
+        "/e2e/fixtures/application-select-menus.html?view=export",
+      );
+      await page
+        .getByRole("button", { name: "Xuất báo cáo", exact: true })
+        .click();
+      const dialog = page.getByRole("dialog");
+      const format = dialog.getByRole("combobox", { name: "Định dạng" });
+      const outline = dialog.locator(
+        ".hn-report-export-file .MuiOutlinedInput-notchedOutline",
+      );
+      for (const state of ["normal", "hover", "focus"]) {
+        if (state === "hover") await format.hover();
+        if (state === "focus") await format.focus();
+        await expect(outline).toHaveCSS("border-top-style", "solid");
+        await expect
+          .poll(async () =>
+            parseFloat(
+              await outline.evaluate(
+                (el) => getComputedStyle(el).borderTopWidth,
+              ),
+            ),
+          )
+          .toBeGreaterThan(0);
+      }
+      await page.screenshot({
+        path: `outputs/export-format-border-${theme}-${width}.png`,
+        fullPage: false,
+      });
+    });
+  }
+}
 for (const theme of ["light", "dark"])
   for (const width of [1440, 390]) {
     test(`application selectors use shared menus in ${theme} at ${width}px`, async ({
