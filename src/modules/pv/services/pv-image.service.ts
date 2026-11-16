@@ -59,6 +59,24 @@ export async function uploadPvProductImage(
     { signal: options.signal },
   );
 
+  return parseUploadResponse(raw);
+}
+
+/** Download on the server so third-party CORS/cookies do not affect viewers. */
+export async function importPvProductImage(
+  url: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<PvImageUploadResult> {
+  const raw = await http.post<RawUploadResponse>(
+    PV_API_ENDPOINTS.ADMIN_PRODUCT_IMAGES,
+    { url },
+    // Allow the server's download budget plus scanning and storage; default API timeout is 10s.
+    { signal: options.signal, timeout: 45000 },
+  );
+  return parseUploadResponse(raw);
+}
+
+function parseUploadResponse(raw: RawUploadResponse): PvImageUploadResult {
   const url = typeof raw?.url === "string" ? raw.url : "";
   if (!url) {
     // BE luôn trả `url`; rơi vào đây nghĩa là hợp đồng đã trôi. Nổ ngay còn hơn
@@ -79,11 +97,11 @@ export async function uploadPvProductImage(
  *
  * Khớp đúng luật của `PvAdminResourceController::imageListInput` — `javascript:`
  * và `data:` bị loại vì App PV render thẳng chuỗi này vào `<img src>`. Vẫn cần ở
- * FE cho nhánh DÁN URL có sẵn (ảnh đã nằm trên CDN khác).
+ * Với URL nguồn chỉ dùng để tải về, truyền maxLength=4096; URL lưu DB vẫn tối đa 500.
  */
-export function isValidImageUrl(value: string): boolean {
+export function isValidImageUrl(value: string, maxLength = 500): boolean {
   const trimmed = value.trim();
-  if (trimmed === "" || trimmed.length > 500) return false;
+  if (trimmed === "" || trimmed.length > maxLength) return false;
   try {
     const parsed = new URL(trimmed);
     return (

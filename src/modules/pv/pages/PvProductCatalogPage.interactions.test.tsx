@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
+  act,
   fireEvent,
   screen,
   waitFor,
@@ -51,6 +52,14 @@ vi.mock("@/modules/master-data/services/mvp-master.service", () => ({
 }));
 
 import { PvProductCatalogPage } from "@/modules/pv/pages/PvProductCatalogPage";
+import { importPvProductImage } from "@/modules/pv/services/pv-image.service";
+
+vi.mock("@/modules/pv/services/pv-image.service", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/modules/pv/services/pv-image.service")
+  >()),
+  importPvProductImage: vi.fn(),
+}));
 
 const WITH_IMAGE: PvAdminProfile = {
   id: "33333333-3333-4333-8333-333333333333",
@@ -179,6 +188,39 @@ describe("MST-PV-01 · catalog interactions", () => {
     expect(
       await screen.findByRole("textbox", { name: "Tên hiển thị" }),
     ).toHaveValue(WITH_IMAGE.display_name);
+  });
+
+  it("aborts a pending image import immediately on cancel and never changes a reopened product", async () => {
+    let finish!: (value: { url: string }) => void;
+    let signal!: AbortSignal;
+    vi.mocked(importPvProductImage).mockImplementation((_url, options) => {
+      signal = options!.signal!;
+      return new Promise((resolve) => {
+        finish = resolve as typeof finish;
+      });
+    });
+    renderWithProviders(<PvProductCatalogPage />);
+    await screen.findByRole("table");
+    fireEvent.click(screen.getByText(WITH_IMAGE.display_name));
+    const input = await screen.findByRole("textbox", {
+      name: "Hoặc dán URL ảnh có sẵn",
+    });
+    fireEvent.change(input, {
+      target: { value: "https://images.example.test/one.png" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Thêm" }));
+    expect(screen.getByTestId("pv-catalog-submit")).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Hủy" }));
+    expect(signal.aborted).toBe(true);
+    fireEvent.click(screen.getByText(WITHOUT_IMAGE.display_name));
+    expect(
+      await screen.findByRole("textbox", { name: "Tên hiển thị" }),
+    ).toHaveValue(WITHOUT_IMAGE.display_name);
+    await act(async () => {
+      finish({ url: "https://hoanam.test/api/v1/pv/product-images/stale.png" });
+    });
+    expect(screen.queryByTestId("pv-image-list")).not.toBeInTheDocument();
+    expect(screen.getByTestId("pv-catalog-submit")).toBeEnabled();
   });
 
   it("navigates internally to the App PV preview", async () => {

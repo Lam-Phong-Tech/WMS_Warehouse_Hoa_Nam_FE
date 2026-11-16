@@ -521,6 +521,7 @@ export function PvProductCatalogPage() {
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [imagesBusy, setImagesBusy] = useState(false);
   const [skuKeyword, setSkuKeyword] = useState("");
 
   // Chỉ nạp danh sách SKU khi đang ở chế độ THÊM: màn này mở ra chủ yếu để xem
@@ -585,6 +586,7 @@ export function PvProductCatalogPage() {
   }
 
   async function submit() {
+    if (imagesBusy) return;
     const nextErrors: Record<string, string> = {};
     const displayName = form.display_name.trim();
     const description = form.description.trim();
@@ -1351,12 +1353,16 @@ export function PvProductCatalogPage() {
               )}
 
               <Grid size={12}>
-                <PvProductImageField
-                  value={form.images}
-                  onChange={(images) => patchForm({ images }, "images")}
-                  disabled={saving || !canManage}
-                  error={errors.images}
-                />
+                {dialogMode !== null && (
+                  <PvProductImageField
+                    key={editing?.id ?? "create"}
+                    value={form.images}
+                    onChange={(images) => patchForm({ images }, "images")}
+                    onBusyChange={setImagesBusy}
+                    disabled={saving || !canManage}
+                    error={errors.images}
+                  />
+                )}
               </Grid>
             </Grid>
           </div>
@@ -1367,7 +1373,9 @@ export function PvProductCatalogPage() {
             <ActionButton
               kind="save"
               onClick={() => void submit()}
-              disabled={saving || !canManage || setPublished.isPending}
+              disabled={
+                saving || imagesBusy || !canManage || setPublished.isPending
+              }
               data-testid="pv-catalog-submit"
             >
               {saving ? t("pv.common.saving") : t("pv.common.save")}

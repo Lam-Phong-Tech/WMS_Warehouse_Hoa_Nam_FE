@@ -6,6 +6,7 @@ vi.mock("@/shared/api/http", () => ({ http: { post: postMock } }));
 
 import {
   isValidImageUrl,
+  importPvProductImage,
   uploadPvProductImage,
 } from "@/modules/pv/services/pv-image.service";
 
@@ -17,6 +18,22 @@ describe("pv-image.service · uploadPvProductImage", () => {
       bytes: 1234,
       mime_type: "image/jpeg",
     });
+  });
+
+  it("imports an external URL through the authenticated system endpoint", async () => {
+    const controller = new AbortController();
+    const result = await importPvProductImage(
+      "https://png.pngtree.com/image.png",
+      { signal: controller.signal },
+    );
+    expect(postMock).toHaveBeenCalledWith(
+      "/pv-admin/product-images",
+      { url: "https://png.pngtree.com/image.png" },
+      { signal: controller.signal, timeout: 45000 },
+    );
+    expect(result.url).toBe(
+      "http://localhost:8080/api/v1/pv/product-images/abc.jpg",
+    );
   });
 
   it("gửi FormData chứa file lên endpoint upload của hệ thống", async () => {

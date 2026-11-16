@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { UiDrawer } from "@/shared/ui";
 import { describe, expect, it, vi } from "vitest";
 import { PvProductImageField } from "@/modules/pv/components/PvProductImageField";
-import { uploadPvProductImage } from "@/modules/pv/services/pv-image.service";
+import {
+  importPvProductImage,
+  uploadPvProductImage,
+} from "@/modules/pv/services/pv-image.service";
 import { renderWithProviders } from "@/test/test-utils";
 
 vi.mock("@/modules/pv/services/pv-image.service", async (importOriginal) => {
@@ -11,10 +14,73 @@ vi.mock("@/modules/pv/services/pv-image.service", async (importOriginal) => {
     await importOriginal<
       typeof import("@/modules/pv/services/pv-image.service")
     >();
-  return { ...actual, uploadPvProductImage: vi.fn() };
+  return {
+    ...actual,
+    uploadPvProductImage: vi.fn(),
+    importPvProductImage: vi.fn(),
+  };
 });
 
 describe("PvProductImageField", () => {
+  it("downloads a pasted URL and adds only the system URL after completion", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const onBusyChange = vi.fn();
+    let finish!: (value: { url: string }) => void;
+    vi.mocked(importPvProductImage).mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve as typeof finish;
+      }),
+    );
+    renderWithProviders(
+      <PvProductImageField
+        value={[]}
+        onChange={onChange}
+        onBusyChange={onBusyChange}
+      />,
+    );
+    const input = screen.getByRole("textbox", {
+      name: "Hoặc dán URL ảnh có sẵn",
+    });
+    await user.type(input, "https://png.pngtree.com/board.png");
+    await user.click(screen.getByRole("button", { name: "Thêm" }));
+    expect(importPvProductImage).toHaveBeenCalledWith(
+      "https://png.pngtree.com/board.png",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input).toBeDisabled();
+    expect(onBusyChange).toHaveBeenLastCalledWith(true);
+    finish({ url: "https://hoanam.test/api/v1/pv/product-images/one.png" });
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith([
+        {
+          url: "https://hoanam.test/api/v1/pv/product-images/one.png",
+          alt_text: null,
+          is_primary: true,
+        },
+      ]),
+    );
+    expect(input).toHaveValue("");
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("keeps the URL and reports download failure without adding a broken image", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    vi.mocked(importPvProductImage).mockRejectedValue(
+      new Error("Không tải được ảnh từ link này."),
+    );
+    renderWithProviders(<PvProductImageField value={[]} onChange={onChange} />);
+    const input = screen.getByRole("textbox", {
+      name: "Hoặc dán URL ảnh có sẵn",
+    });
+    await user.type(input, "https://png.pngtree.com/blocked.png{Enter}");
+    await screen.findByText("Không tải được ảnh từ link này.");
+    expect(input).toHaveValue("https://png.pngtree.com/blocked.png");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("opens the clicked image at full size and closes without changing images", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

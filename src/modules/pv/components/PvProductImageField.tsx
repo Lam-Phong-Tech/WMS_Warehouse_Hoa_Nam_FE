@@ -10,7 +10,7 @@
  * nên "đưa lên trước / xuống sau" là thao tác nghiệp vụ thật chứ không phải
  * trang trí: thẻ sản phẩm trên App PV lấy ảnh đầu tiên khi không có ảnh đại diện.
  *
- * Vẫn giữ ô DÁN URL bên cạnh nút tải lên, cho ảnh đã nằm sẵn trên CDN khác.
+ * DÁN URL cũng tải ảnh vào kho hệ thống trước khi thêm vào hồ sơ.
  */
 import { useEffect, useId, useRef, useState, type DragEvent } from "react";
 import { Box, Stack, UiAlert, UiDialog, UiTextField } from "@/shared/ui";
@@ -22,6 +22,7 @@ import { getMutationErrorMessage } from "@/shared/api/api-error";
 import {
   PV_IMAGE_RULE,
   isValidImageUrl,
+  importPvProductImage,
   uploadPvProductImage,
 } from "@/modules/pv/services/pv-image.service";
 import {
@@ -41,6 +42,7 @@ export interface PvProductImageFieldProps {
   disabled?: boolean;
   /** Câu lỗi từ 422 của BE (khoá `images`). */
   error?: string;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 /** Ảnh đại diện là DUY NHẤT: bật ảnh này thì mọi ảnh khác phải tắt. */
@@ -67,6 +69,7 @@ export function PvProductImageField({
   onChange,
   disabled = false,
   error,
+  onBusyChange,
 }: PvProductImageFieldProps) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -81,11 +84,16 @@ export function PvProductImageField({
   // `setUploading` chạy trên component đã unmount và tệp vẫn lặng lẽ lên bucket.
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortRef.current?.abort(), []);
+  useEffect(() => {
+    onBusyChange?.(uploading > 0);
+  }, [uploading, onBusyChange]);
+  useEffect(() => () => onBusyChange?.(false), [onBusyChange]);
 
   const slotsLeft = PV_IMAGE_MAX - value.length;
   const busy = disabled || uploading > 0;
 
   async function acceptFiles(files: File[]) {
+    if (busy || abortRef.current) return;
     if (files.length === 0) return;
     if (slotsLeft <= 0) {
       toast.error(
@@ -149,6 +157,7 @@ export function PvProductImageField({
     if (uploaded.length > 0 && !controller.signal.aborted) {
       onChange(normalizePrimary([...value, ...uploaded]));
     }
+    abortRef.current = null;
   }
 
   function onDrop(event: DragEvent<HTMLDivElement>) {
@@ -160,9 +169,10 @@ export function PvProductImageField({
     void acceptFiles(Array.from(event.dataTransfer.files ?? []));
   }
 
-  function addManualUrl() {
+  async function addManualUrl() {
+    if (busy || abortRef.current) return;
     const url = manualUrl.trim();
-    if (!isValidImageUrl(url)) {
+    if (!isValidImageUrl(url, 4096)) {
       setManualError(t("pv.productCatalog.imageUrlInvalid"));
       return;
     }
@@ -176,11 +186,34 @@ export function PvProductImageField({
       );
       return;
     }
-    onChange(
-      normalizePrimary([...value, { url, alt_text: null, is_primary: false }]),
-    );
-    setManualUrl("");
     setManualError("");
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setUploading(1);
+    try {
+      const result = await importPvProductImage(url, {
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      if (value.some((image) => image.url === result.url)) {
+        setManualError(t("pv.productCatalog.imageDuplicate"));
+        return;
+      }
+      onChange(
+        normalizePrimary([
+          ...value,
+          { url: result.url, alt_text: null, is_primary: false },
+        ]),
+      );
+      setManualUrl("");
+    } catch (downloadError) {
+      if (!controller.signal.aborted) {
+        setManualError(getMutationErrorMessage(downloadError));
+      }
+    } finally {
+      abortRef.current = null;
+      setUploading(0);
+    }
   }
 
   function removeAt(index: number) {
@@ -290,17 +323,18 @@ export function PvProductImageField({
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
-              addManualUrl();
+              void addManualUrl();
             }
           }}
           error={Boolean(manualError)}
           helperText={manualError}
-          slotProps={{ htmlInput: { maxLength: 500 } }}
+          slotProps={{ htmlInput: { maxLength: 4096 } }}
         />
         <ActionButton
           kind="create"
-          onClick={addManualUrl}
-          disabled={busy || manualUrl.trim() === ""}
+          onClick={() => void addManualUrl()}
+          disabled={busy || slotsLeft <= 0 || manualUrl.trim() === ""}
+          loading={uploading > 0}
           sx={{ mt: 0.5, flexShrink: 0 }}
         >
           {t("pv.productCatalog.imageUrlAdd")}
