@@ -33,7 +33,7 @@ export const REPORT_EXPORT_VI = {
   unavailable:
     "Dữ liệu chưa sẵn sàng để xuất. Vui lòng đợi hoặc đóng bảng và tải lại báo cáo.",
   reversalUnavailable:
-    "Chưa hỗ trợ xuất phiếu đảo xuất. Hãy chọn “Tất cả”, “Nhập kho” hoặc “Xuất kho” để xuất báo cáo.",
+    "Chưa hỗ trợ xuất phiếu đảo nhập hoặc đảo xuất. Hãy chọn “Tất cả”, “Nhập kho” hoặc “Xuất kho” để xuất báo cáo.",
   scopeMismatch:
     "Không xác định được phạm vi dữ liệu trong tệp. Hãy tải lại báo cáo và thử lại.",
   empty: "Không có dữ liệu trong phạm vi đã chọn.",

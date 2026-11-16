@@ -828,34 +828,44 @@ export default function PackingLabelPrintReport() {
                 period.setRange([range[0], range[1]]);
             }}
           />
-          <select
+          <UiSelect
+            fullWidth
+            displayEmpty
+            searchable={false}
             aria-label={t("packingLabelReport.statusFilter")}
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="">{t("packingLabelReport.resultAll")}</option>
-            <option value="PRINTED">
-              {t("packingLabelReport.resultSuccessful")}
-            </option>
-            <option value="PRINT_FAILED">
-              {t("packingLabelReport.resultFailed")}
-            </option>
-            <option value="PENDING_PRINT">
-              {t("packingLabelReport.resultPending")}
-            </option>
-          </select>
-          <select
+            onChange={setStatus}
+            options={[
+              { value: "", label: t("packingLabelReport.resultAll") },
+              {
+                value: "PRINTED",
+                label: t("packingLabelReport.resultSuccessful"),
+              },
+              {
+                value: "PRINT_FAILED",
+                label: t("packingLabelReport.resultFailed"),
+              },
+              {
+                value: "PENDING_PRINT",
+                label: t("packingLabelReport.resultPending"),
+              },
+            ]}
+          />
+          <UiSelect
+            fullWidth
+            displayEmpty
+            searchable={false}
             aria-label={t("packingLabelReport.printer")}
             value={printer}
-            onChange={(e) => setPrinter(e.target.value)}
-          >
-            <option value="">{t("packingLabelReport.printerAll")}</option>
-            {report.printerOptions.map((p) => (
-              <option key={p.value} value={p.value}>
-                {t("packingLabelReport.printerOption", { name: p.label })}
-              </option>
-            ))}
-          </select>
+            onChange={setPrinter}
+            options={[
+              { value: "", label: t("packingLabelReport.printerAll") },
+              ...report.printerOptions.map((p) => ({
+                value: p.value,
+                label: t("packingLabelReport.printerOption", { name: p.label }),
+              })),
+            ]}
+          />
           <button
             type="button"
             className="hn-pkg-label__more-filters"
@@ -877,29 +887,37 @@ export default function PackingLabelPrintReport() {
           className="hn-pkg-label__extra-filters"
           hidden={!filtersOpen}
         >
-          <select
+          <UiSelect
+            fullWidth
+            displayEmpty
+            searchable={false}
             aria-label={t("packingLabelReport.operator")}
             value={actor}
-            onChange={(e) => setActor(e.target.value)}
-          >
-            <option value="">{t("packingLabelReport.actorAll")}</option>
-            {(report.actorOptions ?? []).map((p) => (
-              <option key={p.value} value={p.value}>
-                {t("packingLabelReport.actorOption", { name: p.label })}
-              </option>
-            ))}
-          </select>
-          <select
+            onChange={setActor}
+            options={[
+              { value: "", label: t("packingLabelReport.actorAll") },
+              ...(report.actorOptions ?? []).map((p) => ({
+                value: p.value,
+                label: t("packingLabelReport.actorOption", { name: p.label }),
+              })),
+            ]}
+          />
+          <UiSelect
+            fullWidth
+            displayEmpty
+            searchable={false}
             aria-label={t("packingLabelReport.printAttemptType")}
             value={action}
-            onChange={(e) => setAction(e.target.value)}
-          >
-            <option value="">{t("packingLabelReport.actionAll")}</option>
-            <option value="PRINT">{t("packingLabelReport.actionPrint")}</option>
-            <option value="REPRINT">
-              {t("packingLabelReport.actionReprint")}
-            </option>
-          </select>
+            onChange={setAction}
+            options={[
+              { value: "", label: t("packingLabelReport.actionAll") },
+              { value: "PRINT", label: t("packingLabelReport.actionPrint") },
+              {
+                value: "REPRINT",
+                label: t("packingLabelReport.actionReprint"),
+              },
+            ]}
+          />
         </div>
         {report.capped && (
           <UiAlert tone="warning">
@@ -1301,22 +1319,22 @@ export default function PackingLabelPrintReport() {
         )}
         <label className="hn-pkg-label__form-label">
           {t("packingLabelReport.printer")} *
-          <select
+          <UiSelect
+            fullWidth
+            displayEmpty
+            searchable={false}
             aria-label={t("packingLabelReport.commandPrinter")}
             value={printerId}
             disabled={busy}
-            onChange={(e) => {
-              setPrinterId(e.target.value);
+            onChange={(value) => {
+              setPrinterId(value);
               setReasonError(false);
             }}
-          >
-            <option value="">{t("packingLabelReport.choosePrinter")}</option>
-            {report.printerOptions.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: t("packingLabelReport.choosePrinter") },
+              ...report.printerOptions,
+            ]}
+          />
         </label>
         {reasonError && !printerId && (
           <p role="alert" className="hn-pkg-label__error-text">

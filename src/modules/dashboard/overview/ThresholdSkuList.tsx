@@ -88,19 +88,22 @@ export function ThresholdSkuList({ rows, onNavigate }: Props) {
               resetPage();
             }}
           />
-          <select
+          <UiSelect
             aria-label={t("dashboardAudit.filterStatus")}
             value={filter}
-            onChange={(event) => {
-              setFilter(event.target.value as Filter);
+            searchable={false}
+            minWidth={FILTER_WIDTH.select}
+            options={[
+              { value: "alerts", label: t("dashboardAudit.filterAlerts") },
+              { value: "low", label: t("dashboardAudit.filterLow") },
+              { value: "high", label: t("dashboardAudit.filterHigh") },
+              { value: "all", label: t("dashboardAudit.filterAll") },
+            ]}
+            onChange={(value) => {
+              setFilter(value as Filter);
               resetPage();
             }}
-          >
-            <option value="alerts">{t("dashboardAudit.filterAlerts")}</option>
-            <option value="low">{t("dashboardAudit.filterLow")}</option>
-            <option value="high">{t("dashboardAudit.filterHigh")}</option>
-            <option value="all">{t("dashboardAudit.filterAll")}</option>
-          </select>
+          />
           {(search || filter !== "alerts") && (
             <UiButton
               appearance="outlined"

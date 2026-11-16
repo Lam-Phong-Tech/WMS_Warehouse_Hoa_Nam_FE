@@ -972,7 +972,7 @@
 
 .outbound-chart-plot {
   position: relative;
-  min-width: min(100%, calc(var(--chart-days, 7) * 55px));
+  min-width: max(100%, calc(var(--chart-days, 7) * 55px));
   height: 164px;
 }
 
@@ -993,7 +993,7 @@
   position: absolute;
   inset: 0 0 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(42px, 1fr));
+  grid-template-columns: repeat(var(--chart-days, 7), minmax(42px, 1fr));
   gap: 8px;
 }
 
@@ -2453,7 +2453,7 @@
     min-width: max(100%, calc(var(--chart-days, 7) * 31px));
   }
   .outbound-chart-bars {
-    grid-template-columns: repeat(auto-fit, minmax(27px, 1fr));
+    grid-template-columns: repeat(var(--chart-days, 7), minmax(27px, 1fr));
     gap: 3px;
   }
   .outbound-chart-bar {

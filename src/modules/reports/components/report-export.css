@@ -192,8 +192,7 @@ button.hn-report-export-button.MuiButton-root:focus-visible {
   display: block;
   margin-bottom: 6px;
 }
-.hn-report-export-file input,
-.hn-report-export-file select {
+.hn-report-export-file label > input {
   width: 100%;
   min-width: 0;
   height: 40px;
@@ -204,10 +203,12 @@ button.hn-report-export-button.MuiButton-root:focus-visible {
   color: var(--ops-text);
   font: inherit;
 }
-.hn-report-export-file input:focus,
-.hn-report-export-file select:focus {
+.hn-report-export-file label > input:focus {
   outline: 2px solid var(--ops-link);
   outline-offset: 1px;
+}
+.hn-report-export-file [data-ui-select-kind] .MuiInputBase-root {
+  height: 40px;
 }
 .hn-report-export-hint {
   margin: 0;

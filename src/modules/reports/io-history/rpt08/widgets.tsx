@@ -8,20 +8,31 @@ import {
   InboxOutlined,
   SearchOutlined,
   WarehouseOutlined,
-  SwapOutlined,
 } from "@/shared/components/icons";
+import { createFlatIcon } from "@/shared/ui/icons";
 import type { DailyMovement, HistoryRow } from "./model";
-import { PAGE_SIZE, displayDay, displayStamp, number, percent } from "./model";
+import {
+  PAGE_SIZE,
+  displayDay,
+  displayStamp,
+  number,
+  percent,
+  reversalTypeLabel,
+} from "./model";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 import { UiSelect, FILTER_WIDTH } from "@/shared/ui";
 
+const MovementOverviewIcon = createFlatIcon("exchange");
+
 export function OverviewCard({
+  reversalLabel = reversalTypeLabel(),
   total,
   inbound,
   outbound,
   stale,
   reversal,
 }: {
+  reversalLabel?: string;
   total: number;
   inbound: number;
   outbound: number;
@@ -38,7 +49,7 @@ export function OverviewCard({
       aria-label={tUi("updatedUi.text_97b7bfe0ab46")}
     >
       <div className="rpt08-metric-icon">
-        <SwapOutlined />
+        <MovementOverviewIcon />
       </div>
       <div className="rpt08-overview-card__total">
         <h2>{tUi("updatedUi.text_97b7bfe0ab46")}</h2>
@@ -89,7 +100,7 @@ export function OverviewCard({
           <div>
             <i className="is-reversal" />
             <span>
-              {tUi("dashboard.snapshot.reversal") + " "}
+              {reversalLabel + " "}
               <strong>{number(reversal)}</strong>
               {total ? <small> · {percent(reversalRate)}</small> : null}
             </span>
@@ -101,11 +112,13 @@ export function OverviewCard({
 }
 
 export function ProductCard({
+  reversalLabel = reversalTypeLabel(),
   total,
   inbound,
   outbound,
   reversal,
 }: {
+  reversalLabel?: string;
   total: number | null;
   inbound: number | null;
   outbound: number | null;
@@ -139,7 +152,7 @@ export function ProductCard({
           <span className="is-reversal">
             <i className="is-reversal" />
             <strong>{reversal === null ? "—" : number(reversal)}</strong>
-            {" " + tUi("dashboard.snapshot.reversal")}
+            {" " + reversalLabel}
           </span>
         </div>
       </div>
@@ -148,9 +161,11 @@ export function ProductCard({
 }
 
 export function DailyChart({
+  reversalLabel = reversalTypeLabel(),
   daily,
   total,
 }: {
+  reversalLabel?: string;
   daily: ReadonlyArray<DailyMovement>;
   total: number;
 }) {
@@ -191,7 +206,7 @@ export function DailyChart({
           </span>
           <span>
             <i className="is-reversal" />
-            {" " + tUi("dashboard.snapshot.reversal")}
+            {" " + reversalLabel}
           </span>
           <span className="rpt08-chart-total">
             {tUi("reports.agencyComparison.colTotal") + " "}
@@ -202,6 +217,9 @@ export function DailyChart({
 
       <div
         className={"rpt08-bar-chart" + (empty ? " is-empty" : "")}
+        style={
+          { "--rpt08-day-count": Math.max(1, daily.length) } as CSSProperties
+        }
         role="img"
         aria-label={tUi("updatedUi.text_5c969326149f")}
       >
@@ -268,12 +286,14 @@ export function DailyChart({
 }
 
 export function ActivityCard({
+  reversalLabel = reversalTypeLabel(),
   total,
   inbound,
   outbound,
   reversal,
   peak,
 }: {
+  reversalLabel?: string;
   total: number;
   inbound: number;
   outbound: number;
@@ -326,7 +346,7 @@ export function ActivityCard({
         </div>
         <div className="rpt08-donut-reversal">
           <i className="is-reversal" aria-hidden="true" />
-          <span>{tUi("dashboard.snapshot.reversal")}</span>
+          <span>{reversalLabel}</span>
           <strong>{total ? `${Math.round(reversalRate)}%` : "—"}</strong>
           <b>{number(reversal)}</b>
         </div>
@@ -353,7 +373,7 @@ export function ActivityCard({
                 {number(peak.outbound)}
                 {" " + tUi("updatedUi.text_3b16ad526464") + " "}
                 {number(peak.reversal)}
-                {" " + tUi("dashboard.snapshot.reversal")}
+                {" " + reversalLabel}
               </span>
             </div>
           </>
@@ -442,7 +462,13 @@ function Pagination({
   );
 }
 
-export function TypePill({ type }: { type: HistoryRow["type"] }) {
+export function TypePill({
+  type,
+  originalDocumentType,
+}: {
+  type: HistoryRow["type"];
+  originalDocumentType?: string;
+}) {
   const inbound = type === "INBOUND";
   const reversal = type === "REVERSAL";
   return (
@@ -456,7 +482,7 @@ export function TypePill({ type }: { type: HistoryRow["type"] }) {
         {reversal ? "↩" : inbound ? "↓" : "↑"}
       </span>
       {reversal
-        ? tUi("dashboard.snapshot.reversal")
+        ? reversalTypeLabel(originalDocumentType)
         : inbound
           ? tUi("dashboard.snapshot.inbound")
           : tUi("dashboard.snapshot.outbound")}
@@ -607,7 +633,10 @@ export function HistoryTable({
                       </strong>
                     </td>
                     <td>
-                      <TypePill type={row.type} />
+                      <TypePill
+                        type={row.type}
+                        originalDocumentType={row.source?.originalDocumentType}
+                      />
                     </td>
                     <td className="rpt08-code-cell">
                       <span className="rpt08-document">

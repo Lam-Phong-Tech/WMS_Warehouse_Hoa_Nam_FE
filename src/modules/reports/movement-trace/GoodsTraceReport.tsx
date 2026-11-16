@@ -453,21 +453,20 @@ export default function GoodsTraceReport() {
           value={query.code ?? ""}
           onChange={(e) => update({ code: e.target.value || undefined })}
         />
-        <select
+        <UiSelect
           aria-label={tUi("inventory.trace.fieldCodeType")}
-          value={query.code_type}
-          onChange={(e) =>
+          value={query.code_type ?? "all"}
+          fullWidth
+          onChange={(value) =>
             update({
-              code_type: e.target.value as GoodsTraceQuery["code_type"],
+              code_type: value as GoodsTraceQuery["code_type"],
             })
           }
-        >
-          {codeTypes.map(([value, label]) => (
-            <option key={value} value={value}>
-              {tUi("uiAudit.text_3417fec764")} {label}
-            </option>
-          ))}
-        </select>
+          options={codeTypes.map(([value, label]) => ({
+            value,
+            label: `${tUi("uiAudit.text_3417fec764")} ${label}`,
+          }))}
+        />
         <ReportDateRangePicker
           value={
             query.from_date && query.to_date
@@ -481,63 +480,69 @@ export default function GoodsTraceReport() {
             })
           }
         />
-        <select
+        <UiSelect
           aria-label={tUi("uiAudit.text_55cb99d3e5")}
           value={query.activity_type ?? ""}
-          onChange={(e) =>
-            update({ activity_type: e.target.value || undefined })
-          }
-        >
-          <option value="">{tUi("uiAudit.text_ab28eea9c3")}</option>
-          {Array.from(
-            new Map(
-              allEvents.map((e) => [e.event_type, e.event_label]),
-            ).entries(),
-          ).map(([value, label]) => (
-            <option key={value} value={value}>
-              {tUi("uiAudit.text_beed899a22")} {label}
-            </option>
-          ))}
-        </select>
-        <select
+          fullWidth
+          displayEmpty
+          onChange={(value) => update({ activity_type: value || undefined })}
+          options={[
+            { value: "", label: tUi("uiAudit.text_ab28eea9c3") },
+            ...Array.from(
+              new Map(
+                allEvents.map((e) => [e.event_type, e.event_label]),
+              ).entries(),
+            ).map(([value, label]) => ({
+              value,
+              label: `${tUi("uiAudit.text_beed899a22")} ${label}`,
+            })),
+          ]}
+        />
+        <UiSelect
           aria-label={tUi("uiAudit.text_843900338f")}
           value={query.source ?? ""}
-          onChange={(e) => update({ source: e.target.value || undefined })}
-        >
-          <option value="">{tUi("uiAudit.text_d4767ab8d5")}</option>
-          {Array.from(
-            new Set(allEvents.map((e) => e.source_type).filter(Boolean)),
-          ).map((value) => (
-            <option key={value} value={value}>
-              {tUi("uiAudit.text_dcd2b5f785")} {sourceLabel(value)}
-            </option>
-          ))}
-        </select>
-        <select
+          fullWidth
+          displayEmpty
+          onChange={(value) => update({ source: value || undefined })}
+          options={[
+            { value: "", label: tUi("uiAudit.text_d4767ab8d5") },
+            ...Array.from(
+              new Set(allEvents.map((e) => e.source_type).filter(Boolean)),
+            ).map((value) => ({
+              value,
+              label: `${tUi("uiAudit.text_dcd2b5f785")} ${sourceLabel(value)}`,
+            })),
+          ]}
+        />
+        <UiSelect
           aria-label={tUi("packingLabelReport.operator")}
           value={query.actor ?? ""}
-          onChange={(e) => update({ actor: e.target.value || undefined })}
-        >
-          <option value="">{tUi("uiAudit.text_0d63458be8")}</option>
-          {Array.from(
-            new Set(allEvents.map((e) => e.actor).filter(Boolean)),
-          ).map((value) => (
-            <option key={value} value={value}>
-              {tUi("uiAudit.text_f7aaa4d291")} {value}
-            </option>
-          ))}
-        </select>
-        <select
+          fullWidth
+          displayEmpty
+          onChange={(value) => update({ actor: value || undefined })}
+          options={[
+            { value: "", label: tUi("uiAudit.text_0d63458be8") },
+            ...Array.from(
+              new Set(allEvents.map((e) => e.actor).filter(Boolean)),
+            ).map((value) => ({
+              value,
+              label: `${tUi("uiAudit.text_f7aaa4d291")} ${value}`,
+            })),
+          ]}
+        />
+        <UiSelect
           aria-label={tUi("reports.movementTrace.relation")}
           value={query.relation ?? "all"}
-          onChange={(e) =>
-            update({ relation: e.target.value as GoodsTraceQuery["relation"] })
+          fullWidth
+          onChange={(value) =>
+            update({ relation: value as GoodsTraceQuery["relation"] })
           }
-        >
-          <option value="all">{tUi("uiAudit.text_fcc88705d6")}</option>
-          <option value="original">{tUi("uiAudit.text_f9b9712862")}</option>
-          <option value="reversal">{tUi("uiAudit.text_d34baeafc8")}</option>
-        </select>
+          options={[
+            { value: "all", label: tUi("uiAudit.text_fcc88705d6") },
+            { value: "original", label: tUi("uiAudit.text_f9b9712862") },
+            { value: "reversal", label: tUi("uiAudit.text_d34baeafc8") },
+          ]}
+        />
         {filtered && (
           <button onClick={reset}>{tUi("dashboardAudit.clearFilters")}</button>
         )}

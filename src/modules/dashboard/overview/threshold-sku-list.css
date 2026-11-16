@@ -81,19 +81,14 @@
   min-width: 0;
 }
 .threshold-filters .MuiInputBase-root,
-.threshold-filters > select,
 .threshold-filters > button {
   height: 48px;
   min-height: 48px;
   background: var(--ops-surface);
   border-radius: var(--ops-radius-control);
 }
-.threshold-filters > select {
+.threshold-filters > .MuiFormControl-root {
   max-width: 100%;
-  padding: 0 12px;
-  border: 1px solid var(--ops-line);
-  color: var(--ops-text);
-  font: inherit;
 }
 .threshold-filters .MuiOutlinedInput-notchedOutline {
   border-color: var(--ops-line);
@@ -318,7 +313,7 @@
   line-height: 20px;
   font-weight: 600;
 }
-.dashboard-threshold-view :is(button, select):focus-visible {
+.dashboard-threshold-view button:focus-visible {
   outline: 2px solid var(--ops-link);
   outline-offset: 2px;
 }
@@ -335,7 +330,7 @@
   .threshold-filters .threshold-search {
     flex-basis: 100%;
   }
-  .threshold-filters > select {
+  .threshold-filters > .MuiFormControl-root {
     flex: 1;
     min-width: 0;
   }

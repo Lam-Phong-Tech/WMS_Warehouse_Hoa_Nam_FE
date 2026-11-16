@@ -154,19 +154,43 @@ describe("DashboardSystemViews — định mức tồn", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Vượt 2")).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Lọc trạng thái định mức"), {
-      target: { value: "high" },
-    });
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: "Lọc trạng thái định mức" }),
+    );
+    expect(screen.getAllByRole("option")).toHaveLength(4);
+    fireEvent.click(
+      screen.getByRole("option", { name: "Trạng thái: Trên max" }),
+    );
     const table = screen.getByRole("table");
     expect(within(table).getByText("LK-002")).toBeInTheDocument();
     expect(within(table).queryByText("SP-001")).not.toBeInTheDocument();
     fireEvent.click(within(table).getByRole("button", { name: "LK-002" }));
     expect(screen.getByText("Vượt 2")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Lọc trạng thái định mức"), {
-      target: { value: "low" },
-    });
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: "Lọc trạng thái định mức" }),
+    );
+    fireEvent.click(
+      screen.getByRole("option", { name: "Trạng thái: Dưới min" }),
+    );
     expect(
       screen.queryByRole("region", { name: "Chi tiết định mức" }),
+    ).not.toBeInTheDocument();
+    expect(within(table).getByText("SP-001")).toBeInTheDocument();
+    expect(within(table).queryByText("LK-002")).not.toBeInTheDocument();
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: "Lọc trạng thái định mức" }),
+    );
+    fireEvent.click(
+      screen.getByRole("option", { name: "Trạng thái: Tất cả đã cấu hình" }),
+    );
+    expect(within(table).getByText("SP-001")).toBeInTheDocument();
+    expect(within(table).getByText("LK-002")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Xóa lọc" }));
+    expect(
+      screen.getByRole("combobox", { name: "Lọc trạng thái định mức" }),
+    ).toHaveTextContent("Trạng thái: Đang cảnh báo");
+    expect(
+      screen.queryByRole("button", { name: "Xóa lọc" }),
     ).not.toBeInTheDocument();
   });
 
@@ -247,9 +271,9 @@ describe("DashboardSystemViews — định mức tồn", () => {
       within(detail).getByRole("button", { name: "Đóng chi tiết định mức" }),
     );
     expect(opener).toHaveFocus();
-    expect(screen.getByLabelText("Lọc trạng thái định mức")).toHaveValue(
-      "alerts",
-    );
+    expect(
+      screen.getByRole("combobox", { name: "Lọc trạng thái định mức" }),
+    ).toHaveTextContent("Trạng thái: Đang cảnh báo");
   });
 
   it("thu hẹp rồi mở rộng dữ liệu không tự nhảy trang hoặc mở lại chi tiết", () => {

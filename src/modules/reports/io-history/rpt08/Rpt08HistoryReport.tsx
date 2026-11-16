@@ -31,6 +31,8 @@ import {
   displayAsOf,
   mapLiveRow,
   historySearchText,
+  matchesTransactionType,
+  reversalTypeLabel,
   type AppliedFilters,
   type DailyMovement,
   type ExportState,
@@ -83,7 +85,20 @@ export default function IoHistoryReport() {
   const [exportState, setExportState] = useState<ExportState>("idle");
   const [showExport, setShowExport] = useState(false);
 
-  const sourceType: IoTypeFilter = applied.type === "ALL" ? "" : applied.type;
+  const sourceType: IoTypeFilter =
+    applied.type === "ALL"
+      ? ""
+      : applied.type === "INBOUND_REVERSAL" ||
+          applied.type === "OUTBOUND_REVERSAL"
+        ? "REVERSAL"
+        : applied.type;
+  const reversalLabel = reversalTypeLabel(
+    applied.type === "INBOUND_REVERSAL"
+      ? "INBOUND"
+      : applied.type === "OUTBOUND_REVERSAL"
+        ? "OUTBOUND"
+        : undefined,
+  );
   const source = useIoHistorySnapshot({
     from: applied.from,
     to: applied.to,
@@ -119,7 +134,7 @@ export default function IoHistoryReport() {
         ISO_DATE,
       );
       if (day < applied.from || day > applied.to) return false;
-      if (applied.type !== "ALL" && row.type !== applied.type) return false;
+      if (!matchesTransactionType(row, applied.type)) return false;
       if (applied.actor && row.actor !== applied.actor) return false;
       return true;
     });
@@ -205,9 +220,9 @@ export default function IoHistoryReport() {
     searchedRows.length === 0;
   const stale = !staleDismissed && Boolean(source.error) && liveRows.length > 0;
   const controlsBusy = initialLoading || refreshing;
-  // Phiếu đảo xuất chỉ có ở nguồn /reversal-documents; nút Xuất và BE
+  // Phiếu đảo chỉ có ở nguồn /reversal-documents; nút Xuất và BE
   // document-history không sinh được reversal, nên chặn luôn với lý do đọc được.
-  const reversalOnly = applied.type === "REVERSAL";
+  const reversalOnly = sourceType === "REVERSAL";
   const reversalUnavailableReason = reversalOnly
     ? tUi("reportExport.reversalUnavailable")
     : undefined;
@@ -372,6 +387,7 @@ export default function IoHistoryReport() {
 
           <div className="rpt08-summary-grid">
             <OverviewCard
+              reversalLabel={reversalLabel}
               total={totalTransactions}
               inbound={inboundCount}
               outbound={outboundCount}
@@ -379,6 +395,7 @@ export default function IoHistoryReport() {
               stale={stale}
             />
             <ProductCard
+              reversalLabel={reversalLabel}
               total={totalProducts}
               inbound={inboundProducts}
               outbound={outboundProducts}
@@ -387,8 +404,13 @@ export default function IoHistoryReport() {
           </div>
 
           <div className="rpt08-analysis-grid">
-            <DailyChart daily={daily} total={totalTransactions} />
+            <DailyChart
+              daily={daily}
+              total={totalTransactions}
+              reversalLabel={reversalLabel}
+            />
             <ActivityCard
+              reversalLabel={reversalLabel}
               total={totalTransactions}
               inbound={inboundCount}
               outbound={outboundCount}

@@ -40,7 +40,7 @@
 .goods-trace-report select {
   font: inherit;
 }
-.goods-trace-report button {
+.goods-trace-report button:not(.MuiIconButton-root) {
   cursor: pointer;
   min-height: 40px;
   padding: 8px 14px;
@@ -89,7 +89,10 @@
   gap: 12px;
   align-items: center;
 }
-.goods-trace-report input:not([type="checkbox"]):not([type="radio"]),
+.goods-trace-report
+  input:not([type="checkbox"]):not([type="radio"]):not(.MuiInputBase-input):not(
+    .MuiSelect-nativeInput
+  ),
 .goods-trace-report select {
   height: 48px;
   border: 1px solid var(--ops-line);
@@ -102,8 +105,14 @@
 .goods-trace-filters > input {
   flex: 2 1 310px;
 }
-.goods-trace-filters > select {
+.goods-trace-filters > .MuiFormControl-root,
+.goods-trace-filters > .MuiAutocomplete-root {
   flex: 1 1 160px;
+  min-width: 0;
+  width: auto;
+}
+.goods-trace-filters .MuiOutlinedInput-root {
+  min-height: 48px;
 }
 .goods-trace-filters > .hn-report-date-range {
   flex: 1 1 280px;

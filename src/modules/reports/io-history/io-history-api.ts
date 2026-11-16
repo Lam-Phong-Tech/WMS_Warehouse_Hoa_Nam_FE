@@ -111,6 +111,8 @@ export type IoHistoryRow = {
   movementNo: string;
   /** Mã chứng từ gốc của một phiếu hoàn tác; rỗng với phiếu nhập/xuất. */
   originalDocumentNo: string;
+  /** Loại phiếu gốc của giao dịch đảo; không suy đoán từ dấu số lượng. */
+  originalDocumentType?: string;
   /** "MÃ · TÊN" của từng dòng SKU trong chứng từ. */
   skuLines: string[];
   /** Dòng hàng có cấu trúc (mã/tên/SL ghi nhận) — bản thay thế có dấu cho skuLines. */
@@ -404,6 +406,7 @@ export function useIoHistorySnapshot({
         movementCount: movements?.count ?? 0,
         movementNo: movements?.count === 1 ? movements.firstNo : "",
         originalDocumentNo: text(row.reference_document_code, ""),
+        originalDocumentType: originalType,
         skuLines: [],
         lines: [],
       });

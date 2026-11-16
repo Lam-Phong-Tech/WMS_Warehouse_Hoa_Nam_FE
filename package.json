@@ -85,6 +85,7 @@
     "ui:foundation": "vitest run src/test/ui-foundation",
     "ui:guards": "node scripts/run-ui-guards.mjs",
     "ui:page-sizes": "node scripts/check-page-size-selectors.mjs",
+    "ui:select-menus": "node scripts/check-app-select-menus.mjs",
     "prepare": "husky",
     "postinstall": "patch-package",
     "verify:wwhn-242": "node scripts/verify-wwhn-242-closure.mjs",

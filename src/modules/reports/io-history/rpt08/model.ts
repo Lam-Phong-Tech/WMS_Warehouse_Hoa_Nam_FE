@@ -4,7 +4,31 @@ import type { IoDocType, IoHistoryLine, IoHistoryRow } from "../io-history-api";
 import { ISO_DATE } from "../io-history-api";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
-export type TransactionFilter = "ALL" | "INBOUND" | "OUTBOUND" | "REVERSAL";
+export type TransactionFilter =
+  "ALL" | "INBOUND" | "OUTBOUND" | "INBOUND_REVERSAL" | "OUTBOUND_REVERSAL";
+
+export function reversalTypeLabel(originalDocumentType?: string): string {
+  if (originalDocumentType === "INBOUND")
+    return tUi("reverse.list.typeInbound");
+  if (originalDocumentType === "OUTBOUND")
+    return tUi("reverse.list.typeOutbound");
+  return tUi("reports.pendingEvidence.reversal");
+}
+
+export function matchesTransactionType(
+  row: HistoryRow,
+  filter: TransactionFilter,
+): boolean {
+  if (filter === "ALL") return true;
+  if (filter === "INBOUND_REVERSAL" || filter === "OUTBOUND_REVERSAL") {
+    const originalType = filter === "INBOUND_REVERSAL" ? "INBOUND" : "OUTBOUND";
+    return (
+      row.type === "REVERSAL" &&
+      row.source?.originalDocumentType === originalType
+    );
+  }
+  return row.type === filter;
+}
 export type ExportState = "idle" | "exporting" | "failed" | "unknown";
 
 export type AppliedFilters = {
@@ -131,7 +155,7 @@ function daysInRange(from: string, to: string): string[] {
   if (!start.isValid() || !end.isValid() || start.isAfter(end)) return [];
   const result: string[] = [];
   let cursor = start;
-  while (!cursor.isAfter(end) && result.length < 31) {
+  while (!cursor.isAfter(end)) {
     result.push(cursor.format(ISO_DATE));
     cursor = cursor.add(1, "day");
   }

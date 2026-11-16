@@ -401,6 +401,34 @@
   }
 }
 
+/* Keep long date ranges in one scrollable row inside the chart card. */
+#rpt08-history-report .rpt08-bar-chart {
+  height: auto;
+}
+
+#rpt08-history-report .rpt08-plot {
+  box-sizing: content-box;
+  padding-block: 12px 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#rpt08-history-report .rpt08-y-axis {
+  height: auto;
+  padding-block: 18px 44px;
+}
+
+#rpt08-history-report .rpt08-bar-groups {
+  inset-block: 18px 16px;
+  min-width: calc(var(--rpt08-day-count, 7) * 62px);
+  grid-template-columns: repeat(var(--rpt08-day-count, 7), minmax(54px, 1fr));
+}
+
+#rpt08-history-report .rpt08-grid-lines {
+  inset-block: 18px 44px;
+  min-width: calc(var(--rpt08-day-count, 7) * 62px);
+}
+
 /* The card palette follows the current theme; its inset surfaces must too. */
 #rpt08-history-report .rpt08-donut::before {
   background: var(--ops-surface);

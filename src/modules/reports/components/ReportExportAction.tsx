@@ -1,5 +1,5 @@
 import { useId, useRef, useState, type ReactNode } from "react";
-import { UiDrawer, UiButton } from "@/shared/ui";
+import { UiDrawer, UiButton, UiSelect } from "@/shared/ui";
 import { DownloadOutlined, CloseOutlined } from "@/shared/components/icons";
 import { useT } from "@/shared/i18n/useT";
 import { useAuthStore } from "@/shared/store/auth.store";
@@ -299,24 +299,28 @@ export function ReportExportDrawer({
           </label>
           <label>
             <span>{t("reportExport.format")}</span>
-            <select
+            <UiSelect
+              fullWidth
+              displayEmpty
+              searchable={false}
+              aria-label={t("reportExport.format")}
               value={format}
               disabled={busy}
-              onChange={(e) => {
-                const next = e.target.value as "xlsx" | "pdf";
+              onChange={(value) => {
+                const next = value as "xlsx" | "pdf";
                 setFormat(next);
                 setFilename(
                   (current) =>
                     current.replace(/\.(xlsx|pdf)$/i, "") + "." + next,
                 );
               }}
-            >
-              {formats.map((f) => (
-                <option value={f} key={f}>
-                  {t(f === "pdf" ? "reportExport.pdf" : "reportExport.excel")}
-                </option>
-              ))}
-            </select>
+              options={formats.map((value) => ({
+                value,
+                label: t(
+                  value === "pdf" ? "reportExport.pdf" : "reportExport.excel",
+                ),
+              }))}
+            />
           </label>
         </div>
         {invalid ? (

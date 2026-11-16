@@ -210,6 +210,16 @@ const PAGE_PAYLOAD: Record<string, unknown[]> = {
   ],
 };
 
+async function chooseReportFilter(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+  option: string,
+) {
+  await user.click(screen.getByRole("combobox", { name }));
+  const menu = await screen.findByRole("listbox");
+  await user.click(within(menu).getByRole("option", { name: option }));
+}
+
 function renderReport() {
   renderWithProviders(<PackingLabelPrintReport />, [
     ROUTES.REPORTS_PACKING_LABEL,
@@ -225,7 +235,11 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     );
     vi.mocked(http.getPage).mockImplementation(async (url: unknown) => ({
       data: (PAGE_PAYLOAD[String(url)] ?? []) as never,
-      meta: { current_page: 1, last_page: 1, total: 1 },
+      meta: {
+        current_page: 1,
+        last_page: 1,
+        total: (PAGE_PAYLOAD[String(url)] ?? []).length,
+      },
     }));
     useAuthStore.setState({
       isSuperAdmin: false,
@@ -288,7 +302,7 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Status" })).toHaveTextContent(
-      "Result: AllResult: SuccessfulResult: FailedResult: Undetermined",
+      "Result: All",
     );
     expect(screen.getByRole("combobox", { name: "Printer" })).toHaveTextContent(
       "Printer: All",
@@ -315,7 +329,7 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     ).toHaveTextContent("Printed by: All");
     expect(
       screen.getByRole("combobox", { name: "Print attempt type" }),
-    ).toHaveTextContent("Attempt type: First print / retry");
+    ).toHaveTextContent("Attempt type: All");
 
     const table = screen.getByRole("table");
     for (const name of [
@@ -370,6 +384,15 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     expect(
       within(preview).getByRole("combobox", { name: "Zoom label preview" }),
     ).toHaveTextContent("Fit to frame");
+    await user.click(
+      within(preview).getByRole("combobox", { name: "Zoom label preview" }),
+    );
+    await user.click(
+      within(await screen.findByRole("listbox")).getByRole("option", {
+        name: "80%",
+      }),
+    );
+    expect(preview.querySelector(".zoom-80")).toBeInTheDocument();
     expect(preview).toHaveTextContent("Total: 2 SKUs / 3 items");
     await user.click(
       within(preview).getByRole("button", { name: "Back to label details" }),
@@ -508,16 +531,10 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     renderReport();
 
     const table = await screen.findByRole("table");
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Trạng thái" }),
-      "PRINT_FAILED",
-    );
+    await chooseReportFilter(user, "Trạng thái", "Kết quả: Lỗi");
     expect(within(table).getAllByRole("row")).toHaveLength(2);
     expect(within(table).getByText("Lỗi in")).toBeInTheDocument();
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Trạng thái" }),
-      "",
-    );
+    await chooseReportFilter(user, "Trạng thái", "Kết quả: Tất cả");
     expect(within(table).getAllByRole("row")).toHaveLength(5);
   });
 
@@ -697,10 +714,7 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     const user = userEvent.setup();
     renderReport();
     await screen.findAllByText("PL-PX-0001");
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Máy in" }),
-      PRINTER_B,
-    );
+    await chooseReportFilter(user, "Máy in", "Máy in: PRN-02 · TSC TE200");
     expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(
       3,
     );
@@ -772,10 +786,7 @@ describe("RPT-05 · Nhãn đóng gói In / In lại", () => {
     const user = userEvent.setup();
     renderReport();
     await screen.findAllByText("PL-PX-0001");
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: "Máy in" }),
-      PRINTER_A,
-    );
+    await chooseReportFilter(user, "Máy in", "Máy in: PRN-01 · Zebra ZD421");
     await user.click(screen.getByRole("button", { name: "Xuất báo cáo" }));
     const dialog = screen.getByRole("dialog", {
       name: /^Xuất báo cáo nhãn đóng gói/,

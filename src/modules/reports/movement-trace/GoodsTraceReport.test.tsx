@@ -9,6 +9,7 @@ import {
   act,
 } from "@testing-library/react";
 import GoodsTraceReport from "./GoodsTraceReport";
+import userEvent from "@testing-library/user-event";
 import { ensureEnglishMessages } from "@/shared/i18n/english-messages";
 import { ensureChineseMessages } from "@/shared/i18n/chinese-messages";
 import { useLanguageStore } from "@/shared/i18n/language.store";
@@ -29,10 +30,14 @@ const query = vi.hoisted(() => ({
   isFetching: false,
   refetch: vi.fn(),
   allowed: true,
+  params: {} as Record<string, unknown>,
 }));
 vi.mock("./goods-trace-api", async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  useGoodsTraceReport: () => query,
+  useGoodsTraceReport: (params: Record<string, unknown>) => {
+    query.params = params;
+    return query;
+  },
 }));
 vi.mock("@/shared/components/permission", () => ({
   usePermissionState: () => ({}),
@@ -93,22 +98,26 @@ describe("GoodsTraceReport", () => {
       ],
     };
     render(<GoodsTraceReport />);
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: "Nguồn chứng từ" }),
+    );
     expect(
       screen.getByRole("option", { name: /Phiếu xuất kho/ }),
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("option", { name: /Phiếu xuất kho/ }));
     await act(async () => {
       await ensureEnglishMessages();
       useLanguageStore.getState().setLanguage("en");
     });
     expect(
-      screen.getByRole("option", { name: /Issue note/ }),
-    ).toBeInTheDocument();
+      screen.getByRole("combobox", { name: "Source document" }),
+    ).toHaveTextContent("Issue note");
     expect(
       screen.queryByRole("option", { name: /Phiếu xuất kho/ }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("option", { name: /Code type:.*All/ }),
-    ).toBeInTheDocument();
+      screen.getByRole("combobox", { name: "Code type" }),
+    ).toHaveTextContent(/Code type:.*All/);
     expect(screen.getByText("Trace history (1 events)")).toBeInTheDocument();
     expect(
       screen.getByText("Total events during the selected period."),
@@ -121,9 +130,8 @@ describe("GoodsTraceReport", () => {
         name: "Event details MÃ-01 Xuất kho của Nguyễn",
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("option", { name: /Nguyễn Văn An/ }),
-    ).toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Operator" }));
+    fireEvent.click(screen.getByRole("option", { name: /Nguyễn Văn An/ }));
     await act(async () => {
       await ensureChineseMessages();
       useLanguageStore.getState().setLanguage("zh");
@@ -131,22 +139,129 @@ describe("GoodsTraceReport", () => {
     expect(screen.getByText("追溯历史（1 条事件）")).toBeInTheDocument();
     expect(screen.getByText("期间内事件总数。")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("combobox", { name: "编码类型" })).getByRole(
-        "option",
-        { name: /全部/ },
-      ),
-    ).toBeInTheDocument();
+      screen.getByRole("combobox", { name: "编码类型" }),
+    ).toHaveTextContent(/全部/);
     expect(
       screen.getByRole("combobox", { name: "每页行数" }),
-    ).toHaveTextContent("每页 10 条");
+    ).toHaveTextContent("10 / 页");
     expect(
       screen.getByRole("button", {
         name: "事件详情 MÃ-01 Xuất kho của Nguyễn",
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("option", { name: /Nguyễn Văn An/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "操作人" })).toHaveTextContent(
+      "Nguyễn Văn An",
+    );
+  });
+  it("uses application menus for every trace filter and restores their no-filter values", () => {
+    query.data = {
+      ...base,
+      events: [
+        {
+          id: "event-1",
+          code: "SN-1",
+          event_type: "ISSUE",
+          event_label: "Xuất kho",
+          source_type: "ISSUE_DOCUMENT",
+          actor: "Lan",
+          occurred_at: "2026-11-05T10:00:00",
+          qty_delta: -1,
+          related_documents: [],
+        },
+      ],
+    };
+    render(<GoodsTraceReport />);
+    const filters = [
+      ["Loại mã", /BOX/, "code_type", "box", /Loại mã:.*Tất cả/, "all"],
+      [
+        "Loại hoạt động",
+        /Hoạt động: Xuất kho/,
+        "activity_type",
+        "ISSUE",
+        /Hoạt động: Tất cả/,
+        undefined,
+      ],
+      [
+        "Nguồn chứng từ",
+        /Phiếu xuất kho/,
+        "source",
+        "ISSUE_DOCUMENT",
+        /Nguồn: Tất cả/,
+        undefined,
+      ],
+      [
+        "Người thực hiện",
+        /Người thực hiện: Lan/,
+        "actor",
+        "Lan",
+        /Người thực hiện: Tất cả/,
+        undefined,
+      ],
+      [
+        "Quan hệ",
+        /Quan hệ: Bút toán đảo/,
+        "relation",
+        "reversal",
+        /Quan hệ: Tất cả/,
+        "all",
+      ],
+    ] as const;
+    for (const [
+      name,
+      choice,
+      key,
+      selected,
+      resetChoice,
+      resetValue,
+    ] of filters) {
+      const control = screen.getByRole("combobox", { name });
+      fireEvent.mouseDown(control);
+      fireEvent.click(
+        within(screen.getByRole("listbox")).getByRole("option", {
+          name: choice,
+        }),
+      );
+      expect(query.params[key]).toBe(selected);
+      fireEvent.mouseDown(control);
+      const options = within(screen.getByRole("listbox")).getAllByRole(
+        "option",
+        { name: resetChoice },
+      );
+      expect(options).toHaveLength(1);
+      fireEvent.click(options[0]);
+      expect(query.params[key]).toBe(resetValue);
+    }
+  });
+  it("searches a long actor menu and clears back to all actors", async () => {
+    const user = userEvent.setup();
+    query.data = {
+      ...base,
+      events: Array.from({ length: 9 }, (_, index) => ({
+        id: `event-${index}`,
+        code: `SN-${index}`,
+        actor: `Operator ${index}`,
+        event_type: "ISSUE",
+        event_label: "Xuất kho",
+        source_type: "ISSUE_DOCUMENT",
+        occurred_at: "2026-11-05T10:00:00",
+        qty_delta: -1,
+        related_documents: [],
+      })),
+    };
+    render(<GoodsTraceReport />);
+    const control = screen.getByRole("combobox", { name: "Người thực hiện" });
+    expect(control).toHaveValue("Người thực hiện: Tất cả");
+    await user.clear(control);
+    await user.type(control, "Operator 8");
+    await user.click(
+      await screen.findByRole("option", {
+        name: "Người thực hiện: Operator 8",
+      }),
+    );
+    expect(query.params.actor).toBe("Operator 8");
+    await user.click(screen.getByRole("button", { name: "Bỏ chọn" }));
+    expect(query.params.actor).toBeUndefined();
+    expect(control).toHaveValue("Người thực hiện: Tất cả");
   });
   it.each([
     [false, "Code not found within your permitted scope"],

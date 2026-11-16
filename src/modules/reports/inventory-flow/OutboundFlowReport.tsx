@@ -721,7 +721,7 @@ export default function OutboundFlowReport() {
     const points: Array<{ date: string; value: number }> = [];
     const start = dayjs(appliedRange.from);
     const end = dayjs(appliedRange.to);
-    const dayCount = Math.min(Math.max(end.diff(start, "day") + 1, 1), 62);
+    const dayCount = Math.max(end.diff(start, "day") + 1, 1);
     for (let index = 0; index < dayCount; index += 1) {
       const date = start.add(index, "day").format(ISO_DATE);
       points.push({
@@ -1226,6 +1226,11 @@ export default function OutboundFlowReport() {
                 ) : (
                   <div
                     className="outbound-bar-chart"
+                    style={
+                      {
+                        "--chart-days": Math.max(1, chartPoints.length),
+                      } as CSSProperties
+                    }
                     role="img"
                     aria-label={tUi("updatedUi.text_518e399f02c3")}
                   >

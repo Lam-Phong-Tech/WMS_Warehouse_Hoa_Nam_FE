@@ -225,9 +225,10 @@
   flex: 1 1 350px;
   min-width: 0;
 }
-.hn-pkg-label__filters > select {
+.hn-pkg-label__filters > [data-ui-select-kind] {
   flex: 1 1 160px;
   width: 160px;
+  min-width: 0;
 }
 .hn-pkg-label__filters input,
 .hn-pkg-label__filters select {
@@ -272,9 +273,10 @@
 .hn-pkg-label__extra-filters[hidden] {
   display: none;
 }
-.hn-pkg-label__extra-filters > select {
+.hn-pkg-label__extra-filters > [data-ui-select-kind] {
   flex: 1 1 200px;
   width: 200px;
+  min-width: 0;
 }
 .hn-pkg-label select,
 .hn-pkg-label__form-label select,
@@ -814,9 +816,11 @@
   padding: 12px 16px;
   background: var(--ops-surface);
 }
-.hn-label-detail__preview-toolbar select {
-  height: 36px;
-  margin-left: 8px;
+.hn-label-detail__preview-toolbar > label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 .hn-label-detail__paper-wrap {
   position: relative;
@@ -935,7 +939,7 @@
   .hn-pkg-label__filters > .hn-report-date-range {
     flex-basis: 100%;
   }
-  .hn-pkg-label__filters > select {
+  .hn-pkg-label__filters > [data-ui-select-kind] {
     flex-basis: calc(50% - 6px);
     width: 0;
   }
@@ -982,7 +986,7 @@
   .hn-pkg-label__kpis {
     grid-template-columns: 1fr;
   }
-  .hn-pkg-label__filters > select {
+  .hn-pkg-label__filters > [data-ui-select-kind] {
     flex-basis: 100%;
     width: 100%;
   }
@@ -995,7 +999,8 @@
 }
 
 /* SKU filter controls take precedence over the shared 44px report date field. */
-.hn-pkg-label .hn-pkg-label__filters .MuiInputBase-root {
+.hn-pkg-label .hn-pkg-label__filters .MuiInputBase-root,
+.hn-pkg-label .hn-pkg-label__extra-filters .MuiInputBase-root {
   height: 48px;
   min-height: 48px;
 }

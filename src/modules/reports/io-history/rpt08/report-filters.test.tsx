@@ -26,6 +26,72 @@ it("applies transaction type immediately to the report query", () => {
     expect.objectContaining({ type: "OUTBOUND" }),
   );
 });
+
+it("filters inbound and outbound reversals by the original document type", () => {
+  const hook = vi.mocked(useIoHistorySnapshot);
+  const originalImplementation = hook.getMockImplementation();
+  const timestamp = dayjs().format("YYYY-MM-DD") + "T09:00:00+07:00";
+  hook.mockReturnValue({
+    snapshot: {
+      dataAsOf: timestamp,
+      rows: ["INBOUND", "OUTBOUND", ""].map((originalDocumentType, index) => ({
+        id: `reverse-${index}`,
+        documentNo: `REV-${index}`,
+        type: "REVERSAL",
+        originalDocumentType,
+        status: "POSTED",
+        createdAt: timestamp,
+        postedAt: timestamp,
+        qty: 2,
+        actor: "Tester",
+        department: "Kho",
+        party: "Kho Hoa Nam",
+        movementCount: 1,
+        movementNo: `MV-${index}`,
+        originalDocumentNo: `DOC-${index}`,
+        skuLines: [],
+        lines: [],
+      })),
+    },
+    loading: false,
+    fetching: false,
+    error: null,
+    refetch: vi.fn(),
+  });
+  try {
+    renderWithProviders(<Rpt08HistoryReport />);
+    for (const [label, shown, hidden] of [
+      ["Đảo nhập", "REV-0", "REV-1"],
+      ["Đảo xuất", "REV-1", "REV-0"],
+    ]) {
+      fireEvent.click(screen.getByRole("combobox", { name: "Loại giao dịch" }));
+      fireEvent.click(
+        screen.getByRole("option", { name: new RegExp(`${label}$`) }),
+      );
+      expect(hook).toHaveBeenLastCalledWith(
+        expect.objectContaining({ type: "REVERSAL" }),
+      );
+      expect(screen.getByTitle(shown)).toBeInTheDocument();
+      expect(screen.queryByTitle(hidden)).not.toBeInTheDocument();
+      expect(screen.queryByTitle("REV-2")).not.toBeInTheDocument();
+      expect(
+        within(screen.getByRole("table")).getByText(label),
+      ).toBeInTheDocument();
+      expect(
+        screen
+          .getByRole("region", { name: "Tổng quan luân chuyển" })
+          .querySelector(".rpt08-big-number"),
+      ).toHaveTextContent("1");
+    }
+    fireEvent.click(screen.getByRole("combobox", { name: "Loại giao dịch" }));
+    fireEvent.click(screen.getByRole("option", { name: /Tất cả$/ }));
+    expect(screen.getByTitle("REV-0")).toBeInTheDocument();
+    expect(screen.getByTitle("REV-1")).toBeInTheDocument();
+    expect(screen.getByTitle("REV-2")).toBeInTheDocument();
+  } finally {
+    if (originalImplementation) hook.mockImplementation(originalImplementation);
+  }
+});
 it("applies dates automatically without an Apply button", async () => {
   renderWithProviders(<Rpt08HistoryReport />);
   fireEvent.click(screen.getByRole("button", { name: "Từ ngày" }));

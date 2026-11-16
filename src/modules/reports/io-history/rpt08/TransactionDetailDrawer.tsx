@@ -93,7 +93,10 @@ export function TransactionDetailDrawer({
     >
       <dl className="rpt08-transaction-fields">
         <DetailField label={t("updatedUi.text_94c1cbc6d405")}>
-          <TypePill type={row.type} />
+          <TypePill
+            type={row.type}
+            originalDocumentType={row.source?.originalDocumentType}
+          />
         </DetailField>
         <DetailField label={t("inventory.movement.colTime")}>
           {displayStamp(row.timestamp)}

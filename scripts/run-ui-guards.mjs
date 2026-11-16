@@ -28,6 +28,12 @@ const STEPS = [
     "--self-test",
   ],
   ["ui:page-sizes", "scripts/check-page-size-selectors.mjs"],
+  ["ui:select-menus", "scripts/check-app-select-menus.mjs"],
+  [
+    "ui:select-menus --self-test",
+    "scripts/check-app-select-menus.mjs",
+    "--self-test",
+  ],
   [
     "ui:page-sizes --self-test",
     "scripts/check-page-size-selectors.mjs",

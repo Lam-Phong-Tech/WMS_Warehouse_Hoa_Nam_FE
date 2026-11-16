@@ -32,6 +32,8 @@ Quy tắc số dòng/trang áp dụng toàn hệ thống: dùng `UiSelect kind="
 
 Không chép nguyên `dist/hn-components.css` từ UI Kit vào sản phẩm: file đó chứa cả bố cục catalog. Không đổi brand, token, font hoặc icon toàn hệ thống chỉ để một màn hình giống ảnh mẫu. Nếu chủ sản phẩm chốt chuyển sang token kit, thực hiện một đợt migration riêng và cập nhật tài liệu này.
 
+**Menu ô chọn:** dùng `UiSelect`, `UiFormSelect` hoặc combobox dùng chung của ứng dụng cho bộ lọc và biểu mẫu, gồm cả drawer xuất báo cáo, chọn máy in và tỷ lệ xem trước. Không dùng `<select>` thuần hoặc `NativeSelect` để mở menu mặc định của trình duyệt. Chạy `npm run ui:select-menus` để kiểm tra quy tắc này trong mã ứng dụng.
+
 Tên icon phải khớp bộ đang render: `UiIcon` nhận slug Flaticon có trong CSS/font đang nạp; tên trong `VUEXY_NAV_ICONS` chỉ dùng với `VuexyNavIcon`. Không lấy tên SVG của bộ này đưa vào font của bộ khác. Ví dụ mục Hồ sơ cá nhân ở nhóm Hệ thống dùng `user` qua `UiIcon`; kiểm tra glyph thực tế sau khi thêm menu để tránh icon trống.
 
 ## 2. Nền tảng thị giác và component

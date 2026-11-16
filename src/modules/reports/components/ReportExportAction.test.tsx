@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/shared/store/auth.store";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test/test-utils";
 import { cleanupTestState } from "@/test/setup";
 import { ReportExportAction } from "./ReportExportAction";
@@ -28,6 +28,31 @@ const props = {
   ],
 };
 describe("report export drawer", () => {
+  it("changes export format using the application menu and updates the filename", async () => {
+    const onExport = vi.fn();
+    renderWithProviders(
+      <ReportExportAction
+        {...props}
+        formats={["xlsx", "pdf"]}
+        onExport={onExport}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Xuất báo cáo" }));
+    fireEvent.mouseDown(
+      await screen.findByRole("combobox", { name: "Định dạng" }),
+    );
+    const menu = await screen.findByRole("listbox");
+    fireEvent.click(within(menu).getByRole("option", { name: /PDF/ }));
+    expect(
+      (
+        screen.getByRole("textbox", {
+          name: "Tên tệp xuất",
+        }) as HTMLInputElement
+      ).value,
+    ).toMatch(/\.pdf$/);
+    expect(screen.getByRole("button", { name: "Xuất PDF" })).toBeEnabled();
+    expect(onExport).not.toHaveBeenCalled();
+  });
   it("opens options without exporting, then submits actual choices", async () => {
     const onExport = vi.fn().mockResolvedValue(undefined);
     renderWithProviders(<ReportExportAction {...props} onExport={onExport} />);

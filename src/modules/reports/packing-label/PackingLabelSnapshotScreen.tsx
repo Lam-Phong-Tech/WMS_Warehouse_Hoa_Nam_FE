@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatDateTime } from "@/shared/utils/format-date";
-import { UiAlert, UiButton } from "@/shared/ui";
+import { UiAlert, UiButton, UiSelect } from "@/shared/ui";
 import {
   ResponsiveDataTable,
   type ResponsiveTableColumn,
@@ -294,15 +294,18 @@ export function PackingLabelSnapshotScreen({
             <div className="hn-label-detail__preview-toolbar">
               <label>
                 {t("packingLabelReport.zoom")}{" "}
-                <select
+                <UiSelect
+                  searchable={false}
+                  minWidth={160}
                   aria-label={t("packingLabelReport.zoomPreview")}
                   value={zoom}
-                  onChange={(e) => setZoom(e.target.value)}
-                >
-                  <option value="fit">{t("packingLabelReport.fit")}</option>
-                  <option value="80">80%</option>
-                  <option value="100">100%</option>
-                </select>
+                  onChange={setZoom}
+                  options={[
+                    { value: "fit", label: t("packingLabelReport.fit") },
+                    { value: "80", label: "80%" },
+                    { value: "100", label: "100%" },
+                  ]}
+                />
               </label>
               <span>1 / 1</span>
             </div>

@@ -273,7 +273,14 @@ export function FilterCard({
               { value: "ALL", label: tUi("dashboard.operations.filterAll") },
               { value: "INBOUND", label: tUi("dashboard.snapshot.inbound") },
               { value: "OUTBOUND", label: tUi("dashboard.snapshot.outbound") },
-              { value: "REVERSAL", label: tUi("dashboard.snapshot.reversal") },
+              {
+                value: "INBOUND_REVERSAL",
+                label: tUi("reverse.list.typeInbound"),
+              },
+              {
+                value: "OUTBOUND_REVERSAL",
+                label: tUi("reverse.list.typeOutbound"),
+              },
             ].map((option) => ({
               ...option,
               label: `${tUi("updatedUi.text_94c1cbc6d405")}: ${option.label}`,
