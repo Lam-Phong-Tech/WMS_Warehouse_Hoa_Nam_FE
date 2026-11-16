@@ -65,6 +65,9 @@ export function ProfilePasswordDrawer({ onClose }: { onClose: () => void }) {
   const mutation = useMutation({
     mutationFn: authService.changePassword,
     onMutate: () => captureAuthOwner(),
+    onError: () => {
+      // submit renders errors inline; suppress the global mutation error toast.
+    },
     onSuccess: (_result, _variables, stillCurrent) => {
       if (!stillCurrent?.()) return;
       setValues({

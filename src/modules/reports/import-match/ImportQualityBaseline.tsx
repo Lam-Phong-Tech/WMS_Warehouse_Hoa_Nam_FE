@@ -92,6 +92,9 @@ const surface = {
   boxShadow: "0 1px 2px rgba(4, 70, 116, 0.03)",
 } as const;
 
+// Leave enough plot space after the legend and date axis on tablet and desktop.
+const DAILY_CHART_HEIGHT = 340;
+
 const getdataTypeOptions = localizedUiValue(() => [
   { value: "all", label: tUi("dashboard.operations.filterAll") },
   { value: "PRODUCT", label: tUi("dashboard.skuType.product") },
@@ -614,7 +617,12 @@ export default function ImportQualityBaseline() {
         <Box sx={{ ...surface, p: { xs: 1.25, md: 1.5 }, minWidth: 0 }}>
           <Stack
             direction={{ xs: "column", sm: "row" }}
-            sx={{ justifyContent: "space-between", gap: 0.75, mb: 0.5 }}
+            sx={{
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 0.75,
+              mb: 0.5,
+            }}
           >
             <Box
               component="h2"
@@ -637,13 +645,19 @@ export default function ImportQualityBaseline() {
             </Box>
           </Stack>
           {source.isLoading ? (
-            <Box sx={{ height: 190, display: "grid", placeItems: "center" }}>
+            <Box
+              sx={{
+                height: DAILY_CHART_HEIGHT,
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
               <UiSpinner />
             </Box>
           ) : trend.length === 0 ? (
             <Box
               sx={{
-                height: 190,
+                height: DAILY_CHART_HEIGHT,
                 display: "grid",
                 placeItems: "center",
                 color: C.muted,
@@ -672,8 +686,8 @@ export default function ImportQualityBaseline() {
                 },
               ]}
               stacked
-              showValues
-              height={190}
+              showValues={false}
+              height={DAILY_CHART_HEIGHT}
               valueFormatter={fmt}
             />
           )}

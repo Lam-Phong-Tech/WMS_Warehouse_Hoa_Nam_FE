@@ -2,6 +2,32 @@ import { expect, test, type Page } from "@playwright/test";
 
 type ReportName = "inbound" | "outbound" | "recipient" | "import-quality";
 
+for (const width of [768, 1440]) {
+  for (const theme of ["light", "dark"]) {
+    test(`import-quality daily chart readable ${width}px ${theme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1024 });
+      await page.clock.setFixedTime(new Date("2026-11-30T12:00:00+07:00"));
+      await page.addInitScript((mode) => localStorage.setItem("hoa-nam-theme", mode), theme);
+      await page.goto("/e2e/fixtures/report-tablet.html?report=import-quality&qualityTrend=1");
+      const chart = page.getByRole("heading", { name: "Kết quả kiểm tra theo ngày" }).locator("../..");
+      await chart.scrollIntoViewIfNeeded();
+      await expect(chart.locator(".apexcharts-bar-series .apexcharts-series").first().locator("path")).toHaveCount(30, { timeout: 30000 });
+      const plot = chart.locator(".apexcharts-grid");
+      await expect.poll(async () => (await plot.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(200);
+      await expect(chart.locator(".apexcharts-datalabel")).toHaveCount(0);
+      const metrics = await layoutMetrics(page);
+      expect(metrics.docScrollWidth).toBeLessThanOrEqual(metrics.docClientWidth + 1);
+      const bar = chart.locator(".apexcharts-bar-series .apexcharts-series").first().locator("path").nth(15);
+      await bar.hover();
+      await expect(chart.locator(".apexcharts-tooltip")).toHaveClass(/apexcharts-active/);
+      await expect(chart.locator(".apexcharts-tooltip")).toContainText("Dòng hợp lệ");
+      await page.mouse.move(0, 0);
+      await expect(chart.locator(".apexcharts-tooltip")).toHaveCSS("opacity", "0");
+      await chart.screenshot({ path: `test-results/report-tablet/import-quality-trend-${width}-${theme}.png` });
+    });
+  }
+}
+
 for (const language of ["vi", "en", "zh"]) {
   for (const width of [1536, 768]) {
     test(`outbound status text remains inside padded badge ${language} ${width}px`, async ({ page }) => {

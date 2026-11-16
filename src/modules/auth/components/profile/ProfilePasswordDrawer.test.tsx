@@ -17,6 +17,9 @@ import { createMockAxiosError } from "@/shared/api/api-error";
 import { profileFixture } from "../../pages/profile.fixture";
 import { authService } from "../../services/auth.service";
 import { ProfilePasswordDrawer } from "./ProfilePasswordDrawer";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/app/providers/query-client";
+import { toast } from "sonner";
 
 vi.mock("../../services/auth.service", () => ({
   authService: { changePassword: vi.fn() },
@@ -45,7 +48,11 @@ describe("ProfilePasswordDrawer", () => {
   beforeAll(async () => {
     await Promise.all([ensureEnglishMessages(), ensureChineseMessages()]);
   });
-  afterEach(() => act(() => useLanguageStore.getState().setLanguage("vi")));
+  afterEach(() => {
+    act(() => useLanguageStore.getState().setLanguage("vi"));
+    queryClient.clear();
+    vi.restoreAllMocks();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({
@@ -125,50 +132,66 @@ describe("ProfilePasswordDrawer", () => {
     expect(authService.changePassword).not.toHaveBeenCalled();
   });
 
-  it("puts a server field error under its input without a duplicate banner", async () => {
-    vi.mocked(authService.changePassword).mockRejectedValue(
-      createMockAxiosError({
-        status: 422,
-        data: {
-          message: "Thông tin đổi mật khẩu không hợp lệ.",
-          errors: {
-            current_password: ["Mật khẩu hiện tại không chính xác"],
+  it.each([
+    [
+      "current_password",
+      "Mật khẩu hiện tại không chính xác",
+      "The current password is incorrect.",
+    ],
+    [
+      "new_password",
+      "Mật khẩu mới không được trùng với các mật khẩu đã sử dụng trước đó",
+      "The new password must differ from previously used passwords.",
+    ],
+  ])(
+    "puts %s errors inline without a duplicate banner or popup",
+    async (field, message, englishMessage) => {
+      const toastErrorSpy = vi
+        .spyOn(toast, "error")
+        .mockImplementation(() => "");
+      vi.mocked(authService.changePassword).mockRejectedValue(
+        createMockAxiosError({
+          status: 422,
+          data: {
+            message: "Thông tin đổi mật khẩu không hợp lệ.",
+            errors: {
+              [field]: [message],
+            },
           },
-        },
-      }),
-    );
+        }),
+      );
 
-    renderWithProviders(<ProfilePasswordDrawer onClose={vi.fn()} />);
-    fillDrawer({
-      currentPassword: CURRENT_PASSWORD,
-      newPassword: NEW_PASSWORD,
-      newPasswordConfirmation: NEW_PASSWORD,
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Đổi mật khẩu" }));
+      renderWithProviders(
+        <QueryClientProvider client={queryClient}>
+          <ProfilePasswordDrawer onClose={vi.fn()} />
+        </QueryClientProvider>,
+      );
+      fillDrawer({
+        currentPassword: CURRENT_PASSWORD,
+        newPassword: NEW_PASSWORD,
+        newPasswordConfirmation: NEW_PASSWORD,
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Đổi mật khẩu" }));
 
-    expect(
-      await screen.findByText("Mật khẩu hiện tại không chính xác"),
-    ).toBeInTheDocument();
-    await waitFor(() =>
-      expect(vi.mocked(authService.changePassword).mock.calls[0]?.[0]).toEqual({
-        current_password: CURRENT_PASSWORD,
-        new_password: NEW_PASSWORD,
-        new_password_confirmation: NEW_PASSWORD,
-      }),
-    );
-    expect(
-      screen.queryByText("Thông tin đổi mật khẩu không hợp lệ."),
-    ).not.toBeInTheDocument();
-    act(() => useLanguageStore.getState().setLanguage("en"));
-    expect(
-      await screen.findByText("The current password is incorrect."),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText("Mật khẩu hiện tại không chính xác"),
-    ).not.toBeInTheDocument();
-    act(() => useLanguageStore.getState().setLanguage("vi"));
-    expect(
-      await screen.findByText("Mật khẩu hiện tại không chính xác"),
-    ).toBeInTheDocument();
-  });
+      expect(await screen.findByText(message)).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          vi.mocked(authService.changePassword).mock.calls[0]?.[0],
+        ).toEqual({
+          current_password: CURRENT_PASSWORD,
+          new_password: NEW_PASSWORD,
+          new_password_confirmation: NEW_PASSWORD,
+        }),
+      );
+      expect(
+        screen.queryByText("Thông tin đổi mật khẩu không hợp lệ."),
+      ).not.toBeInTheDocument();
+      expect(toastErrorSpy).not.toHaveBeenCalled();
+      act(() => useLanguageStore.getState().setLanguage("en"));
+      expect(await screen.findByText(englishMessage)).toBeInTheDocument();
+      expect(screen.queryByText(message)).not.toBeInTheDocument();
+      act(() => useLanguageStore.getState().setLanguage("vi"));
+      expect(await screen.findByText(message)).toBeInTheDocument();
+    },
+  );
 });

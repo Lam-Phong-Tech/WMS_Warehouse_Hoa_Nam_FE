@@ -272,7 +272,21 @@ http.getPage = async (url: string) => {
         department: { department_id: "dep-1", department_name: "Kho vận" },
       },
     ]);
-  if (url === "/skus/import-reports") return page(IMPORT_ROWS);
+  if (url === "/skus/import-reports") {
+    if (new URLSearchParams(location.search).has("qualityTrend")) {
+      return page(Array.from({ length: 30 }, (_, index) => ({
+        ...IMPORT_ROWS[0],
+        import_report_id: `trend-${index}`,
+        created_at: `2026-11-${String(index + 1).padStart(2, "0")}T08:00:00+07:00`,
+        total_rows: index % 5 === 0 ? 200 : 65,
+        valid_rows: index % 5 === 0 ? 180 : 50,
+        duplicate_rows: 5,
+        error_rows: index % 5 === 0 ? 15 : 10,
+        row_counts: { valid: index % 5 === 0 ? 180 : 50, duplicate: 5, invalid: index % 5 === 0 ? 15 : 10 },
+      })));
+    }
+    return page(IMPORT_ROWS);
+  }
   if (url === API_ENDPOINTS.PRODUCTS) return page(SKUS);
   return page([]);
 };
