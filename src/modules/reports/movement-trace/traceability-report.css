@@ -1009,7 +1009,7 @@
 
 #traceability-rpt03 .trace-completeness {
   display: inline-flex;
-  min-width: 75px;
+  min-width: min(75px, 100%);
   min-height: 23px;
   align-items: center;
   justify-content: center;
