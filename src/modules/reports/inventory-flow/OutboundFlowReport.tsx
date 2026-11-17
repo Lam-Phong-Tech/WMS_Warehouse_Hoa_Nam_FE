@@ -895,6 +895,7 @@ export default function OutboundFlowReport() {
           <h1 className="hn-report-page-title">
             {tUi("reports.inventoryFlowReport.outboundTitle")}
           </h1>
+          <p>{tUi("reports.inventoryFlowReport.outboundSubtitle")}</p>
         </div>
         <div className="outbound-heading-actions">
           <ReportExportAction
@@ -947,16 +948,6 @@ export default function OutboundFlowReport() {
               })
             }
           />
-          {canImport ? (
-            <button
-              type="button"
-              className="outbound-intake-button"
-              onClick={() => setIntakeOpen(true)}
-            >
-              <Icon name="package-plus" />
-              {tUi("outbound.list.intake")}
-            </button>
-          ) : null}
         </div>
       </header>
 

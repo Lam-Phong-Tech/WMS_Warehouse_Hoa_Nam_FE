@@ -1611,6 +1611,7 @@
 }
 .inbound-skeleton-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: center;
   gap: 9px;
 }
@@ -1638,7 +1639,7 @@
 }
 .inbound-chart-skeleton {
   display: flex;
-  height: 230px;
+  height: 168px;
   align-items: end;
   gap: 17px;
   padding: 32px 20px 28px 45px;
@@ -1665,7 +1666,8 @@
 }
 .inbound-progress-skeleton {
   display: flex;
-  min-height: 212px;
+  flex: 1;
+  min-height: 0;
   align-items: center;
   justify-content: center;
   gap: 25px;

@@ -39,6 +39,7 @@ export default defineConfig({
         "**/outlined-field-focus.spec.ts",
         "**/ui-contrast.spec.ts",
         "**/report-tablet.spec.ts",
+        "**/report-skeleton.spec.ts",
         "**/dashboard-dark.spec.ts",
         "**/sku-import-errors.spec.ts",
         "**/warranty-table-layout.spec.ts",

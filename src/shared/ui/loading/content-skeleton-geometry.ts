@@ -126,7 +126,11 @@ export function measureSkeletonGeometry(root: HTMLElement): SkeletonGeometry | n
     const rect = node.getBoundingClientRect();
     if (rect.width < 2 || rect.height < 2) return;
     const style = view.getComputedStyle(node);
-    if (style.display === "none" || style.position === "fixed" || style.contentVisibility === "hidden") return;
+    // The page inherits visibility:hidden from the loading boundary and must
+    // remain measurable. Transparent branches, however, are genuinely hidden
+    // (e.g. closed dropdowns whose absolutely positioned controls still have boxes).
+    if (style.display === "none" || style.opacity === "0" ||
+        style.position === "fixed" || style.contentVisibility === "hidden") return;
     const visibleRect = clipSkeletonBounds(rect, clip);
     if (visibleRect.width < 2 || visibleRect.height < 2) return;
     const childClip = clipSkeletonBounds(clip, {
@@ -163,7 +167,9 @@ export function measureSkeletonGeometry(root: HTMLElement): SkeletonGeometry | n
       return;
     }
     if (node.matches("table,[role=table],[role=grid]")) contentEvidence = true;
-    const painted = hasPaint(style.backgroundColor) || Number.parseFloat(style.borderTopWidth) > 0 || style.boxShadow !== "none";
+    const painted = hasPaint(style.backgroundColor) ||
+      (style.backgroundImage !== "" && style.backgroundImage !== "none") ||
+      Number.parseFloat(style.borderTopWidth) > 0 || style.boxShadow !== "none";
     // Preserve icon/avatar blocks, readonly fields and horizontal progress rails.
     // Do not collapse table headings or a whole toolbar into one rectangle.
     if (painted && rect.height <= 64 && rect.height >= 8 && rect.width >= 20 &&
@@ -181,6 +187,13 @@ export function measureSkeletonGeometry(root: HTMLElement): SkeletonGeometry | n
         !node.matches("td,th,tr,thead,tbody,span,i")) {
       add(rect, "surface", radius, clip);
       panels += 1;
+    }
+    // Closed <details> descendants can retain layout boxes even though the
+    // browser does not paint them. Only the first direct summary is exposed.
+    if (node.matches("details:not([open])")) {
+      const summary = Array.from(node.children).find((child) => child.tagName === "SUMMARY");
+      if (summary) visit(summary as HTMLElement, childClip);
+      return;
     }
     for (const child of Array.from(node.childNodes)) {
       if (child.nodeType === 1) visit(child as HTMLElement, childClip);

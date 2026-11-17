@@ -64,7 +64,7 @@ export class ContentLoadingSkeleton extends Component<
     if (typeof MutationObserver !== "undefined") {
       this.mutations = new MutationObserver(this.schedule);
       this.mutations.observe(root, { childList: true, subtree: true, characterData: true, attributes: true,
-        attributeFilter: ["class", "style", "hidden", "open", "data-view", "data-state", "aria-expanded"] });
+        attributeFilter: ["class", "style", "hidden", "open", "data-open", "data-view", "data-state", "aria-expanded"] });
     }
     if (typeof ResizeObserver !== "undefined") {
       this.resize = new ResizeObserver(this.schedule);
@@ -73,6 +73,9 @@ export class ContentLoadingSkeleton extends Component<
     window.addEventListener("resize", this.schedule);
     // Scrollable tables can move their cells without changing the outer size.
     root.addEventListener("scroll", this.schedule, true);
+    // Opacity/transform transitions do not mutate DOM attributes every frame.
+    // Refresh the final geometry after a menu has finished opening or closing.
+    root.addEventListener("transitionend", this.schedule, true);
     root.ownerDocument.fonts?.addEventListener("loadingdone", this.schedule);
     void root.ownerDocument.fonts?.ready.then(this.schedule);
   }
@@ -83,6 +86,7 @@ export class ContentLoadingSkeleton extends Component<
     this.frame = undefined;
     window.removeEventListener("resize", this.schedule);
     this.observedRoot?.removeEventListener("scroll", this.schedule, true);
+    this.observedRoot?.removeEventListener("transitionend", this.schedule, true);
     this.observedRoot?.ownerDocument.fonts?.removeEventListener("loadingdone", this.schedule);
     this.observedRoot = null;
   }
