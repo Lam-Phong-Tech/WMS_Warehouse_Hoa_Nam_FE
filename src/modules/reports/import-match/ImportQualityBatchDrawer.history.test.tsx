@@ -79,6 +79,54 @@ describe("import result history drawer", () => {
     vi.clearAllMocks();
   });
 
+  it("blocks Overview version navigation while rechecking a selected older result", async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(
+      await screen.findByRole("combobox", { name: "Kết quả của" }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /Phiên bản 1/ }),
+    );
+    let finish!: (value: unknown) => void;
+    vi.mocked(http.post).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await user.click(screen.getByRole("button", { name: "Kiểm tra lại" }));
+    await user.click(screen.getByRole("tab", { name: "Tổng quan" }));
+    expect(screen.getByRole("button", { name: "Xem kết quả" })).toBeDisabled();
+    await act(async () =>
+      finish({ ...latest, import_report_id: "report-v3", result_version: 3 }),
+    );
+  });
+
+  it("uses the approved three tabs and opens the SKU source separately", async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByRole("tab", { name: "Kết quả xử lý" });
+    expect(screen.getByRole("tab", { name: "Kết quả xử lý" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("combobox", { name: "Kết quả của" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Tổng quan" }));
+    const source = screen.getByRole("link", {
+      name: "Mở danh mục SKU (tab mới)",
+    });
+    expect(source).toHaveAttribute("href", "/master-data/skus");
+    expect(source).toHaveAttribute("target", "_blank");
+    expect(source).toHaveAttribute("rel", "noopener noreferrer");
+    await user.click(screen.getByRole("tab", { name: /Lịch sử/ }));
+    expect(
+      await screen.findByRole("button", { name: /Phiên bản 1/ }),
+    ).toBeVisible();
+  });
+
   it("shows uploader, file facts and dry-run projected counts without claiming writes", async () => {
     setup();
     const dialog = await screen.findByRole("dialog");
@@ -104,7 +152,10 @@ describe("import result history drawer", () => {
     const user = userEvent.setup();
     setup();
     await user.click(
-      await screen.findByRole("button", { name: /Phiên bản 1/ }),
+      await screen.findByRole("combobox", { name: "Kết quả của" }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /Phiên bản 1/ }),
     );
     const actual = screen.getByRole("region", { name: "Kết quả ghi dữ liệu" });
     expect(
@@ -142,8 +193,8 @@ describe("import result history drawer", () => {
       await screen.findByRole("button", { name: "Kiểm tra lại" }),
     );
     expect(
-      await screen.findByRole("button", { name: /Phiên bản 3/ }),
-    ).toHaveAttribute("aria-pressed", "true");
+      await screen.findByRole("combobox", { name: "Kết quả của" }),
+    ).toHaveTextContent("Phiên bản 3");
     expect(http.post).toHaveBeenCalledWith(
       "/skus/import-reports/report-v2/recheck",
       {},
@@ -151,10 +202,9 @@ describe("import result history drawer", () => {
     vi.mocked(http.post).mockRejectedValueOnce(new Error("Offline"));
     await user.click(screen.getByRole("button", { name: "Kiểm tra lại" }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Phiên bản 3/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(
+      screen.getByRole("combobox", { name: "Kết quả của" }),
+    ).toHaveTextContent("Phiên bản 3");
   });
 
   it("explains unavailable legacy file actions instead of inventing size or duration", async () => {
@@ -218,7 +268,7 @@ describe("import result history drawer", () => {
       refreshing = client.refetchQueries({ queryKey: key });
     });
     await user.click(screen.getByRole("button", { name: "Kiểm tra lại" }));
-    await screen.findByRole("button", { name: /Phiên bản 3/ });
+    await screen.findByRole("combobox", { name: "Kết quả của" });
     await act(async () => {
       finish({ data: [latest, original], meta: { last_page: 1 } });
       await refreshing;
@@ -228,10 +278,9 @@ describe("import result history drawer", () => {
         expect.objectContaining({ import_report_id: "report-v3" }),
       ]),
     );
-    expect(screen.getByRole("button", { name: /Phiên bản 3/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(
+      screen.getByRole("combobox", { name: "Kết quả của" }),
+    ).toHaveTextContent("Phiên bản 3");
     client.clear();
   });
 

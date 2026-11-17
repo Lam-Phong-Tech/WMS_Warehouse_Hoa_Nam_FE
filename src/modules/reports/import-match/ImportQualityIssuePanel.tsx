@@ -79,6 +79,10 @@ function IssueDetail({
           <dt>{copy("Quy tắc kiểm tra", "Validation rule", "校验规则")}</dt>
           <dd>{issue.code || "—"}</dd>
         </div>
+        <div>
+          <dt>{t("importResult.severity")}</dt>
+          <dd>{issue.severity || "—"}</dd>
+        </div>
       </dl>
       <h4>{copy("Hướng dẫn xử lý", "How to fix", "处理指引")}</h4>
       <p>
@@ -110,6 +114,7 @@ export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
         <h3>{t("importResult.issues")}</h3>
         <strong>{query.data?.total ?? "—"}</strong>
       </div>
+      <p className="rpt04-batch-note">{t("importResult.issueCountHint")}</p>
       {query.isLoading ? (
         <p role="status">
           {copy("Đang tải dòng lỗi…", "Loading error rows…", "正在加载错误行…")}
@@ -137,8 +142,11 @@ export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
               <button
                 type="button"
                 className="hn-import-issues__select"
-                onClick={() => setSelectedIndex(index)}
+                onClick={() =>
+                  setSelectedIndex(activeIndex === index ? -1 : index)
+                }
                 aria-pressed={activeIndex === index}
+                aria-expanded={activeIndex === index}
                 aria-label={copy(
                   `Dòng ${row.rowNo}: ${localizeMessage(row.message) || row.code}`,
                   `Row ${row.rowNo}: ${localizeMessage(row.message) || row.code}`,

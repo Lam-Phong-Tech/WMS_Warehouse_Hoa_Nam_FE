@@ -4,7 +4,6 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppThemeProvider } from "@/shared/ui/theme/AppThemeProvider";
 import { initializeTheme } from "@/shared/ui/theme/theme.store";
-import { useAuthStore } from "@/shared/store/auth.store";
 import { ImportQualityBatchDrawer } from "@/modules/reports/import-match/ImportQualityBatchDrawer";
 import type { ImportMatchBatch } from "@/modules/reports/import-match/import-match-model";
 import "@flaticon/flaticon-uicons/css/regular/rounded.css";
@@ -164,7 +163,64 @@ client.setQueryData(["rpt-04", "sku-import-issues", "batch-1", 2], {
   total: 3,
   lastPage: 2,
 });
-function Fixture() {
+// Exercise all three approved states through the real component and data mapper.
+const scenario = new URLSearchParams(location.search).get("scenario");
+if (scenario && ["valid", "duplicate", "invalid"].includes(scenario)) {
+  const valid = scenario === "valid";
+  const duplicate = scenario === "duplicate";
+  const rowIssues = valid
+    ? []
+    : duplicate
+      ? [
+          {
+            rowNo: 2,
+            field: "sku_code",
+            code: "DUPLICATE_CODE",
+            message: "SKU đã tồn tại.",
+            rawValue: "DCMY155",
+            severity: "CRITICAL",
+            suggestedAction: "Kiểm tra tùy chọn cập nhật SKU đã tồn tại.",
+          },
+        ]
+      : ["brand", "category"].map((kind) => ({
+          rowNo: 2,
+          field: `${kind}_code`,
+          code: "UNKNOWN_MASTER_CODE",
+          message: `Không tìm thấy ${kind.toUpperCase()} ACTIVE với code 4344SFDFS.`,
+          rawValue: "4344SFDFS",
+          severity: "CRITICAL",
+          suggestedAction: "Kiểm tra mã danh mục đã tồn tại và đang ACTIVE.",
+        }));
+  client.setQueryData(
+    ["rpt-04", "sku-import-versions", "batch-1"],
+    [
+      {
+        ...latest,
+        total_rows: 1,
+        mode: valid ? "COMMIT" : "DRY_RUN",
+        status: valid ? "COMMITTED" : "REJECTED",
+        row_counts: {
+          valid: valid ? 1 : 0,
+          duplicate: duplicate ? 1 : 0,
+          invalid: !valid && !duplicate ? 1 : 0,
+        },
+        error_rows: rowIssues.length,
+        actual_inserted_rows: valid ? 1 : 0,
+        actual_updated_rows: 0,
+        not_written_rows: valid ? 0 : 1,
+        error_file_available: !valid,
+        error_file_status: valid ? "UNAVAILABLE" : "AVAILABLE",
+        error_file_expires_at: "2026-12-01T00:00:00Z",
+      },
+    ],
+  );
+  client.setQueryData(["rpt-04", "sku-import-issues", "batch-1", 1], {
+    rows: rowIssues,
+    total: rowIssues.length,
+    lastPage: 1,
+  });
+}
+export function Fixture() {
   const [open, setOpen] = useState(false);
   return (
     <main style={{ padding: 24 }}>

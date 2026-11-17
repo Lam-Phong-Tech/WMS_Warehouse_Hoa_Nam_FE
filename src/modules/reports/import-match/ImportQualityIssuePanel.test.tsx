@@ -53,6 +53,18 @@ afterEach(() => {
 });
 
 describe("Import quality issue detail", () => {
+  it("discloses severity and allows an open issue to collapse", async () => {
+    const user = userEvent.setup();
+    render(<ImportQualityIssuePanel batchId="batch-1" sourceFile="sku.xlsx" />);
+    const row = screen.getByRole("button", { name: /Dòng 32:/ });
+    expect(row).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Mức độ")).toBeVisible();
+    await user.click(row);
+    expect(row).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("region", { name: "Chi tiết dòng 32" }),
+    ).not.toBeInTheDocument();
+  });
   it.each(["en", "zh"] as const)(
     "localizes server prose in %s summaries, accessible names, details and hints without changing source data",
     async (language) => {
@@ -82,7 +94,8 @@ describe("Import quality issue detail", () => {
           name: `${language === "en" ? `Row ${issue.rowNo}: ` : `第 ${issue.rowNo} 行：`}${translatedMessage}`,
         });
         expect(within(rowButton).getByText(translatedMessage)).toBeVisible();
-        await user.click(rowButton);
+        if (rowButton.getAttribute("aria-expanded") !== "true")
+          await user.click(rowButton);
         const detail = screen.getByRole("region", {
           name:
             language === "en"

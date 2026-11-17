@@ -221,3 +221,241 @@
     flex-direction: column;
   }
 }
+
+/* Approved import-file prototypes: shared layout for valid, duplicate and invalid rows. */
+.rpt04-batch-drawer [role="tabpanel"][hidden] {
+  display: none;
+}
+.rpt04-batch-filename {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--ops-muted);
+  overflow-wrap: anywhere;
+}
+.rpt04-detail-tabs {
+  margin: 0 0 24px;
+  border-bottom: 1px solid var(--ops-divider);
+  flex-shrink: 0;
+}
+.rpt04-batch-drawer .rpt04-batch-section {
+  padding: 20px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+}
+.rpt04-batch-section h3 {
+  font-size: 15px;
+  line-height: 22px;
+  margin-bottom: 16px;
+}
+.rpt04-batch-context {
+  gap: 20px 24px;
+  margin-bottom: 0;
+}
+.rpt04-batch-context dt {
+  font-size: 12px;
+  line-height: 20px;
+}
+.rpt04-batch-context dd {
+  font-size: 13px;
+  line-height: 22px;
+  font-weight: 400;
+}
+.rpt04-batch-context .rpt04-batch-full:first-child {
+  padding: 12px 14px;
+  background: var(--ops-pale);
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+}
+.rpt04-batch-id {
+  justify-content: space-between;
+}
+.rpt04-batch-id > span {
+  flex: 1;
+  font-family: var(--wms-font-family);
+  font-variant-numeric: tabular-nums;
+}
+.rpt04-source-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--ops-line);
+}
+.rpt04-source-link > div {
+  min-width: 0;
+}
+.rpt04-source-link > div > span {
+  font-size: 12px;
+  color: var(--ops-muted);
+}
+.rpt04-source-link p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.rpt04-source-link a {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 10px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-control);
+  background: var(--ops-pale);
+  color: var(--ops-link);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.rpt04-source-link a:focus-visible {
+  outline: 2px solid var(--ops-link);
+  outline-offset: 3px;
+}
+.rpt04-version-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 22px;
+  min-width: 0;
+}
+.rpt04-version-tools > .MuiFormControl-root {
+  width: 270px;
+  max-width: 100%;
+}
+.rpt04-result-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: var(--ops-radius-control);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--ops-pale);
+  color: var(--ops-heading);
+}
+.rpt04-result-badge[data-tone="success"] {
+  background: var(--ops-success-soft);
+  color: var(--ops-success);
+}
+.rpt04-result-badge[data-tone="error"] {
+  background: var(--ops-danger-soft);
+  color: var(--ops-danger);
+}
+.rpt04-batch-checksum {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ops-line);
+}
+.rpt04-batch-metrics > div {
+  padding: 12px 10px;
+  background: var(--ops-pale);
+}
+.rpt04-batch-metrics dt {
+  font-size: 12px;
+}
+.rpt04-batch-metrics dd {
+  font-size: 24px;
+}
+.rpt04-batch-history {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+.rpt04-batch-drawer .rpt04-batch-history > button {
+  position: relative;
+  border: 0;
+  border-left: 2px solid var(--ops-line);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 16px 20px 24px;
+  min-height: 0;
+}
+.rpt04-batch-history > button:before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 17px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ops-surface);
+  background: var(--ops-link);
+}
+.rpt04-batch-drawer .rpt04-batch-history > button[aria-pressed="true"] {
+  background: var(--ops-pale);
+}
+.rpt04-batch-actions {
+  gap: 8px;
+}
+.rpt04-batch-drawer .rpt04-batch-actions > button {
+  font-size: 12px;
+  padding: 8px 10px;
+}
+.rpt04-batch-drawer .hn-import-issues {
+  padding: 20px;
+  border: 1px solid var(--ops-line);
+  border-radius: var(--ops-radius-card);
+  background: var(--ops-surface);
+  margin-top: 0;
+}
+.rpt04-batch-drawer .hn-import-issues__heading {
+  margin-bottom: 0;
+}
+.rpt04-batch-drawer .hn-import-issues h3 {
+  font-size: 15px;
+  line-height: 22px;
+}
+.rpt04-batch-drawer .hn-import-issues__rows {
+  margin-top: 16px;
+}
+.rpt04-batch-drawer .hn-import-issues__badge {
+  border-radius: var(--ops-radius-control);
+}
+.rpt04-batch-drawer .hn-import-issues__select[aria-expanded="true"] {
+  border-radius: var(--ops-radius-card) var(--ops-radius-card) 0 0;
+}
+@container rpt04-batch (max-width:560px) {
+  .rpt04-batch-drawer .rpt04-batch-section,
+  .rpt04-batch-drawer .hn-import-issues {
+    padding: 16px;
+  }
+  .rpt04-batch-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rpt04-batch-actions > button {
+    white-space: normal;
+    min-width: 0;
+  }
+  .rpt04-batch-writes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .rpt04-batch-writes > div {
+    padding: 10px 6px;
+  }
+  .rpt04-batch-metrics dt {
+    overflow-wrap: anywhere;
+  }
+}
+
+@container rpt04-batch (max-width:560px) {
+  .rpt04-detail-tabs .MuiTab-root {
+    min-width: 0;
+    padding: 12px 8px;
+    font-size: 12px;
+    line-height: 20px;
+  }
+  .rpt04-detail-tabs .MuiTabs-scrollButtons {
+    width: 20px;
+  }
+}
+
+.rpt04-detail-tabs .MuiTab-root.Mui-selected {
+  color: var(--ops-link);
+}
+.rpt04-detail-tabs .MuiTabs-indicator {
+  background-color: var(--ops-link);
+}
