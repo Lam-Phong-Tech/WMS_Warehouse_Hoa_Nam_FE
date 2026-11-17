@@ -24,6 +24,7 @@ export const PV_API_ENDPOINTS = {
 
   /** REQ-SRS-020 — publish, permission RIÊNG pv.publish. */
   PRODUCT_PUBLISH: (skuId: string) => `/pv/products/${skuId}/publish`,
+  PRODUCT_APPROVE: (skuId: string) => `/pv-admin/products/${skuId}/approve`,
 
   /**
    * MST-PV-01 — upload ảnh sản phẩm lên object storage của hệ thống (MinIO ở

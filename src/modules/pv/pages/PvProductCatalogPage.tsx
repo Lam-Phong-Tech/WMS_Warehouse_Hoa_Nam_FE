@@ -7,10 +7,10 @@
  * có ẢNH — và cần thêm một sản phẩm lên ứng dụng ngay tại chỗ. Hai nhu cầu đó
  * không nhồi chung một màn được, nên tách trang và đặt dưới nhóm "Danh mục".
  *
- * "Thêm sản phẩm" = tạo HỒ SƠ App PV cho một SKU đã có trong kho, chứ không tạo
- * SKU mới: sản phẩm trên App PV luôn phải quy về một SKU thật thì tồn kho hiển
- * thị cho khách mới có nghĩa (REQ-SRS-018). Tạo SKU vẫn là việc của MST-01, và
- * ô chọn SKU ở đây có lối tắt sang đó.
+ * "Thêm sản phẩm" chọn SKU đang ẩn để duyệt lên App PV. Hồ sơ có sẵn được
+ * nạp vào biểu mẫu; Lưu cập nhật thông tin và bật hiển thị trong một giao dịch.
+ * Tạo SKU vẫn thuộc MST-01; hồ sơ ẩn trong trang quản trị chưa xuất hiện ở
+ * mặt công khai cho đến khi người có quyền xuất bản bật hiển thị.
  *
  * Ảnh được tải qua API của hệ thống; danh sách URL và ảnh đại diện tiếp tục
  * đi cùng payload hồ sơ (xem PvProductImageField).
@@ -77,11 +77,11 @@ import {
   hasAnyWmsPermission,
 } from "@/shared/constants/wms-permissions";
 import { useAuthStore } from "@/shared/store/auth.store";
-import { useMvpSkus } from "@/modules/master-data/hooks/use-mvp-master";
 import { PvSwitch } from "@/modules/pv/components/PvSwitch";
 import { PvProductImageField } from "@/modules/pv/components/PvProductImageField";
 import {
   usePvAdminIndustries,
+  useApprovePvProfile,
   usePvAdminProfiles,
   usePvAdminTags,
   useSavePvProfile,
@@ -461,6 +461,7 @@ export function PvProductCatalogPage() {
   });
 
   const saveProfile = useSavePvProfile();
+  const approveProfile = useApprovePvProfile();
   const setPublished = useSetPvPublished();
 
   const industryOptions = useMemo(
@@ -524,29 +525,25 @@ export function PvProductCatalogPage() {
   const [imagesBusy, setImagesBusy] = useState(false);
   const [skuKeyword, setSkuKeyword] = useState("");
 
-  // Chỉ nạp danh sách SKU khi đang ở chế độ THÊM: màn này mở ra chủ yếu để xem
-  // lưới, không có lý do gọi /products mỗi lần vào trang.
-  const skuQuery = useMvpSkus(
+  // A hidden profile is eligible even when it already appears in the table.
+  const skuQuery = usePvAdminProfiles(
     {
       keyword: skuKeyword,
-      status: "ACTIVE",
-      without_pv_profile: 1,
-      per_page: 20,
+      sku_status: "ACTIVE",
+      published: "0",
+      per_page: "20",
     },
-    { enabled: dialogMode === "create" },
+    { enabled: dialogMode === "create", fresh: true },
   );
   const skuOptions = useMemo(() => {
     if (dialogMode !== "create" || skuQuery.isFetching) return [];
-    // API excludes profiles across all pages, including hidden products.
-    // Keep a local guard for profiles already present in this query snapshot.
-    const taken = new Set(rows.map((row) => row.sku_id));
     return (skuQuery.data?.data ?? [])
-      .filter((sku) => !taken.has(sku.sku_id))
+      .filter((sku) => !sku.published && sku.sku_status === "ACTIVE")
       .map((sku) => ({
         value: sku.sku_id,
         label: `${sku.sku_code} — ${sku.sku_name}`,
       }));
-  }, [dialogMode, rows, skuQuery.data, skuQuery.isFetching]);
+  }, [dialogMode, skuQuery.data, skuQuery.isFetching]);
 
   function openCreate() {
     setEditing(null);
@@ -612,19 +609,32 @@ export function PvProductCatalogPage() {
 
     setSaving(true);
     try {
-      await saveProfile.mutateAsync({
-        id: editing?.id,
-        version: editing?.version,
-        payload: {
-          sku_id: dialogMode === "create" ? form.sku_id : undefined,
-          display_name: displayName,
-          description: description || null,
-          sort_order: form.sort_order,
-          industry_ids: form.industry_ids,
-          tag_ids: form.tag_ids,
-          images: form.images,
-        },
-      });
+      const payload = {
+        sku_id: dialogMode === "create" ? form.sku_id : undefined,
+        display_name: displayName,
+        description: description || null,
+        sort_order: form.sort_order,
+        industry_ids: form.industry_ids,
+        tag_ids: form.tag_ids,
+        images: form.images,
+      };
+      if (dialogMode === "create") {
+        if (!editing || !canPublish) {
+          setErrors({ sku_id: t("pv.productCatalog.errSku") });
+          return;
+        }
+        await approveProfile.mutateAsync({
+          skuId: form.sku_id,
+          version: editing.version,
+          payload,
+        });
+      } else {
+        await saveProfile.mutateAsync({
+          id: editing?.id,
+          version: editing?.version,
+          payload,
+        });
+      }
       toast.success(
         dialogMode === "create"
           ? t("pv.productCatalog.created")
@@ -632,11 +642,16 @@ export function PvProductCatalogPage() {
       );
       closeDialog();
     } catch (error) {
-      // 409 = SKU đã có hồ sơ (người khác vừa thêm, hoặc nó nằm ở trang khác).
-      // Nói thẳng nguyên nhân thay vì để người dùng đọc "STATE_CONFLICT".
+      // A concurrently published candidate is no longer eligible for approval.
       const normalized = normalizeError(error);
       if (normalized.status === 409) {
-        setErrors({ sku_id: t("pv.productCatalog.errSkuTaken") });
+        setErrors({
+          sku_id: copy(
+            "SKU đã hiển thị trên App PV. Vui lòng chọn lại sản phẩm đang ẩn.",
+            "This SKU is already visible on App PV. Select a hidden product again.",
+          ),
+        });
+        void skuQuery.refetch();
         return;
       }
       // Lỗi thuộc một ô cụ thể thì hiện ngay dưới ô đó; toast chỉ báo phần còn
@@ -860,7 +875,7 @@ export function PvProductCatalogPage() {
           </UiButton>
           <ActionButton
             kind="create"
-            disabled={!canManage}
+            disabled={!canManage || !canPublish}
             onClick={openCreate}
             data-testid="pv-catalog-add"
           >
@@ -1232,6 +1247,7 @@ export function PvProductCatalogPage() {
               {dialogMode === "create" ? (
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <UiAutocomplete
+                    filterMode="server"
                     required
                     disabled={saving || !canManage}
                     label={t("pv.productCatalog.skuField")}
@@ -1245,22 +1261,36 @@ export function PvProductCatalogPage() {
                       const picked = (skuQuery.data?.data ?? []).find(
                         (sku) => sku.sku_id === skuId,
                       );
-                      // Tên hiển thị mặc định lấy theo tên SKU: hầu hết sản phẩm
-                      // không cần đặt lại tên cho App PV, và ô rỗng bắt người dùng
-                      // gõ lại một chuỗi đã có sẵn.
-                      patchForm(
-                        {
-                          sku_id: skuId,
-                          display_name:
-                            form.display_name.trim() === "" && picked
-                              ? picked.sku_name
-                              : form.display_name,
-                        },
-                        "sku_id",
+                      setEditing(picked ?? null);
+                      setForm(
+                        picked
+                          ? {
+                              sku_id: skuId,
+                              display_name:
+                                picked.display_name || picked.sku_name,
+                              description: picked.description ?? "",
+                              sort_order: picked.sort_order ?? 0,
+                              industry_ids: picked.industry_ids,
+                              tag_ids: picked.tag_ids,
+                              images: picked.images ?? [],
+                            }
+                          : EMPTY_FORM,
                       );
+                      setErrors({});
                     }}
                     error={Boolean(errors.sku_id)}
-                    helperText={errors.sku_id || t("pv.productCatalog.skuHint")}
+                    helperText={
+                      errors.sku_id ||
+                      (skuQuery.isError
+                        ? copy(
+                            "Không tải được danh sách SKU đang ẩn. Đóng và mở lại để thử lại.",
+                            "Could not load hidden SKUs. Close and reopen to retry.",
+                          )
+                        : copy(
+                            "Chọn SKU đang ẩn. Bấm Lưu để hiển thị sản phẩm trên App PV.",
+                            "Select a hidden SKU. Save to make it visible on App PV.",
+                          ))
+                    }
                     data-testid="pv-catalog-sku-picker"
                   />
                 </Grid>
@@ -1374,7 +1404,11 @@ export function PvProductCatalogPage() {
               kind="save"
               onClick={() => void submit()}
               disabled={
-                saving || imagesBusy || !canManage || setPublished.isPending
+                saving ||
+                imagesBusy ||
+                !canManage ||
+                setPublished.isPending ||
+                (dialogMode === "create" && !canPublish)
               }
               data-testid="pv-catalog-submit"
             >

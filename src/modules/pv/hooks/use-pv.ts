@@ -9,6 +9,7 @@ import {
 } from "@/modules/pv/services/pv-public.service";
 import {
   createPvIndustry,
+  approvePvProfile,
   createPvProfile,
   createPvRule,
   createPvTag,
@@ -157,12 +158,17 @@ export function usePvAdminRules(params: Record<string, string> = {}) {
   });
 }
 
-export function usePvAdminProfiles(params: Record<string, string> = {}) {
+export function usePvAdminProfiles(
+  params: Record<string, string> = {},
+  options?: { enabled?: boolean; fresh?: boolean },
+) {
   return useQuery({
     queryKey: pvKeys.admin("product-profiles", params),
     queryFn: () =>
       listPvAdminResources<PvAdminProfile>("product-profiles", params),
     placeholderData: (previous) => previous,
+    ...(options?.fresh ? { staleTime: 0, placeholderData: undefined } : {}),
+    enabled: options?.enabled,
   });
 }
 
@@ -181,7 +187,11 @@ function requiredVersion(version: number | undefined): number {
 
 function useInvalidatePv() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: pvKeys.all });
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: pvKeys.all }),
+      queryClient.invalidateQueries({ queryKey: ["mvp-master"] }),
+    ]);
 }
 
 // `onError` khai RỖNG có chủ đích ở cả 5 hook trong file này: PvAdminPage.tsx
@@ -256,6 +266,19 @@ export function useSavePvProfile() {
             input.payload,
           )
         : createPvProfile(input.payload),
+    onSuccess: invalidate,
+    onError: () => {},
+  });
+}
+
+export function useApprovePvProfile() {
+  const invalidate = useInvalidatePv();
+  return useMutation({
+    mutationFn: (input: {
+      skuId: string;
+      version: number;
+      payload: PvAdminProfilePayload;
+    }) => approvePvProfile(input.skuId, input.version, input.payload),
     onSuccess: invalidate,
     onError: () => {},
   });

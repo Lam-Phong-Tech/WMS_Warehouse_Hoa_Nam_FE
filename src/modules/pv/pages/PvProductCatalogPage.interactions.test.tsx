@@ -28,6 +28,7 @@ vi.mock("@/modules/pv/services/pv-admin.service", () => ({
   setPvProductPublished: setPvProductPublishedMock,
   createPvProfile: vi.fn(),
   updatePvProfile: vi.fn(),
+  approvePvProfile: vi.fn(),
   createPvIndustry: vi.fn(),
   updatePvIndustry: vi.fn(),
   createPvTag: vi.fn(),

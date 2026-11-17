@@ -171,6 +171,19 @@ export function createPvProfile(payload: PvAdminProfilePayload) {
   );
 }
 
+/** Save an existing hidden profile and publish in one version-checked transaction. */
+export function approvePvProfile(
+  skuId: string,
+  version: number,
+  payload: PvAdminProfilePayload,
+) {
+  return http.post<PvAdminProfile>(
+    PV_API_ENDPOINTS.PRODUCT_APPROVE(skuId),
+    profileBody(payload),
+    ifMatch(assertVersion(version, tStatic("pv.admin.actionPublish"))),
+  );
+}
+
 /**
  * `published` KHÔNG có trong payload — BE trả 422 BUSINESS_RULE_VIOLATION nếu
  * client gửi kèm, vì bật/tắt publish là quyền `pv.publish` ở endpoint riêng.

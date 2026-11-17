@@ -6,23 +6,27 @@ import { renderWithProviders } from "@/test/test-utils";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
 import type { PvAdminProfile } from "@/modules/pv/types/pv.types";
+import { createMockAxiosError } from "@/shared/api/api-error";
 
 const {
   listPvAdminResourcesMock,
   createPvProfileMock,
   updatePvProfileMock,
   getMvpSkusMock,
+  approvePvProfileMock,
 } = vi.hoisted(() => ({
   listPvAdminResourcesMock: vi.fn(),
   createPvProfileMock: vi.fn(),
   updatePvProfileMock: vi.fn(),
   getMvpSkusMock: vi.fn(),
+  approvePvProfileMock: vi.fn(),
 }));
 
 vi.mock("@/modules/pv/services/pv-admin.service", () => ({
   listPvAdminResources: listPvAdminResourcesMock,
   createPvProfile: createPvProfileMock,
   updatePvProfile: updatePvProfileMock,
+  approvePvProfile: approvePvProfileMock,
   setPvProductPublished: vi.fn(),
   createPvIndustry: vi.fn(),
   updatePvIndustry: vi.fn(),
@@ -108,6 +112,9 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
       );
     createPvProfileMock.mockReset().mockResolvedValue(WITH_IMAGE);
     updatePvProfileMock.mockReset().mockResolvedValue(WITH_IMAGE);
+    approvePvProfileMock
+      .mockReset()
+      .mockResolvedValue({ ...WITHOUT_IMAGE, published: true, version: 4 });
     getMvpSkusMock.mockReset().mockResolvedValue({ data: [], meta: {} });
   });
 
@@ -138,35 +145,87 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("excludes profiles on other pages and hidden profiles from the add SKU search", async () => {
+  it("offers hidden profiles including the current page, excludes published profiles, and saves with immediate publication", async () => {
     signInWith(["pv.master.manage", "pv.publish"]);
-    const available = {
-      sku_id: "new-sku",
-      sku_code: "NEW-001",
-      sku_name: "Available SKU",
-    };
-    const existing = {
-      sku_id: "other-page",
-      sku_code: "OLD-001",
-      sku_name: "Hidden existing SKU",
-    };
-    getMvpSkusMock.mockImplementation(
-      async (params: { without_pv_profile?: 0 | 1 }) => ({
-        data: params.without_pv_profile ? [available] : [existing, available],
-        meta: {},
-      }),
-    );
+    const hidden = { ...WITHOUT_IMAGE, images: WITH_IMAGE.images };
+    listPvAdminResourcesMock.mockImplementation(async (resource: string) => ({
+      data: resource === "product-profiles" ? [WITH_IMAGE, hidden] : [],
+      meta: { current_page: 1, per_page: 20, total: 2, last_page: 1 },
+    }));
     renderWithProviders(<PvProductCatalogPage />);
     await screen.findByRole("table");
     fireEvent.click(screen.getByTestId("pv-catalog-add"));
     const picker = screen.getByRole("combobox", { name: /^SKU trong kho/ });
     fireEvent.mouseDown(picker);
     expect(
-      await screen.findByRole("option", { name: "NEW-001 — Available SKU" }),
+      await screen.findByRole("option", {
+        name: `${hidden.sku_code} — ${hidden.sku_name}`,
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("option", { name: "OLD-001 — Hidden existing SKU" }),
+      screen.queryByRole("option", {
+        name: `${WITH_IMAGE.sku_code} — ${WITH_IMAGE.sku_name}`,
+      }),
     ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("option", {
+        name: `${hidden.sku_code} — ${hidden.sku_name}`,
+      }),
+    );
+    expect(screen.getByRole("textbox", { name: /^Tên hiển thị/ })).toHaveValue(
+      hidden.display_name,
+    );
+    expect(screen.getByRole("textbox", { name: "Mô tả" })).toHaveValue(
+      hidden.description,
+    );
+    fireEvent.click(screen.getByTestId("pv-catalog-submit"));
+    await waitFor(() =>
+      expect(approvePvProfileMock).toHaveBeenCalledWith(
+        hidden.sku_id,
+        hidden.version,
+        expect.objectContaining({
+          display_name: hidden.display_name,
+          description: hidden.description,
+          images: hidden.images,
+        }),
+      ),
+    );
+    expect(createPvProfileMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the approval form open when the selected profile version is stale", async () => {
+    signInWith(["pv.master.manage", "pv.publish"]);
+    approvePvProfileMock.mockRejectedValue(
+      createMockAxiosError({
+        status: 412,
+        data: {
+          success: false,
+          error_code: "STALE_VERSION",
+          message: "Hồ sơ đã thay đổi. Vui lòng tải lại.",
+        },
+      }),
+    );
+    renderWithProviders(<PvProductCatalogPage />);
+    await screen.findByRole("table");
+    fireEvent.click(screen.getByTestId("pv-catalog-add"));
+    fireEvent.mouseDown(
+      screen.getByRole("combobox", { name: /^SKU trong kho/ }),
+    );
+    fireEvent.click(
+      await screen.findByRole("option", {
+        name: `${WITHOUT_IMAGE.sku_code} — ${WITHOUT_IMAGE.sku_name}`,
+      }),
+    );
+    fireEvent.click(screen.getByTestId("pv-catalog-submit"));
+    await waitFor(() => expect(approvePvProfileMock).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByTestId("pv-catalog-submit")).toBeEnabled(),
+    );
+    expect(screen.getByRole("textbox", { name: /^Tên hiển thị/ })).toHaveValue(
+      WITHOUT_IMAGE.display_name,
+    );
+    expect(screen.getByTestId("pv-catalog-submit")).toBeEnabled();
+    expect(createPvProfileMock).not.toHaveBeenCalled();
   });
 
   it("refreshes SKU eligibility when reopening the add form despite the master cache", async () => {
@@ -177,18 +236,19 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
       },
     });
     let claimed = false;
-    getMvpSkusMock.mockImplementation(async () => ({
-      data: claimed
-        ? []
-        : [
-            {
-              sku_id: "new-sku",
-              sku_code: "NEW-001",
-              sku_name: "Available SKU",
-            },
-          ],
-      meta: {},
-    }));
+    listPvAdminResourcesMock.mockImplementation(
+      async (resource: string, params: Record<string, string> = {}) => ({
+        data:
+          resource !== "product-profiles"
+            ? []
+            : params.sku_status === "ACTIVE"
+              ? claimed
+                ? []
+                : [WITHOUT_IMAGE]
+              : [WITH_IMAGE, WITHOUT_IMAGE],
+        meta: {},
+      }),
+    );
     const view = renderWithProviders(
       <QueryClientProvider client={client}>
         <PvProductCatalogPage />
@@ -201,7 +261,9 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
         screen.getByRole("combobox", { name: /^SKU trong kho/ }),
       );
       expect(
-        await screen.findByRole("option", { name: "NEW-001 — Available SKU" }),
+        await screen.findByRole("option", {
+          name: `${WITHOUT_IMAGE.sku_code} — ${WITHOUT_IMAGE.sku_name}`,
+        }),
       ).toBeInTheDocument();
       fireEvent.keyDown(
         screen.getByRole("combobox", { name: /^SKU trong kho/ }),
@@ -215,7 +277,9 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
       );
       await waitFor(() =>
         expect(
-          screen.queryByRole("option", { name: "NEW-001 — Available SKU" }),
+          screen.queryByRole("option", {
+            name: `${WITHOUT_IMAGE.sku_code} — ${WITHOUT_IMAGE.sku_name}`,
+          }),
         ).not.toBeInTheDocument(),
       );
     } finally {
@@ -367,6 +431,7 @@ describe("MST-PV-01 · PvProductCatalogPage", () => {
     signInWith(["pv.master.manage"]);
 
     renderWithProviders(<PvProductCatalogPage />);
+    expect(screen.getByTestId("pv-catalog-add")).toBeDisabled();
 
     const editButtons = await screen.findAllByTestId("pv-catalog-edit");
     fireEvent.click(editButtons[0]);

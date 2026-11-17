@@ -33,6 +33,7 @@ const STOCK_DERIVED_ROOTS: readonly string[] = [
 
 /** Mọi thứ đọc ra từ master/danh mục. */
 const MASTER_DERIVED_ROOTS: readonly string[] = [
+  "pv",
   "ref",
   "mvp-master",
   "catalog-master",

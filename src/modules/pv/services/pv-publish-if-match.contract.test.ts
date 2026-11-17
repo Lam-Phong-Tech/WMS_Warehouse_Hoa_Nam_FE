@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/shared/api/axios";
 import { createMockAxiosError, normalizeError } from "@/shared/api/api-error";
-import { setPvProductPublished } from "@/modules/pv/services/pv-admin.service";
+import {
+  approvePvProfile,
+  setPvProductPublished,
+} from "@/modules/pv/services/pv-admin.service";
 
 /**
  * WWHN-252 · FE252-P1-08 — bằng chứng "network header".
@@ -16,6 +19,36 @@ import { setPvProductPublished } from "@/modules/pv/services/pv-admin.service";
  * 400/401/403/404/409/412/422/428/500.
  */
 const SKU_ID = "11111111-1111-4111-8111-111111111111";
+
+describe("approvePvProduct atomic request", () => {
+  it("sends metadata and the observed profile version to the approval endpoint", async () => {
+    vi.mocked(api.post).mockResolvedValue({
+      status: 200,
+      data: {
+        success: true,
+        data: { sku_id: SKU_ID, published: true, version: 8 },
+      },
+    });
+    const result = await approvePvProfile(SKU_ID, 7, {
+      display_name: "Selected hidden profile",
+      description: "Existing description",
+      sort_order: 5,
+      industry_ids: [],
+      tag_ids: [],
+      images: [],
+    });
+    expect(api.post).toHaveBeenLastCalledWith(
+      `/pv-admin/products/${SKU_ID}/approve`,
+      expect.objectContaining({
+        display_name: "Selected hidden profile",
+        sort_order: 5,
+        images: [],
+      }),
+      expect.objectContaining({ headers: { "If-Match": "7" } }),
+    );
+    expect(result.published).toBe(true);
+  });
+});
 
 function mockPatchOk(publishedToApp: boolean, version: number) {
   vi.mocked(api.patch).mockResolvedValue({
