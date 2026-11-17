@@ -1325,6 +1325,10 @@
   border-color: var(--ops-link);
   box-shadow: 0 0 0 3px rgb(22 155 213 / 10%);
 }
+.outbound-table-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
 .outbound-table-search > button {
   position: absolute;
   right: 7px;
