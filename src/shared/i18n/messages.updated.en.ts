@@ -1,5 +1,8 @@
 /** UI copy for the aligned warehouse screens; keys are stable across wording changes. */
 export const MESSAGES_UPDATED_EN = {
+  outboundNetTitle: "Net outbound",
+  outboundNetNote:
+    "Net outbound = Posted outbound − Outbound reversals · Not current stock",
   postedSkuCaption: "{count} SKU · Posted documents",
   searchSourceIncomplete:
     "The search list is incomplete or has changed. Narrow the filters or reload.",

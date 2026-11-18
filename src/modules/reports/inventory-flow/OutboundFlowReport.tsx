@@ -684,15 +684,33 @@ export default function OutboundFlowReport() {
     ["ISSUE", "COMPONENT_ISSUE"],
   );
   const pendingCount = progress.pending;
-  const recipientCount = useMemo(
-    () =>
-      new Set(
-        filteredDocuments
-          .map((document) => document.counterpart)
-          .filter(Boolean),
-      ).size,
-    [filteredDocuments],
-  );
+  const netIssuedQuantity = useMemo(() => {
+    if (!hasDocumentFilter)
+      return snapshot.summary.issueNet + snapshot.summary.componentNet;
+    const movementsById = new Map(
+      snapshot.ledger.map((movement) => [movement.movement_id, movement]),
+    );
+    return snapshot.ledger.reduce((total, movement) => {
+      const origin =
+        movement.movement_type === "REVERSAL"
+          ? movementsById.get(movement.reversal_of_movement_id)
+          : movement;
+      if (
+        !origin ||
+        (origin.movement_type !== "ISSUE" &&
+          origin.movement_type !== "COMPONENT_ISSUE") ||
+        !filteredDocumentNumbers.has(origin.source_document_no)
+      )
+        return total;
+      return total - movement.qty_delta;
+    }, 0);
+  }, [
+    hasDocumentFilter,
+    filteredDocumentNumbers,
+    snapshot.ledger,
+    snapshot.summary.issueNet,
+    snapshot.summary.componentNet,
+  ]);
 
   const chartPoints = useMemo(() => {
     const dailyMap = new Map(
@@ -1149,9 +1167,9 @@ export default function OutboundFlowReport() {
                 <KpiCard
                   tone="violet"
                   icon="warehouse"
-                  title={tUi("outbound.list.colRecipient")}
-                  value={recipientCount}
-                  note={tUi("uiAudit.text_f5213a2bcb")}
+                  title={tUi("updatedUi.outboundNetTitle")}
+                  value={netIssuedQuantity}
+                  note={tUi("updatedUi.outboundNetNote")}
                   empty={reportEmpty}
                   expanded={kpiOpen.violet}
                   onToggle={() => toggleKpi("violet")}

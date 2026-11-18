@@ -114,6 +114,8 @@ const MESSAGES_ZH_BASE: MessageTree = {
     failed: "失败",
   },
   updatedUi: {
+    outboundNetTitle: "净出库",
+    outboundNetNote: "净出库 = 已过账出库 − 出库冲销 · 非当前库存",
     postedSkuCaption: "{count} SKU · 已过账单据",
     searchSourceIncomplete:
       "搜索列表未完整加载或已发生变化。请缩小筛选范围或重新加载。",

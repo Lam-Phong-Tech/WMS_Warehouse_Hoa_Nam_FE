@@ -1,5 +1,8 @@
 /** UI copy for the aligned warehouse screens; keys are stable across wording changes. */
 export const MESSAGES_UPDATED_VI = {
+  outboundNetTitle: "Xuất thuần",
+  outboundNetNote:
+    "Xuất thuần = Xuất đã ghi sổ − Hoàn tác xuất · Không phải tồn hiện tại",
   postedSkuCaption: "{count} SKU · Phiếu đã ghi sổ",
   searchSourceIncomplete:
     "Danh sách tìm kiếm tải chưa đầy đủ hoặc đã thay đổi. Vui lòng thu hẹp bộ lọc hoặc tải lại.",

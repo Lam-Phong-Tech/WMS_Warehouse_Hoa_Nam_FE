@@ -58,6 +58,9 @@ import OutboundFlowReport from "./OutboundFlowReport";
 
 afterEach(() => {
   snapshot.documents = [];
+  snapshot.summary.issueNet = 0;
+  snapshot.summary.componentNet = 0;
+  snapshot.summary.closing = 0;
   cleanupTestState();
   useLanguageStore.getState().setLanguage("vi");
 });
@@ -68,14 +71,15 @@ it.each([
     status: "Search statuses...",
     recipient: "Search recipients...",
     period: "0 SKU · Posted documents",
-    activity: "With issues during the period",
+    activity:
+      "Net outbound = Posted outbound − Outbound reversals · Not current stock",
   },
   {
     language: "zh" as const,
     status: "搜索状态...",
     recipient: "搜索收货人...",
     period: "0 SKU · 已过账单据",
-    activity: "有出库记录",
+    activity: "净出库 = 已过账出库 − 出库冲销 · 非当前库存",
   },
 ])(
   "translates report placeholders and KPI notes into $language while preserving recipient data",
@@ -84,6 +88,9 @@ it.each([
       ? ensureChineseMessages()
       : ensureEnglishMessages());
     useLanguageStore.getState().setLanguage(language);
+    snapshot.summary.issueNet = 14;
+    snapshot.summary.componentNet = 4;
+    snapshot.summary.closing = 900;
     snapshot.documents = [
       {
         id: "locale-document",
@@ -105,6 +112,8 @@ it.each([
     expect(screen.getAllByPlaceholderText(recipient).length).toBeGreaterThan(0);
     expect(screen.getByText(period)).toBeInTheDocument();
     expect(screen.getByText(activity)).toBeInTheDocument();
+    const netCard = screen.getByText(activity).closest("article")!;
+    expect(netCard.querySelector("strong")).toHaveTextContent(/^18$/);
     expect(screen.getAllByText("Đại lý Nguyễn Văn An").length).toBeGreaterThan(
       0,
     );
@@ -126,7 +135,7 @@ describe("RPT-01B · đóng mở các khối báo cáo", () => {
       "Tình trạng xử lý phiếu",
       "Sản phẩm đã xuất",
       "Phiếu hoàn tất",
-      "Người nhận",
+      "Xuất thuần",
       "Phiếu cần xử lý",
       "Sản lượng xuất theo ngày",
       "Tiến độ phiếu xuất",
