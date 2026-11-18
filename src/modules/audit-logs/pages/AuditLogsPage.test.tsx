@@ -87,7 +87,9 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     expect(await screen.findByText("Tài khoản người dùng")).toBeInTheDocument();
 
     // Toolbar cùng chuẩn WarrantyPage/InventoryPage.
-    expect(screen.getByLabelText("Tìm theo người thực hiện hoặc hành động")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Tìm theo người thực hiện hoặc hành động"),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Lọc phân hệ")).toBeInTheDocument();
     expect(screen.getByLabelText("Lọc hành động")).toBeInTheDocument();
     expect(screen.getByLabelText("Số dòng mỗi trang")).toBeInTheDocument();
@@ -177,17 +179,36 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
       /^Đến ngày$/,
     );
 
-    // Chọn hôm kia → hôm nay rồi Áp dụng: khoảng gửi lên BE là TRỌN NGÀY.
+    // Mỗi hộp lịch chỉ chọn một mốc; khoảng gửi lên BE vẫn là TRỌN NGÀY.
     const today = dayjs().startOf("day");
     const from = today.subtract(2, "day");
     await user.click(screen.getByRole("button", { name: "Từ ngày" }));
+    let calendar = screen.getByRole("dialog", { name: "Từ ngày" });
+    expect(within(calendar).queryByText("Đến ngày")).not.toBeInTheDocument();
     await user.click(
-      screen.getByRole("button", { name: from.format("DD/MM/YYYY") }),
+      within(calendar).getByRole("button", { name: from.format("DD/MM/YYYY") }),
     );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "Đến ngày" }));
+    calendar = screen.getByRole("dialog", { name: "Đến ngày" });
+    expect(within(calendar).queryByText("Từ ngày")).not.toBeInTheDocument();
+    expect(
+      within(calendar).getByRole("button", {
+        name: from.subtract(1, "day").format("DD/MM/YYYY"),
+      }),
+    ).toBeDisabled();
+    expect(
+      within(calendar).getByRole("button", {
+        name: today.add(1, "day").format("DD/MM/YYYY"),
+      }),
+    ).toBeDisabled();
     await user.click(
-      screen.getByRole("button", { name: today.format("DD/MM/YYYY") }),
+      within(calendar).getByRole("button", {
+        name: today.format("DD/MM/YYYY"),
+      }),
     );
-    await user.click(screen.getByRole("button", { name: "Áp dụng" }));
 
     await waitFor(() => {
       expect(auditLogService.getAuditLogs).toHaveBeenCalledWith(
@@ -197,6 +218,42 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
         }),
       );
     });
+  });
+
+  it("cho phép chọn đến ngày trước và giới hạn từ ngày theo mốc đã chọn", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AuditLogsPage />);
+    await screen.findByText("Tài khoản người dùng");
+    const end = dayjs().startOf("day").subtract(2, "day");
+    await user.click(screen.getByRole("button", { name: "Đến ngày" }));
+    const toCalendar = screen.getByRole("dialog", { name: "Đến ngày" });
+    expect(within(toCalendar).queryByText("Từ ngày")).not.toBeInTheDocument();
+    await user.click(
+      within(toCalendar).getByRole("button", {
+        name: end.format("DD/MM/YYYY"),
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(auditLogService.getAuditLogs).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          date_from: undefined,
+          date_to: `${end.format("YYYY-MM-DD")}T23:59:59.999999+07:00`,
+        }),
+      ),
+    );
+    await user.click(screen.getByRole("button", { name: "Từ ngày" }));
+    const fromCalendar = screen.getByRole("dialog", { name: "Từ ngày" });
+    expect(
+      within(fromCalendar).queryByText("Đến ngày"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(fromCalendar).getByRole("button", {
+        name: end.add(1, "day").format("DD/MM/YYYY"),
+      }),
+    ).toBeDisabled();
   });
 
   it("chọn tất cả bật khối thao tác hàng loạt và bỏ chọn tắt đi", async () => {
@@ -237,9 +294,12 @@ describe("AuditLogsPage (Nhật ký hệ thống)", () => {
     renderWithProviders(<AuditLogsPage />);
     await screen.findByText("Tài khoản người dùng");
     expect(screen.queryByLabelText("Lọc kết quả")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Tìm theo người thực hiện hoặc hành động"), {
-      target: { value: "stock_document" },
-    });
+    fireEvent.change(
+      screen.getByLabelText("Tìm theo người thực hiện hoặc hành động"),
+      {
+        target: { value: "stock_document" },
+      },
+    );
     await waitFor(() =>
       expect(auditLogService.getAuditLogs).toHaveBeenLastCalledWith(
         expect.objectContaining({ q: "stock_document", page: 1 }),

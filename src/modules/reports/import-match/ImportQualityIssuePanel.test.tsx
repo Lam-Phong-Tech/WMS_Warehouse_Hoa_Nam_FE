@@ -53,6 +53,58 @@ afterEach(() => {
 });
 
 describe("Import quality issue detail", () => {
+  it("explains Vietnamese import errors while preserving the original file values", async () => {
+    fixture.rows = [
+      {
+        rowNo: 5,
+        field: "sku_type",
+        code: "INVALID_ENUM",
+        message: "sku_type phải thuộc PRODUCT, COMPONENT.",
+        rawValue: "ACCESSORY",
+        severity: "ERROR",
+        suggestedAction:
+          "Chọn đúng một trong các giá trị hợp lệ được liệt kê ở cột message.",
+      },
+      {
+        rowNo: 6,
+        field: "sku_code",
+        code: "DUPLICATE_CODE",
+        message: "SKU đã tồn tại; cần bật update_existing.",
+        rawValue: "SKU-DEMO-00",
+        severity: "ERROR",
+        suggestedAction:
+          'SKU đã tồn tại: bật tùy chọn "cập nhật SKU đã tồn tại" nếu thực sự muốn ghi đè.',
+      },
+    ];
+    const original = structuredClone(fixture.rows);
+    const user = userEvent.setup();
+    render(<ImportQualityIssuePanel batchId="batch-1" sourceFile="sku.xlsx" />);
+    expect(
+      screen.getByRole("button", {
+        name: "Dòng 5: Loại SKU chỉ chấp nhận “Sản phẩm” (PRODUCT) hoặc “Linh kiện” (COMPONENT).",
+      }),
+    ).toBeVisible();
+    let detail = screen.getByRole("region", { name: "Chi tiết dòng 5" });
+    expect(detail).toHaveTextContent("Loại SKU (sku_type)");
+    expect(detail).toHaveTextContent(
+      "Giá trị không thuộc danh sách cho phép (INVALID_ENUM)",
+    );
+    expect(detail).toHaveTextContent("cột Thông báo (message)");
+    expect(within(detail).getByText("ACCESSORY")).toBeVisible();
+    await user.click(
+      screen.getByRole("button", {
+        name: "Dòng 6: SKU đã tồn tại. Bật tùy chọn “Cho phép cập nhật SKU đã tồn tại” để cập nhật.",
+      }),
+    );
+    detail = screen.getByRole("region", { name: "Chi tiết dòng 6" });
+    expect(detail).toHaveTextContent("Mã SKU (sku_code)");
+    expect(detail).toHaveTextContent("Trùng mã SKU (DUPLICATE_CODE)");
+    expect(detail).toHaveTextContent("Cho phép cập nhật SKU đã tồn tại");
+    expect(detail).not.toHaveTextContent("update_existing");
+    expect(within(detail).getByText("SKU-DEMO-00")).toBeVisible();
+    expect(fixture.rows).toEqual(original);
+  });
+
   it("discloses severity and allows an open issue to collapse", async () => {
     const user = userEvent.setup();
     render(<ImportQualityIssuePanel batchId="batch-1" sourceFile="sku.xlsx" />);

@@ -12,7 +12,7 @@ import {
   UiTextField,
   InputAdornment,
   UiIcon,
-  UiVuexyDateRangePicker,
+  UiVuexyDateField,
 } from "@/shared/ui";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { TableLoadingBanner } from "@/shared/components/feedback/BusinessState";
@@ -77,11 +77,8 @@ export function AuditLogsPage() {
   const [search, setSearch] = useState("");
   const [module, setModule] = useState<AuditModule | "">("");
   const [action, setAction] = useState<AuditAction | "">("");
-  // Lọc theo khoảng ngày (mục 13) — cùng một control lịch với các màn báo cáo
-  // (UiVuexyDateRangePicker) thay cho 2 ô `datetime-local` của trình duyệt:
-  // lịch chọn theo NGÀY, nên khoảng gửi lên BE là trọn ngày (00:00:00 →
-  // 23:59:59). Bản thân control đã chặn "đến" < "từ" và ngày ngoài mốc cho
-  // phép, không cần lớp kiểm tra riêng ở màn nữa.
+  // Hai lịch độc lập cho từng mốc; giới hạn chéo ngăn "đến" trước "từ".
+  // Khoảng gửi lên BE vẫn bao trọn ngày theo múi giờ tài khoản.
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [userId, setUserId] = useState("");
   const [actorSearch, setActorSearch] = useState("");
@@ -296,18 +293,42 @@ export function AuditLogsPage() {
           />
         </div>
         <div className="hn-audit-filter hn-audit-filter-range">
-          <UiVuexyDateRangePicker
-            popupClassName="hn-settings-menu"
-            showFieldPrefixes={false}
-            allowClear={false}
-            value={range}
+          <Box
+            role="group"
             aria-label={t("audit.rangeAria")}
-            maxDate={maxSelectableDate}
-            onChange={(next) => {
-              setRange(next);
-              setPage(1);
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+              },
+              gap: 1,
             }}
-          />
+          >
+            <UiVuexyDateField
+              field="from"
+              aria-label={t("shared.datePicker.fromDate")}
+              placeholder={t("shared.datePicker.fromDate")}
+              value={range?.[0] ?? null}
+              maxDate={range?.[1] ?? maxSelectableDate}
+              onChange={(next) => {
+                setRange((current) => [next, current?.[1] ?? null]);
+                setPage(1);
+              }}
+            />
+            <UiVuexyDateField
+              field="to"
+              aria-label={t("shared.datePicker.toDate")}
+              placeholder={t("shared.datePicker.toDate")}
+              value={range?.[1] ?? null}
+              minDate={range?.[0] ?? undefined}
+              maxDate={maxSelectableDate}
+              onChange={(next) => {
+                setRange((current) => [current?.[0] ?? null, next]);
+                setPage(1);
+              }}
+            />
+          </Box>
         </div>
         <div className="hn-audit-filter">
           <UiSelect

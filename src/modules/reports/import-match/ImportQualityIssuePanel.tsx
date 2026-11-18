@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { useT } from "@/shared/i18n/useT";
-import { localizeMessage } from "@/shared/i18n/localize-message";
+import { importQualityIssueCopy } from "./import-quality-issue-copy";
 import { isDuplicateCode } from "./import-match-model";
 import {
   useImportQualityIssues,
@@ -33,6 +33,7 @@ function IssueDetail({
 }) {
   const copy = useIssueCopy();
   const t = useT();
+  const display = importQualityIssueCopy(issue);
   return (
     <section
       className="hn-import-issues__detail"
@@ -57,7 +58,7 @@ function IssueDetail({
               : t("importResult.warningIssue")
             : copy("Lỗi", "Error", "错误")}
         </span>
-        <strong>{localizeMessage(issue.message) || issue.code}</strong>
+        <strong>{display.message}</strong>
       </div>
       <dl>
         <div>
@@ -69,7 +70,7 @@ function IssueDetail({
         </div>
         <div>
           <dt>{copy("Cột / trường", "Column / field", "列 / 字段")}</dt>
-          <dd>{issue.field || "—"}</dd>
+          <dd>{display.field}</dd>
         </div>
         <div>
           <dt>{copy("Giá trị trong tệp", "Value in file", "文件中的值")}</dt>
@@ -77,16 +78,22 @@ function IssueDetail({
         </div>
         <div>
           <dt>{copy("Quy tắc kiểm tra", "Validation rule", "校验规则")}</dt>
-          <dd>{issue.code || "—"}</dd>
+          <dd>{display.rule}</dd>
         </div>
         <div>
           <dt>{t("importResult.severity")}</dt>
-          <dd>{issue.severity || "—"}</dd>
+          <dd>
+            {issue.severity === "ERROR"
+              ? copy("Lỗi", "Error", "错误")
+              : issue.severity === "WARNING"
+                ? t("importResult.warningIssue")
+                : issue.severity || "—"}
+          </dd>
         </div>
       </dl>
       <h4>{copy("Hướng dẫn xử lý", "How to fix", "处理指引")}</h4>
       <p>
-        {localizeMessage(issue.suggestedAction) ||
+        {display.hint ||
           copy(
             "Kiểm tra dữ liệu trong tệp nguồn rồi nhập lại.",
             "Check the source file data and import again.",
@@ -134,49 +141,52 @@ export function ImportQualityIssuePanel({ batchId, sourceFile }: Props) {
       ) : null}
       {rows.length ? (
         <ol className="hn-import-issues__rows">
-          {rows.map((row, index) => (
-            <li
-              key={`${row.rowNo}-${row.field}-${index}`}
-              className={activeIndex === index ? "is-selected" : undefined}
-            >
-              <button
-                type="button"
-                className="hn-import-issues__select"
-                onClick={() =>
-                  setSelectedIndex(activeIndex === index ? -1 : index)
-                }
-                aria-pressed={activeIndex === index}
-                aria-expanded={activeIndex === index}
-                aria-label={copy(
-                  `Dòng ${row.rowNo}: ${localizeMessage(row.message) || row.code}`,
-                  `Row ${row.rowNo}: ${localizeMessage(row.message) || row.code}`,
-                  `第 ${row.rowNo} 行：${localizeMessage(row.message) || row.code}`,
-                )}
+          {rows.map((row, index) => {
+            const display = importQualityIssueCopy(row);
+            return (
+              <li
+                key={`${row.rowNo}-${row.field}-${index}`}
+                className={activeIndex === index ? "is-selected" : undefined}
               >
-                <span className="hn-import-issues__row-heading">
-                  <strong>
-                    {copy("Dòng", "Row", "行")} {row.rowNo}
-                  </strong>
-                  <span
-                    className={`hn-import-issues__badge is-${issueTone(row)}`}
-                  >
-                    {issueTone(row) === "warning"
-                      ? isDuplicateCode(row.code)
-                        ? t("importResult.duplicateIssue")
-                        : t("importResult.warningIssue")
-                      : copy("Lỗi", "Error", "错误")}
+                <button
+                  type="button"
+                  className="hn-import-issues__select"
+                  onClick={() =>
+                    setSelectedIndex(activeIndex === index ? -1 : index)
+                  }
+                  aria-pressed={activeIndex === index}
+                  aria-expanded={activeIndex === index}
+                  aria-label={copy(
+                    `Dòng ${row.rowNo}: ${display.message}`,
+                    `Row ${row.rowNo}: ${display.message}`,
+                    `第 ${row.rowNo} 行：${display.message}`,
+                  )}
+                >
+                  <span className="hn-import-issues__row-heading">
+                    <strong>
+                      {copy("Dòng", "Row", "行")} {row.rowNo}
+                    </strong>
+                    <span
+                      className={`hn-import-issues__badge is-${issueTone(row)}`}
+                    >
+                      {issueTone(row) === "warning"
+                        ? isDuplicateCode(row.code)
+                          ? t("importResult.duplicateIssue")
+                          : t("importResult.warningIssue")
+                        : copy("Lỗi", "Error", "错误")}
+                    </span>
                   </span>
-                </span>
-                <span className="hn-import-issues__message">
-                  {localizeMessage(row.message) || row.code}
-                </span>
-                <small>{row.field || "—"}</small>
-              </button>
-              {activeIndex === index ? (
-                <IssueDetail issue={row} sourceFile={sourceFile} />
-              ) : null}
-            </li>
-          ))}
+                  <span className="hn-import-issues__message">
+                    {display.message}
+                  </span>
+                  <small>{display.field}</small>
+                </button>
+                {activeIndex === index ? (
+                  <IssueDetail issue={row} sourceFile={sourceFile} />
+                ) : null}
+              </li>
+            );
+          })}
         </ol>
       ) : null}
       {(query.data?.lastPage ?? 1) > 1 ? (
