@@ -100,6 +100,19 @@ function IssueDetail({
             "请检查源文件数据后重新导入。",
           )}
       </p>
+      {issue.code === "DUPLICATE_CODE" &&
+      issue.field === "sku_code" &&
+      issue.existingSkuId ? (
+        <a
+          className="rpt04-context-sku-link"
+          href={`/master-data/skus?${new URLSearchParams({ sku_id: issue.existingSkuId })}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t("importResult.openExistingSkuAria")}
+        >
+          {t("importResult.openExistingSku")} <span aria-hidden="true">↗</span>
+        </a>
+      ) : null}
     </section>
   );
 }

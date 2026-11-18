@@ -53,6 +53,36 @@ afterEach(() => {
 });
 
 describe("Import quality issue detail", () => {
+  it("links an existing duplicate by its server-resolved ID but never links an in-file duplicate", async () => {
+    fixture.rows = [
+      Object.assign(
+        {
+          rowNo: 2,
+          field: "sku_code",
+          code: "DUPLICATE_CODE",
+          message: "SKU đã tồn tại",
+          rawValue: "HN-001",
+          severity: "ERROR",
+          suggestedAction: "Kiểm tra SKU",
+        },
+        { existingSkuId: "stable-sku" },
+      ),
+    ];
+    const { rerender } = render(
+      <ImportQualityIssuePanel batchId="batch-1" sourceFile="sku.xlsx" />,
+    );
+    const link = screen.getByRole("link", {
+      name: "Xem SKU đang tồn tại (tab mới)",
+    });
+    expect(link).toHaveAttribute("href", "/master-data/skus?sku_id=stable-sku");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    fixture.rows = [{ ...fixture.rows[0], code: "DUPLICATE_CODE_IN_BATCH" }];
+    rerender(
+      <ImportQualityIssuePanel batchId="batch-1" sourceFile="sku.xlsx" />,
+    );
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
   it("explains Vietnamese import errors while preserving the original file values", async () => {
     fixture.rows = [
       {

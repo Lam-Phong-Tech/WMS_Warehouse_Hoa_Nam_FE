@@ -20,7 +20,7 @@ for (const mode of ["light", "dark"]) {
     await drawer.getByRole("tab", { name: "Tổng quan", exact: true }).click();
     await expect(
       drawer.getByRole("link", { name: "Mở danh mục SKU (tab mới)" }),
-    ).toHaveAttribute("target", "_blank");
+    ).toHaveCount(0);
     await expect(drawer.getByText("Nguyễn Văn An")).toBeVisible();
     await expect(drawer.getByText("2 KB")).toBeVisible();
     await drawer
@@ -108,6 +108,103 @@ for (const mode of ["light", "dark"]) {
     await opener.click();
     await drawer.getByRole("button", { name: "Đóng", exact: true }).click();
     await expect(drawer).toBeHidden();
+  });
+}
+
+for (const mode of ["light", "dark"]) {
+  test(`contextual SKU links ${mode}: written version, duplicate and narrow layouts`, async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      (theme) => localStorage.setItem("hoa-nam-theme", theme),
+      mode,
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.route(
+      "**/api/v1/skus/import-reports/batch-v1/written-skus**",
+      (route) =>
+        route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: [
+              {
+                sku_id: "stable-id",
+                sku_code: "SKU-LINKED-001",
+                action: "CREATED",
+                available: true,
+              },
+              {
+                sku_id: "missing-id",
+                sku_code: "SKU-DELETED-002",
+                action: "UPDATED",
+                available: false,
+              },
+            ],
+            meta: {
+              current_page: 1,
+              last_page: 1,
+              total: 2,
+              linkage_status: "AVAILABLE",
+            },
+          }),
+        }),
+    );
+    await page.goto("/e2e/fixtures/import-quality-drawer.html");
+    await page.getByRole("button", { name: "Mở đợt nhập" }).click();
+    const drawer = page.getByRole("dialog", { name: /Chi tiết/ });
+    await expect(
+      drawer.getByRole("button", {
+        name: "Xem SKU đã tạo/cập nhật từ lần nhập này",
+      }),
+    ).toHaveCount(0);
+    await drawer.getByRole("combobox", { name: "Kết quả của" }).click();
+    await page.getByRole("option", { name: /Phiên bản 1/ }).click();
+    await drawer
+      .getByRole("button", { name: "Xem SKU đã tạo/cập nhật từ lần nhập này" })
+      .click();
+    const link = drawer.getByRole("link", {
+      name: "Xem SKU SKU-LINKED-001 (tab mới)",
+    });
+    await expect(link).toHaveAttribute(
+      "href",
+      "/master-data/skus?sku_id=stable-id",
+    );
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(drawer.getByText("SKU không còn tồn tại")).toBeVisible();
+    await expect(drawer.getByRole("link", { name: /SKU-DELETED/ })).toHaveCount(
+      0,
+    );
+    for (const width of [1440, 390, 320]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await link.scrollIntoViewIfNeeded();
+      const overflow = await drawer.evaluate((root) =>
+        [root, ...root.querySelectorAll<HTMLElement>("*")]
+          .filter(
+            (el) => el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1,
+          )
+          .map((el) => el.className),
+      );
+      expect(overflow).toEqual([]);
+      await drawer.screenshot({
+        path: `test-results/import-quality-drawer/contextual-${mode}-${width}.png`,
+      });
+    }
+    await page.goto(
+      "/e2e/fixtures/import-quality-drawer.html?scenario=duplicate",
+    );
+    await page.getByRole("button", { name: "Mở đợt nhập" }).click();
+    const duplicateLink = page.getByRole("link", {
+      name: "Xem SKU đang tồn tại (tab mới)",
+    });
+    await expect(duplicateLink).toHaveAttribute(
+      "href",
+      "/master-data/skus?sku_id=existing-duplicate-id",
+    );
+    await duplicateLink.scrollIntoViewIfNeeded();
+    await drawer.screenshot({
+      path: `test-results/import-quality-drawer/contextual-duplicate-${mode}-320.png`,
+    });
   });
 }
 

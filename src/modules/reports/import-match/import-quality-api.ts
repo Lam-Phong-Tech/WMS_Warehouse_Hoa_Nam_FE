@@ -21,6 +21,7 @@ export type ImportQualityIssue = {
   rawValue: string;
   severity: string;
   suggestedAction: string;
+  existingSkuId?: string;
 };
 
 export async function fetchImportQualityBatches(): Promise<Raw[]> {
@@ -67,12 +68,31 @@ export async function fetchImportQualityIssues(batchId: string, page: number) {
     rawValue: text(row.raw_value, ""),
     severity: text(row.severity, "ERROR"),
     suggestedAction: text(row.suggested_action, ""),
+    ...(typeof row.existing_sku_id === "string" && row.existing_sku_id
+      ? { existingSkuId: row.existing_sku_id }
+      : {}),
   }));
   return {
     rows,
     total: n(response.meta?.total, rows.length),
     lastPage: n(response.meta?.last_page, 1),
   };
+}
+
+export async function fetchImportQualityWrittenSkus(
+  batchId: string,
+  page: number,
+) {
+  return http.getPage<
+    Array<{
+      sku_id: string;
+      sku_code: string;
+      action: "CREATED" | "UPDATED";
+      available: boolean;
+    }>
+  >(`${IMPORT_REPORTS}/${encodeURIComponent(batchId)}/written-skus`, {
+    params: { page, per_page: 20 },
+  });
 }
 
 export function useImportQualityBatches(enabled: boolean) {

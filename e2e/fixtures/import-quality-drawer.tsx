@@ -176,6 +176,7 @@ if (scenario && ["valid", "duplicate", "invalid"].includes(scenario)) {
             rowNo: 2,
             field: "sku_code",
             code: "DUPLICATE_CODE",
+            existingSkuId: "existing-duplicate-id",
             message: "SKU đã tồn tại.",
             rawValue: "DCMY155",
             severity: "CRITICAL",

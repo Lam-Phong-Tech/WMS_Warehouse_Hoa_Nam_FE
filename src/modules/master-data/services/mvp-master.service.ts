@@ -83,6 +83,15 @@ export function getMvpSkus(params: MasterListParams) {
   return listPage<SkuRecord>(API_ENDPOINTS.PRODUCTS, params);
 }
 
+export function getMvpSku(id: string) {
+  return http.get<SkuRecord>(
+    API_ENDPOINTS.PRODUCT.replace(
+      ":id",
+      encodeURIComponent(requiredApiIdentity(id, "sku_id")),
+    ),
+  );
+}
+
 /** Active choices are fully paged. Read failures remain query failures, not empty catalogues. */
 async function listCatalogRefs(
   endpoint: string,

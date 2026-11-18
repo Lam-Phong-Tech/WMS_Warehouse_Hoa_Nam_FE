@@ -39,6 +39,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { SkuImportModal } from "@/modules/master-data/components/SkuImportModal";
+import { SkuDetailDeepLink } from "@/modules/master-data/components/SkuDetailDeepLink";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import {
   useCreateMvpAgency,
@@ -439,6 +440,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SkuRecord | null>(null);
   const [viewing, setViewing] = useState<SkuRecord | null>(null);
+  const linkedSkuId = skuSearchParams.get("sku_id") ?? "";
+  const [linkedSkuRefreshKey, setLinkedSkuRefreshKey] = useState(0);
+  const closeSkuDetail = () => {
+    setViewing(null);
+    if (!skuSearchParams.has("sku_id")) return;
+    const next = new URLSearchParams(skuSearchParams);
+    next.delete("sku_id");
+    setSkuSearchParams(next, { replace: true });
+  };
   const [form, setForm] = useState<SkuFormState>(getEMPTY_SKU_FORM());
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -563,6 +573,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
         );
 
       if (stale) {
+        if (linkedSkuId === recordId) {
+          // A deep-linked SKU need not belong to the current catalog page.
+          // Reload its detail by ID; never retry the rejected mutation.
+          setLinkedSkuRefreshKey((value) => value + 1);
+          void query.refetch();
+          toast.error(t("pv.admin.publishStale"));
+          return;
+        }
         // Phiên khác đã đổi hồ sơ: tự tải lại danh sách ngay, cập nhật lại
         // record đang mở (hoặc đóng drawer nếu bản ghi rời trang hiện tại).
         // Không tự retry publish để tránh ghi đè thay đổi của phiên kia.
@@ -925,6 +943,15 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
 
   return (
     <>
+      {linkedSkuId ? (
+        <SkuDetailDeepLink
+          key={linkedSkuId}
+          skuId={linkedSkuId}
+          refreshKey={linkedSkuRefreshKey}
+          onResolved={setViewing}
+          onDismiss={closeSkuDetail}
+        />
+      ) : null}
       <div
         className="hn-mvp-source-screen hn-sku-screen"
         data-mvp-screen="MST-01"
@@ -1391,7 +1418,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
           className="hn-sku-detail-drawer"
           anchor="right"
           open={Boolean(viewing)}
-          onClose={() => setViewing(null)}
+          onClose={closeSkuDetail}
           slotProps={{
             paper: {
               "aria-label": t("masterData.sku.detailTitle"),
@@ -1404,7 +1431,7 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
               <ActionIconButton
                 kind="close"
                 label={t("common.close")}
-                onClick={() => setViewing(null)}
+                onClick={closeSkuDetail}
               />
             </header>
             {viewing ? (
@@ -1552,14 +1579,14 @@ export function SkuMasterScreen({ openCreateOnMount = false }: ScreenProps) {
                     <ActionButton
                       kind="edit"
                       onClick={() => {
-                        setViewing(null);
+                        closeSkuDetail();
                         openEdit(viewing);
                       }}
                     >
                       {copy("Chỉnh sửa", "Edit")}
                     </ActionButton>
                   ) : null}
-                  <ActionButton kind="close" onClick={() => setViewing(null)}>
+                  <ActionButton kind="close" onClick={closeSkuDetail}>
                     {copy("Đóng chi tiết", "Close details")}
                   </ActionButton>
                 </footer>

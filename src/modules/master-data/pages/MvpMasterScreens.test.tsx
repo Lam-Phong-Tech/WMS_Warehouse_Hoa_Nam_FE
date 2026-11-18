@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { ApiEnvelopeError } from "@/shared/api/api-error";
 import { useAuthStore } from "@/shared/store/auth.store";
 import { PinnedSidebarContext } from "@/shared/ui/layout/pinned-sidebar-context";
+import { renderWithProviders } from "@/test/test-utils";
+import { getMvpSku } from "@/modules/master-data/services/mvp-master.service";
 import {
   useMvpSkus,
   useSetMvpSkuPublished,
@@ -30,6 +32,16 @@ const { mutation } = vi.hoisted(() => ({
     mutateAsync: vi.fn().mockResolvedValue({}),
   }),
 }));
+
+vi.mock(
+  "@/modules/master-data/services/mvp-master.service",
+  async (original) => ({
+    ...(await original<
+      typeof import("@/modules/master-data/services/mvp-master.service")
+    >()),
+    getMvpSku: vi.fn(),
+  }),
+);
 
 vi.mock("@/modules/master-data/hooks/use-mvp-master", () => ({
   useMvpSkus: vi.fn(() => ({
@@ -148,6 +160,7 @@ function defaultSkusResult() {
 
 describe("API-backed MVP master screens", () => {
   beforeEach(() => {
+    vi.mocked(getMvpSku).mockReset();
     useAuthStore.setState({ isSuperAdmin: true, permissionCodes: [] });
     window.sessionStorage.removeItem("hn-sku-overview-open");
   });
@@ -162,6 +175,109 @@ describe("API-backed MVP master screens", () => {
       mutation()) as never);
     vi.mocked(useUpdateMvpDefect).mockImplementation((() =>
       mutation()) as never);
+  });
+
+  it("opens the exact linked SKU even when it is outside the catalog page and clears only its parameter on close", async () => {
+    vi.mocked(getMvpSku).mockResolvedValue({
+      ...DEFAULT_SKU_ROW,
+      sku_id: "linked-sku",
+      sku_code: "LINKED-001",
+      sku_name: "SKU ngoài trang hiện tại",
+    } as never);
+    renderWithProviders(
+      <>
+        <SkuMasterScreen />
+        <CurrentSkuLocation />
+      </>,
+      ["/master-data/skus?sku_id=linked-sku&keep=1"],
+    );
+    const drawer = await screen.findByRole("heading", { name: "LINKED-001" });
+    expect(drawer).toBeVisible();
+    expect(getMvpSku).toHaveBeenCalledWith("linked-sku");
+    const close = within(
+      drawer.closest(".hn-sku-detail-shell") as HTMLElement,
+    ).getByRole("button", { name: "Đóng" });
+    fireEvent.click(close);
+    await waitFor(() =>
+      expect(screen.getByTestId("sku-location")).toHaveTextContent("?keep=1"),
+    );
+    expect(screen.getByTestId("sku-location")).not.toHaveTextContent("sku_id");
+  });
+
+  it("discloses a failed linked SKU without opening a different catalog record", async () => {
+    vi.mocked(getMvpSku).mockRejectedValue(new Error("Missing SKU"));
+    renderWithProviders(<SkuMasterScreen />, [
+      "/master-data/skus?sku_id=missing-sku",
+    ]);
+    expect(
+      await screen.findByText(
+        "Không mở được SKU được liên kết. SKU có thể không còn tồn tại hoặc bạn chưa có quyền xem.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: DEFAULT_SKU_ROW.sku_code }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("refreshes an off-page linked SKU after a publish conflict without retrying the mutation", async () => {
+    const linked = {
+      ...DEFAULT_SKU_ROW,
+      sku_id: "off-page-sku",
+      sku_code: "LINKED-412",
+      published_to_app: true,
+      pv_profile_version: 2,
+    };
+    vi.mocked(getMvpSku)
+      .mockResolvedValueOnce(linked as never)
+      .mockResolvedValueOnce({ ...linked, pv_profile_version: 3 } as never);
+    const refetch = vi.fn().mockResolvedValue({
+      isError: false,
+      data: { data: [DEFAULT_SKU_ROW], meta: {} },
+    });
+    vi.mocked(useMvpSkus).mockReturnValue({
+      ...defaultSkusResult(),
+      refetch,
+    } as never);
+    const mutateAsync = vi.fn().mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 412,
+        data: {
+          error_code: "STALE_VERSION",
+          message: "Hồ sơ đã được cập nhật bởi phiên khác.",
+        },
+      },
+    });
+    vi.mocked(useSetMvpSkuPublished).mockReturnValue({
+      ...mutation(),
+      mutateAsync,
+    } as never);
+    renderWithProviders(
+      <>
+        <SkuMasterScreen />
+        <CurrentSkuLocation />
+      </>,
+      ["/master-data/skus?sku_id=off-page-sku&keep=1"],
+    );
+    await screen.findByRole("heading", { name: "LINKED-412" });
+    const drawer = screen.getByRole("dialog", { name: "Chi tiết SKU" });
+    fireEvent.click(
+      within(drawer).getByRole("button", { name: "Gỡ khỏi ứng dụng" }),
+    );
+    const confirm = screen.getByRole("dialog", {
+      name: "Gỡ SKU khỏi ứng dụng phân vùng?",
+    });
+    fireEvent.click(
+      within(confirm).getByRole("button", { name: "Gỡ khỏi ứng dụng" }),
+    );
+    await waitFor(() => expect(getMvpSku).toHaveBeenCalledTimes(2));
+    expect(
+      await screen.findByRole("heading", { name: "LINKED-412" }),
+    ).toBeVisible();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("sku-location")).toHaveTextContent(
+      "sku_id=off-page-sku",
+    );
   });
 
   it("opens the agency editor from anywhere on an editable row", async () => {

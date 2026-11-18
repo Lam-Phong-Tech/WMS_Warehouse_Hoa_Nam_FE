@@ -103,7 +103,7 @@ describe("import result history drawer", () => {
     );
   });
 
-  it("uses the approved three tabs and opens the SKU source separately", async () => {
+  it("keeps the three tabs and source metadata without a generic catalog shortcut", async () => {
     const user = userEvent.setup();
     setup();
     await screen.findByRole("tab", { name: "Kết quả xử lý" });
@@ -115,16 +115,81 @@ describe("import result history drawer", () => {
       screen.getByRole("combobox", { name: "Kết quả của" }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Tổng quan" }));
-    const source = screen.getByRole("link", {
-      name: "Mở danh mục SKU (tab mới)",
-    });
-    expect(source).toHaveAttribute("href", "/master-data/skus");
-    expect(source).toHaveAttribute("target", "_blank");
-    expect(source).toHaveAttribute("rel", "noopener noreferrer");
+    expect(
+      screen.queryByRole("link", {
+        name: "Mở danh mục SKU (tab mới)",
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Nhập danh mục SKU")).toBeVisible();
     await user.click(screen.getByRole("tab", { name: /Lịch sử/ }));
     expect(
       await screen.findByRole("button", { name: /Phiên bản 1/ }),
     ).toBeVisible();
+  });
+
+  it("loads written SKUs only for the selected committed version and resets when switching versions", async () => {
+    const user = userEvent.setup();
+    setup();
+    expect(
+      screen.queryByRole("button", {
+        name: "Xem SKU đã tạo/cập nhật từ lần nhập này",
+      }),
+    ).not.toBeInTheDocument();
+    vi.mocked(http.getPage).mockImplementation(
+      async (path) =>
+        ({
+          data: path.endsWith("/versions")
+            ? [latest, original]
+            : path.endsWith("/written-skus")
+              ? [
+                  {
+                    sku_id: "stable-sku",
+                    sku_code: "HN-001",
+                    action: "CREATED",
+                    available: true,
+                  },
+                  {
+                    sku_id: "deleted-sku",
+                    sku_code: "HN-002",
+                    action: "UPDATED",
+                    available: false,
+                  },
+                ]
+              : [],
+          meta: { total: 2, last_page: 1, linkage_status: "AVAILABLE" },
+        }) as never,
+    );
+    await user.click(
+      await screen.findByRole("combobox", { name: "Kết quả của" }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /Phiên bản 1/ }),
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: "Xem SKU đã tạo/cập nhật từ lần nhập này",
+      }),
+    );
+    const link = await screen.findByRole("link", {
+      name: "Xem SKU HN-001 (tab mới)",
+    });
+    expect(link).toHaveAttribute("href", "/master-data/skus?sku_id=stable-sku");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(
+      screen.queryByRole("link", { name: /HN-002/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("SKU không còn tồn tại")).toBeVisible();
+    expect(http.getPage).toHaveBeenCalledWith(
+      "/skus/import-reports/report-v1/written-skus",
+      expect.anything(),
+    );
+    await user.click(screen.getByRole("combobox", { name: "Kết quả của" }));
+    await user.click(
+      await screen.findByRole("option", { name: /Phiên bản 2/ }),
+    );
+    expect(
+      screen.queryByRole("link", { name: /HN-001/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows uploader, file facts and dry-run projected counts without claiming writes", async () => {

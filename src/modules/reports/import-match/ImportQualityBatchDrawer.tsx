@@ -18,6 +18,7 @@ import {
   useImportQualityVersions,
 } from "./import-quality-api";
 import { ImportQualityIssuePanel } from "./ImportQualityIssuePanel";
+import { ImportQualityWrittenSkus } from "./ImportQualityWrittenSkus";
 import "./import-quality-batch-drawer.css";
 
 export function ImportQualityBatchDrawer({
@@ -225,14 +226,6 @@ export function ImportQualityBatchDrawer({
               <span>{t("importResult.sourceLabel")}</span>
               <p>{t("reports.importQuality.sourceSkuImport")}</p>
             </div>
-            <a
-              href="/master-data/skus"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={t("importResult.openSourceAria")}
-            >
-              {t("importResult.openSource")} <span aria-hidden="true">↗</span>
-            </a>
           </div>
           <dl className="rpt04-batch-context">
             <div className="rpt04-batch-full">
@@ -509,6 +502,9 @@ export function ImportQualityBatchDrawer({
                 updated: number(details.plannedUpdated),
               })}
             </p>
+          ) : null}
+          {details?.mode === "COMMIT" && active.status === "COMMITTED" ? (
+            <ImportQualityWrittenSkus key={active.id} batchId={active.id} />
           ) : null}
         </section>
         <section
