@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
+import { useLocation } from "react-router-dom";
+import { renderWithProviders as render } from "@/test/test-utils";
 import userEvent from "@testing-library/user-event";
 import { cleanupTestState } from "@/test/setup";
 import { useLanguageStore } from "@/shared/i18n/language.store";
@@ -45,6 +47,16 @@ vi.mock("./import-quality-api", () => ({
 
 import { ImportQualityIssuePanel } from "./ImportQualityIssuePanel";
 
+function CurrentLocation() {
+  const location = useLocation();
+  return (
+    <output data-testid="current-location">
+      {location.pathname}
+      {location.search}
+    </output>
+  );
+}
+
 beforeEach(() => useLanguageStore.getState().setLanguage("vi"));
 
 afterEach(() => {
@@ -53,7 +65,7 @@ afterEach(() => {
 });
 
 describe("Import quality issue detail", () => {
-  it("links an existing duplicate by its server-resolved ID but never links an in-file duplicate", async () => {
+  it("navigates to the exact existing SKU in the current tab but never links an in-file duplicate", async () => {
     fixture.rows = [
       Object.assign(
         {
@@ -69,14 +81,21 @@ describe("Import quality issue detail", () => {
       ),
     ];
     const { rerender } = render(
-      <ImportQualityIssuePanel batchId="batch-1" sourceFile="sku.xlsx" />,
+      <>
+        <ImportQualityIssuePanel batchId="batch-1" sourceFile="sku.xlsx" />
+        <CurrentLocation />
+      </>,
+      ["/reports/import-quality?screen=RPT-04"],
     );
     const link = screen.getByRole("link", {
-      name: "Xem SKU đang tồn tại (tab mới)",
+      name: "Xem SKU đang tồn tại",
     });
     expect(link).toHaveAttribute("href", "/master-data/skus?sku_id=stable-sku");
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    expect(link).not.toHaveAttribute("target", "_blank");
+    await userEvent.setup().click(link);
+    expect(screen.getByTestId("current-location")).toHaveTextContent(
+      "/master-data/skus?sku_id=stable-sku",
+    );
     fixture.rows = [{ ...fixture.rows[0], code: "DUPLICATE_CODE_IN_BATCH" }];
     rerender(
       <ImportQualityIssuePanel batchId="batch-1" sourceFile="sku.xlsx" />,

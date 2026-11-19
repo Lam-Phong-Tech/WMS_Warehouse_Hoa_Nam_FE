@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useLanguageStore } from "@/shared/i18n/language.store";
 import { useT } from "@/shared/i18n/useT";
 import { importQualityIssueCopy } from "./import-quality-issue-copy";
@@ -103,15 +104,13 @@ function IssueDetail({
       {issue.code === "DUPLICATE_CODE" &&
       issue.field === "sku_code" &&
       issue.existingSkuId ? (
-        <a
+        <Link
           className="rpt04-context-sku-link"
-          href={`/master-data/skus?${new URLSearchParams({ sku_id: issue.existingSkuId })}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          to={`/master-data/skus?${new URLSearchParams({ sku_id: issue.existingSkuId })}`}
           aria-label={t("importResult.openExistingSkuAria")}
         >
-          {t("importResult.openExistingSku")} <span aria-hidden="true">↗</span>
-        </a>
+          {t("importResult.openExistingSku")}
+        </Link>
       ) : null}
     </section>
   );

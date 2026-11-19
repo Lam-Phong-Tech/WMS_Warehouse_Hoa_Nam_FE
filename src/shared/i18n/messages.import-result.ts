@@ -18,7 +18,7 @@ export const IMPORT_RESULT_VI = {
   openSkuAria: "Xem SKU {code} (tab mới)",
   skuDeleted: "SKU không còn tồn tại",
   openExistingSku: "Xem SKU đang tồn tại",
-  openExistingSkuAria: "Xem SKU đang tồn tại (tab mới)",
+  openExistingSkuAria: "Xem SKU đang tồn tại",
   skuDetailLoading: "Đang mở chi tiết SKU…",
   skuDetailError:
     "Không mở được SKU được liên kết. SKU có thể không còn tồn tại hoặc bạn chưa có quyền xem.",
@@ -141,7 +141,7 @@ export const IMPORT_RESULT_EN: ImportResultMessages = {
   openSkuAria: "View SKU {code} (new tab)",
   skuDeleted: "SKU no longer exists",
   openExistingSku: "View existing SKU",
-  openExistingSkuAria: "View existing SKU (new tab)",
+  openExistingSkuAria: "View existing SKU",
   skuDetailLoading: "Opening SKU details…",
   skuDetailError:
     "Could not open the linked SKU. It may no longer exist or you may not have permission to view it.",
@@ -263,7 +263,7 @@ export const IMPORT_RESULT_ZH: ImportResultMessages = {
   openSkuAria: "查看 SKU {code}（新标签页）",
   skuDeleted: "SKU 已不存在",
   openExistingSku: "查看现有 SKU",
-  openExistingSkuAria: "查看现有 SKU（新标签页）",
+  openExistingSkuAria: "查看现有 SKU",
   skuDetailLoading: "正在打开 SKU 详情…",
   skuDetailError: "无法打开关联的 SKU。该 SKU 可能已不存在，或您没有查看权限。",
   latestResult: "最新结果",
