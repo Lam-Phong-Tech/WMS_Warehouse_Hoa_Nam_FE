@@ -2763,7 +2763,8 @@
 .hn-dashboard-snapshot *::after {
   box-sizing: border-box;
 }
-.hn-dashboard-snapshot button {
+/* Keep shared date-field borders without raising the reset specificity. */
+.hn-dashboard-snapshot button:where(:not(.hn-vuexy-date-field)) {
   border: 0;
   cursor: pointer;
   font: inherit;
@@ -3531,14 +3532,8 @@
   display: grid;
   gap: 5px;
   min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--ops-divider);
-  border-radius: var(--ops-radius-control);
   color: var(--muted);
   font-size: 12px;
-}
-.snapshot-date-field:focus-within {
-  border-color: var(--ops-link);
 }
 .snapshot-date-field .hn-vuexy-date-field {
   height: 43px;
