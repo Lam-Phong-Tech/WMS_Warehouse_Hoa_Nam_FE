@@ -122,6 +122,7 @@ const optionalNumber = (value: unknown): number | null =>
   value === null || value === undefined || value === "" ? null : n(value);
 
 export type ImportMatchResultFilter = "" | "SUCCESS" | "FAILED" | "DUPLICATE";
+export type ImportMatchModeFilter = "" | "DRY_RUN" | "COMMIT";
 
 export type ImportMatchFilters = {
   from: string;
@@ -132,6 +133,7 @@ export type ImportMatchFilters = {
   keyword: string;
   sku: string;
   kind: ItemKind;
+  mode?: ImportMatchModeFilter;
 };
 
 export type ImportMatchTotals = {
@@ -359,6 +361,8 @@ export function filterBatches(
     const day = dayKey(batch.at);
     if (filters.from && day && day < filters.from) return false;
     if (filters.to && day && day > filters.to) return false;
+    if (filters.mode && batch.importDetails?.mode !== filters.mode)
+      return false;
     if (filters.result === "SUCCESS" && batch.success === 0) return false;
     if (filters.result === "FAILED" && batch.failed === 0) return false;
     if (filters.result === "DUPLICATE" && batch.duplicate === 0) return false;

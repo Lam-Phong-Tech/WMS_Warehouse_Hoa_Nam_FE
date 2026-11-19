@@ -31,10 +31,7 @@ import { SearchInput } from "@/shared/components/data-display/SearchInput";
 import { ApiErrorAlert } from "@/shared/components/feedback/ApiErrorAlert";
 import { MultiSeriesBarChart } from "@/shared/components/charts/MultiSeriesBarChart";
 import { CHART_COLORS } from "@/shared/components/charts/chart-theme";
-import {
-  useSkuCatalog,
-  useUserDirectory,
-} from "@/modules/reports/operations/report-data";
+import { useUserDirectory } from "@/modules/reports/operations/report-data";
 import {
   API_DATE,
   axisDayLabel,
@@ -42,7 +39,6 @@ import {
   fmtDateTime,
   pct,
   presetRange,
-  type ItemKind,
 } from "@/modules/reports/operations/report-format";
 import { reportRangePresets } from "@/modules/reports/operations/report-range-presets";
 import { useT } from "@/shared/i18n/useT";
@@ -63,6 +59,7 @@ import {
   trendByDay,
   type ImportMatchBatch,
   type ImportMatchResultFilter,
+  type ImportMatchModeFilter,
 } from "./import-match-model";
 import { tStatic as tUi } from "@/shared/i18n/useT";
 
@@ -95,10 +92,10 @@ const surface = {
 // Leave enough plot space after the legend and date axis on tablet and desktop.
 const DAILY_CHART_HEIGHT = 340;
 
-const getdataTypeOptions = localizedUiValue(() => [
-  { value: "all", label: tUi("dashboard.operations.filterAll") },
-  { value: "PRODUCT", label: tUi("dashboard.skuType.product") },
-  { value: "COMPONENT", label: tUi("dashboard.skuType.component") },
+const getImportModeOptions = localizedUiValue(() => [
+  { value: "", label: tUi("dashboard.operations.filterAll") },
+  { value: "DRY_RUN", label: tUi("importResult.modeFilterDryRun") },
+  { value: "COMMIT", label: tUi("importResult.modeFilterCommit") },
 ]);
 
 const getresultOptions = localizedUiValue(() => [
@@ -231,7 +228,7 @@ export default function ImportQualityBaseline() {
     presetRange("this-month"),
   );
   const [result, setResult] = useState<ImportMatchResultFilter>("");
-  const [kind, setKind] = useState<ItemKind>("all");
+  const [mode, setMode] = useState<ImportMatchModeFilter>("");
   const [keyword, setKeyword] = useState("");
   const [issuesOnly, setIssuesOnly] = useState(false);
   const [openBatch, setOpenBatch] = useState<ImportMatchBatch | null>(null);
@@ -243,7 +240,6 @@ export default function ImportQualityBaseline() {
   const invalid = range[0].isAfter(range[1], "day");
   const presets = useMemo(() => reportRangePresets(t), [t]);
 
-  const catalog = useSkuCatalog();
   const users = useUserDirectory();
   const source = useImportQualityBatches(!invalid);
 
@@ -263,13 +259,23 @@ export default function ImportQualityBaseline() {
   const filteredRows = useMemo(() => {
     const rows = filterBatches(
       allRows,
-      { from, to, result, status: "", actor: "", keyword, sku: "", kind },
-      (code) => catalog.kindOfCode(code),
+      {
+        from,
+        to,
+        result,
+        status: "",
+        actor: "",
+        keyword,
+        sku: "",
+        kind: "all",
+        mode,
+      },
+      () => undefined,
     );
     return issuesOnly
       ? rows.filter((row) => row.failed > 0 || row.duplicate > 0)
       : rows;
-  }, [allRows, from, to, result, keyword, kind, catalog, issuesOnly]);
+  }, [allRows, from, to, result, keyword, mode, issuesOnly]);
 
   const totals = useMemo(() => totalsOf(filteredRows), [filteredRows]);
   const trend = useMemo(() => trendByDay(filteredRows), [filteredRows]);
@@ -298,7 +304,7 @@ export default function ImportQualityBaseline() {
   });
 
   const hasFilters =
-    kind !== "all" ||
+    mode !== "" ||
     result !== "" ||
     keyword !== "" ||
     issuesOnly ||
@@ -306,7 +312,7 @@ export default function ImportQualityBaseline() {
     !range[1].isSame(businessToday(), "day");
   const clearFilters = () => {
     setRange(presetRange("this-month"));
-    setKind("all");
+    setMode("");
     setResult("");
     setKeyword("");
     setIssuesOnly(false);
@@ -321,6 +327,7 @@ export default function ImportQualityBaseline() {
         {
           from_date: from,
           to_date: to,
+          ...(mode ? { mode } : {}),
           ...(result ? { result } : {}),
           ...(keyword.trim() ? { keyword: keyword.trim() } : {}),
           ...(issuesOnly ? { issues_only: "1" } : {}),
@@ -488,15 +495,15 @@ export default function ImportQualityBaseline() {
             fullWidth
             displayEmpty
             searchable={false}
-            aria-label={tUi("updatedUi.text_cf769803384e")}
-            value={kind}
+            aria-label={tUi("importResult.mode")}
+            value={mode}
             onChange={(value) => {
-              setKind(value as ItemKind);
+              setMode(value as ImportMatchModeFilter);
               pagination.reset();
             }}
-            options={getdataTypeOptions().map((option) => ({
+            options={getImportModeOptions().map((option) => ({
               ...option,
-              label: `${tUi("updatedUi.text_cf769803384e")}: ${option.label}`,
+              label: `${tUi("importResult.mode")}: ${option.label}`,
             }))}
             menuClassName="rpt04-select-menu"
           />
