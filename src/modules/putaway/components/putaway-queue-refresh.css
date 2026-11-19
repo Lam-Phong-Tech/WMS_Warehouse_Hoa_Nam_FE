@@ -51,6 +51,12 @@
 .hn-putaway-page .ptw-list[data-queue="orders"] table.ptw-table {
   min-width: 1120px;
 }
+@media (max-width: 1024px) {
+  /* Empty rows fit the visible card; populated tables keep horizontal scrolling. */
+  .hn-putaway-page .ptw-list[data-queue] table.ptw-table:has(.ptw-empty) {
+    min-width: 0;
+  }
+}
 .hn-putaway-page .ptw-list table.ptw-table :is(th, td) {
   padding: 12px 18px;
   border-bottom: 1px solid var(--ops-line);
